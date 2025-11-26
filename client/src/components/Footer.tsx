@@ -6,25 +6,26 @@ import {
   Stack,
   Divider,
   Box,
+  Anchor,
+  ActionIcon,
 } from "@mantine/core";
-import { IconMail, IconPhone, IconMapPin } from "@tabler/icons-react";
+import {
+  IconMail,
+  IconPhone,
+  IconMapPin,
+  IconBrandInstagram,
+  IconBrandTwitter,
+  IconBrandYoutube,
+} from "@tabler/icons-react";
 
 export default function Footer() {
   return (
-    <Box component="footer" bg="black" c="white" py={48}>
-      <Container size="xl" px="lg">
-        <SimpleGrid
-          cols={{ base: 1, sm: 1, md: 3 }}
-          spacing={{ base: "xl", md: 40 }}
-        >
+    <Box component="footer" bg="black" c="white" py="xl">
+      <Container size="xl">
+        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
           <Box>
-            <Text
-              fw={600}
-              size="xl"
-              mb="lg"
-              style={{ letterSpacing: "0.05em" }}
-            >
-              Adres
+            <Text fw={700} size="md" mb="xs" c="white" tt="uppercase">
+              ADRES
             </Text>
 
             <Group align="flex-start" gap="md" wrap="nowrap">
@@ -39,81 +40,83 @@ export default function Footer() {
                 />
               </Box>
 
-              <Stack gap="xs" style={{ flex: 1 }}>
-                <Group gap="xs" align="flex-start">
-                  <IconMapPin
-                    size={20}
-                    style={{ marginTop: 2, flexShrink: 0 }}
-                  />
-                  <Text c="dimmed" size="sm" style={{ lineHeight: 1.6 }}>
-                    İstiklal Caddesi No: 125
-                    <br />
-                    Kat: 1<br />
-                    Taksim – Beyoğlu / İstanbul
+              <Stack gap={4}>
+                <Group gap={6} align="center">
+                  <IconMapPin size={16} color="gray" />
+                  <Text c="dimmed" size="xs" fw={500}>
+                    Merkez Ofis
                   </Text>
                 </Group>
+                <Text c="dimmed" size="xs" lh={1.4}>
+                  İstiklal Caddesi No: 125
+                  <br />
+                  Beyoğlu / İstanbul
+                </Text>
               </Stack>
             </Group>
           </Box>
 
           <Box>
-            <Text
-              fw={600}
-              size="xl"
-              mb="lg"
-              style={{ letterSpacing: "0.05em" }}
-            >
-              İletişim
+            <Text fw={700} size="md" mb="xs" c="white" tt="uppercase">
+              İLETİŞİM
             </Text>
 
-            <Stack gap="md">
-              <Group gap="xs" align="flex-start">
-                <IconMail size={20} style={{ marginTop: 2, flexShrink: 0 }} />
+            <Stack gap="xs">
+              <Group gap="xs">
+                <IconMail size={18} color="gray" />
                 <Text c="dimmed" size="sm">
                   destek@elegant.com
                 </Text>
               </Group>
 
-              <Group gap="xs" align="flex-start">
-                <IconPhone size={20} style={{ marginTop: 2, flexShrink: 0 }} />
+              <Group gap="xs">
+                <IconPhone size={18} color="gray" />
                 <Text c="dimmed" size="sm">
                   0532 123 45 67
                 </Text>
+              </Group>
+
+              <Group gap="l" mt={5}>
+                <ActionIcon variant="subtle" color="gray">
+                  <IconBrandInstagram />
+                </ActionIcon>
+                <ActionIcon variant="subtle" color="gray">
+                  <IconBrandTwitter />
+                </ActionIcon>
+                <ActionIcon variant="subtle" color="gray">
+                  <IconBrandYoutube />
+                </ActionIcon>
               </Group>
             </Stack>
           </Box>
 
           <Box>
-            <Text
-              fw={600}
-              size="xl"
-              mb="lg"
-              style={{ letterSpacing: "0.05em" }}
-            >
-              Kurumsal
+            <Text fw={700} size="md" mb="xs" c="white" tt="uppercase">
+              KURUMSAL
             </Text>
 
-            <Stack gap="xs">
-              <Text c="dimmed" size="sm" style={{ cursor: "pointer" }}>
-                Hakkımızda
-              </Text>
-              <Text c="dimmed" size="sm" style={{ cursor: "pointer" }}>
-                Sıkça Sorulan Sorular
-              </Text>
-              <Text c="dimmed" size="sm" style={{ cursor: "pointer" }}>
-                İade ve Değişim
-              </Text>
-              <Text c="dimmed" size="sm" style={{ cursor: "pointer" }}>
-                Gizlilik Politikası
-              </Text>
-              <Text c="dimmed" size="sm" style={{ cursor: "pointer" }}>
-                Bize Ulaşın
-              </Text>
+            <Stack gap={4}>
+              {[
+                "Hakkımızda",
+                "Sıkça Sorulan Sorular",
+                "İade ve Değişim",
+                "Bize Ulaşın",
+              ].map((item) => (
+                <Anchor
+                  key={item}
+                  c="dimmed"
+                  size="sm"
+                  underline="hover"
+                  style={{ transition: "color 0.2s", width: "fit-content" }}
+                >
+                  {item}
+                </Anchor>
+              ))}
             </Stack>
           </Box>
         </SimpleGrid>
 
-        <Divider color="gray.8" my="xl" />
+        <Divider color="gray.9" my="lg" />
 
         <Text ta="center" c="dimmed" size="sm">
           © {new Date().getFullYear()} ELEGĀNT. Tüm hakları saklıdır.

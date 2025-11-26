@@ -28,10 +28,7 @@ export default function Footer() {
             </Text>
 
             <Group align="flex-start" gap="md" wrap="nowrap">
-              <Box
-                w={150}
-                h={120}
-              >
+              <Box w={150} h={120}>
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.6517446095927!2d28.984624476525523!3d41.03699761855743!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab76d30691d65%3A0x3ac95d299a2f1f34!2sIstiklal%20Cd.%2C%20Beyo%C4%9Flu%2F%C4%B0stanbul!5e0!3m2!1str!2str!4v1732561800000!5m2!1str!2str"
                   width="100%"

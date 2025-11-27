@@ -2,12 +2,16 @@ require("dotenv").config();
 const { Pool } = require("pg");
 
 const pool = new Pool({
-  connectionString: "postgresql://postgres:123456@localhost:5432/elegant_db"
+  host: "localhost",
+  port: 5432,
+  database: "elegant_db",
+  user: "postgres",
+  password: "123456", // String olarak
 });
 
-
-pool.connect()
+pool
+  .connect()
   .then(() => console.log("PostgreSQL bağlı"))
-  .catch(err => console.error("Bağlantı hatası", err));
+  .catch((err) => console.error("Bağlantı hatası", err));
 
 module.exports = pool;

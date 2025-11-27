@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Box,
@@ -20,9 +21,12 @@ import {
   IconPackage,
   IconLogout,
 } from "@tabler/icons-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 100);
@@ -59,7 +63,7 @@ export default function Navbar() {
     >
       <Container size="xl">
         <Group justify="space-between" align="center">
-          <UnstyledButton>
+          <UnstyledButton style={noOutlineStyle}>
             <Text
               fz="2.8rem"
               fw={400}
@@ -77,7 +81,7 @@ export default function Navbar() {
             <Anchor
               c={textColor}
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              style={{             
+              style={{
                 textDecoration: "none",
                 fontSize: "1.2rem",
                 letterSpacing: "0.05em",
@@ -90,7 +94,7 @@ export default function Navbar() {
             <Anchor
               c={textColor}
               style={{
-                ...noOutlineStyle, 
+                ...noOutlineStyle,
                 textDecoration: "none",
                 fontSize: "1.2rem",
                 letterSpacing: "0.05em",
@@ -107,7 +111,7 @@ export default function Navbar() {
                 footer?.scrollIntoView({ behavior: "smooth" });
               }}
               style={{
-                ...noOutlineStyle, 
+                ...noOutlineStyle,
                 textDecoration: "none",
                 fontSize: "1.2rem",
                 letterSpacing: "0.05em",
@@ -119,28 +123,27 @@ export default function Navbar() {
           </Group>
 
           <Group gap="lg">
-            
-            <ActionIcon 
-              variant="subtle" 
-              color={textColor} 
-              size="xl" 
-              style={noOutlineStyle}    
+            <ActionIcon
+              variant="subtle"
+              color={textColor}
+              size="xl"
+              style={noOutlineStyle}
             >
               <IconSearch size={28} />
             </ActionIcon>
 
-            <ActionIcon 
-              variant="subtle" 
-              color={textColor} 
+            <ActionIcon
+              variant="subtle"
+              color={textColor}
               size="xl"
               style={noOutlineStyle}
             >
               <IconHeart size={28} />
             </ActionIcon>
 
-            <ActionIcon 
-              variant="subtle" 
-              color={textColor} 
+            <ActionIcon
+              variant="subtle"
+              color={textColor}
               size="xl"
               style={noOutlineStyle}
             >
@@ -149,9 +152,9 @@ export default function Navbar() {
 
             <Menu shadow="md" width={240}>
               <Menu.Target>
-                <ActionIcon 
-                  variant="subtle" 
-                  color={textColor} 
+                <ActionIcon
+                  variant="subtle"
+                  color={textColor}
                   size="xl"
                   style={noOutlineStyle}
                 >
@@ -160,17 +163,38 @@ export default function Navbar() {
               </Menu.Target>
 
               <Menu.Dropdown>
-                <Menu.Label>Kullanıcı</Menu.Label>
-                <Menu.Item leftSection={<IconUserCircle size={22} />}>
-                  Profilim
-                </Menu.Item>
-                <Menu.Item leftSection={<IconPackage size={22} />}>
-                  Siparişlerim
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item color="red" leftSection={<IconLogout size={22} />}>
-                  Çıkış Yap
-                </Menu.Item>
+                {isAuthenticated ? (
+                  <>
+                    <Menu.Label>{user?.name || user?.email}</Menu.Label>
+                    <Menu.Item leftSection={<IconUserCircle size={22} />}>
+                      Profilim
+                    </Menu.Item>
+                    <Menu.Item leftSection={<IconPackage size={22} />}>
+                      Siparişlerim
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      color="red"
+                      leftSection={<IconLogout size={22} />}
+                      onClick={() => {
+                        logout();
+                        navigate("/");
+                      }}
+                    >
+                      Çıkış Yap
+                    </Menu.Item>
+                  </>
+                ) : (
+                  <>
+                    <Menu.Label>Hesap</Menu.Label>
+                    <Menu.Item
+                      leftSection={<IconUser size={22} />}
+                      onClick={() => navigate("/auth")}
+                    >
+                      Giriş Yap
+                    </Menu.Item>
+                  </>
+                )}
               </Menu.Dropdown>
             </Menu>
           </Group>

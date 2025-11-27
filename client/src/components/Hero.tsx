@@ -7,23 +7,20 @@ const Hero = () => {
 
   return (
     <Box pos="relative" h="100vh" style={{ overflow: "hidden" }}>
-      
       <Box
         pos="absolute"
         inset={0}
         style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1549439602-43ebca2327af?q=80&w=1920&auto=format&fit=crop')",
+          backgroundImage: "url('http://localhost:5001/images/login.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundColor: "rgba(0,0,0,0.40)",
-          backgroundBlendMode: "darken"
+          backgroundBlendMode: "darken",
         }}
       />
 
       <Center pos="relative" h="100%">
         <Box ta="center" px="xl">
-          
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -37,10 +34,10 @@ const Hero = () => {
                 fontFamily: "Playfair Display, serif",
                 fontSize: "clamp(3rem, 7vw, 6rem)",
                 fontWeight: 400,
-                letterSpacing: "0.05em",
+                letterSpacing: "0.3em",
               }}
             >
-              Zamansız Zarafet
+              TIMELESS
             </Title>
           </motion.div>
 
@@ -49,7 +46,12 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.4 }}
           >
-            <Text size="xl" c="white" mb={40} style={{ letterSpacing: "0.05em" }}>
+            <Text
+              size="xl"
+              c="white"
+              mb={40}
+              style={{ letterSpacing: "0.05em" }}
+            >
               İkonik parçalar, unutulmaz anlar
             </Text>
           </motion.div>
@@ -60,7 +62,6 @@ const Hero = () => {
             transition={{ duration: 1, delay: 0.6 }}
           >
             <Group justify="center" gap="md">
-              
               <Box
                 component="button"
                 onClick={() => navigate("/shop")}
@@ -74,8 +75,12 @@ const Hero = () => {
                   cursor: "pointer",
                   transition: "all 0.3s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#333")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#000")}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#333")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#000")
+                }
               >
                 Kategorileri İncele
               </Box>
@@ -105,10 +110,8 @@ const Hero = () => {
               >
                 Ürünleri Görüntüle
               </Box>
-
             </Group>
           </motion.div>
-
         </Box>
       </Center>
 
@@ -130,21 +133,15 @@ const Hero = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 8
+            gap: 8,
           }}
         >
           <Text c="white" size="sm" style={{ letterSpacing: "0.2em" }}>
             KAYDIR
           </Text>
 
-          <svg
-            stroke="white"
-            width={24}
-            height={24}
-          >
-            <path
-              d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3"
-            />
+          <svg stroke="white" width={24} height={24}>
+            <path d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
           </svg>
         </motion.div>
       </motion.div>

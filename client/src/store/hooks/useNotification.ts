@@ -1,43 +1,60 @@
-import { useAtom } from "jotai";
-import { notificationsAtom } from "../atoms";
-import { useCallback } from "react";
+import { notifications } from "@mantine/notifications";
+import {
+  IconCheck,
+  IconX,
+  IconInfoCircle,
+  IconAlertTriangle,
+} from "@tabler/icons-react";
+import { createElement } from "react";
 
 type NotificationType = "success" | "error" | "info" | "warning";
 
-interface Notification {
-  id: string;
-  message: string;
-  type: NotificationType;
-}
-
-export const useNotification = () => {
-  const [notifications, setNotifications] = useAtom(notificationsAtom);
-
-  const addNotification = useCallback(
-    (message: string, type: NotificationType) => {
-      const id = Math.random().toString(36).substr(2, 9);
-      const newNotification: Notification = { id, message, type };
-
-      setNotifications((prev) => [...prev, newNotification]);
-
-      setTimeout(() => {
-        removeNotification(id);
-      }, 3000);
-    },
-    [setNotifications]
-  );
-
-  const removeNotification = useCallback(
-    (id: string) => {
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    },
-    [setNotifications]
-  );
-
-  return {
-    notifications,
-    addNotification,
-    removeNotification,
-  };
+export const notificationConfig = {
+  position: "top-right" as const,
+  zIndex: 10000,
+  limit: 3,
 };
 
+export const useNotification = () => {
+  const addNotification = (
+    message: string,
+    type: NotificationType = "info"
+  ) => {
+    const configs = {
+      success: {
+        color: "green",
+        Icon: IconCheck,
+        title: "Başarılı",
+      },
+      error: {
+        color: "red",
+        Icon: IconX,
+        title: "Hata",
+      },
+      info: {
+        color: "red",
+        Icon: IconInfoCircle,
+        title: "Başarılı",
+      },
+      warning: {
+        color: "yellow",
+        Icon: IconAlertTriangle,
+        title: "Uyarı",
+      },
+    };
+
+    const config = configs[type];
+
+    notifications.show({
+      title: config.title,
+      message,
+      color: config.color,
+      icon: createElement(config.Icon, { size: 18 }),
+      autoClose: 3000,
+    });
+  };
+
+  return {
+    addNotification,
+  };
+};

@@ -1,15 +1,17 @@
 import { Routes, Route } from "react-router-dom";
 import { MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
+import { notificationConfig } from "./store/hooks/useNotification";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
-import { NotificationContainer } from "./components/NotificationContainer";
 import "./App.css";
 
 function App() {
   return (
     <MantineProvider>
+      <Notifications {...notificationConfig} />
       <Routes>
         <Route path="/auth" element={<Auth />} />
         <Route
@@ -23,7 +25,6 @@ function App() {
           }
         />
       </Routes>
-      <NotificationContainer />
     </MantineProvider>
   );
 }

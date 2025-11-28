@@ -120,65 +120,71 @@ const ProductCard = ({ product }: ProductCardProps) => {
         />
 
         <motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
-  transition={{ duration: 0.3 }}
-  style={{
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: "10px 16px",
-    backgroundColor: "rgba(255,255,255,0.96)",
-    pointerEvents: isHovered ? "auto" : "none",
-    display: "flex",
-    justifyContent: "center",
-    gap: 14,
-  }}
->
-  {SIZES.map((size) => {
-    const isActive = selectedSize === size || hoveredSize === size;
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
+          transition={{ duration: 0.3 }}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: "10px 16px",
+            backgroundColor: "rgba(255,255,255,0.96)",
+            pointerEvents: isHovered ? "auto" : "none",
+            display: "flex",
+            justifyContent: "center",
+            gap: 14,
+          }}
+        >
+          {SIZES.map((size) => {
+            const isActive = selectedSize === size || hoveredSize === size;
 
-    return (
-      <button
-        key={size}
-        type="button"
-        style={{
-          ...sizeButtonBase,
-          color: isActive ? "#000000" : "#b0b0b0",
-          fontWeight: isActive ? 600 : 400,
-        }}
-        onMouseEnter={() => setHoveredSize(size)}
-        onMouseLeave={() => setHoveredSize(null)}
-        onClick={(e) => handleSizeClick(size, e)}
-      >
-        {size}
-      </button>
-    );
-  })}
-</motion.div>
-
+            return (
+              <button
+                key={size}
+                type="button"
+                style={{
+                  ...sizeButtonBase,
+                  color: isActive ? "#000000" : "#b0b0b0",
+                  fontWeight: isActive ? 600 : 400,
+                }}
+                onMouseEnter={() => setHoveredSize(size)}
+                onMouseLeave={() => setHoveredSize(null)}
+                onClick={(e) => handleSizeClick(size, e)}
+              >
+                {size}
+              </button>
+            );
+          })}
+        </motion.div>
       </Box>
 
-      <Box pt={12}>
+      <Box pt={8}>
         <Text
           size="sm"
           c="#666"
-          mb={4}
           style={{
-            lineHeight: 1.,
+            lineHeight: 1.4,
             fontWeight: 400,
             overflow: "hidden",
             textOverflow: "ellipsis",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
+            marginBottom: "4px",
           }}
         >
           {product.name}
         </Text>
 
-        <Text size="sm" fw={600} c="black">
+        <Text
+          size="sm"
+          fw={600}
+          c="black"
+          style={{
+            lineHeight: 1.4,
+          }}
+        >
           {typeof product.price === "number"
             ? product.price.toFixed(2)
             : parseFloat(product.price).toFixed(2)}{" "}

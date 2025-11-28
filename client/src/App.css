@@ -1,40 +1,106 @@
 #root {
   width: 100%;
   min-height: 100vh;
+  background-color: #ffffff;
+  font-family: "Montserrat", sans-serif;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.product-title {
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.product-price {
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  letter-spacing: -0.01em;
+}
+
+.product-old-price {
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.btn-primary {
+  font-family: "Montserrat", sans-serif;
+  padding: 12px 24px;
+  background-color: #000;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #000;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #fff;
+  color: #000;
+}
+
+.btn-secondary {
+  font-family: "Montserrat", sans-serif;
+  padding: 12px 24px;
+  background-color: #fff;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #000;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+.section {
+  padding: 60px 0;
+}
+
+.section-title {
+  font-family: "Montserrat", sans-serif;
+  font-size: 32px;
+  font-weight: 500;
+  text-align: center;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 32px;
+  padding: 0 16px;
+}
+
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
-  to {
-    transform: rotate(360deg);
+
+  .section-title {
+    font-size: 24px;
+    margin-bottom: 24px;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+a,
+button,
+img {
+  transition: all 0.3s ease;
 }

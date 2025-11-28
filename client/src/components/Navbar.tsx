@@ -37,12 +37,6 @@ export default function Navbar() {
   const bgColor = isScrolled ? "white" : "transparent";
   const textColor = isScrolled ? "black" : "white";
 
-  const noOutlineStyle = {
-    border: "none",
-    outline: "none",
-    boxShadow: "none",
-  };
-
   return (
     <Box
       component={motion.nav}
@@ -63,7 +57,7 @@ export default function Navbar() {
     >
       <Container size="xl">
         <Group justify="space-between" align="center">
-          <UnstyledButton style={noOutlineStyle}>
+          <UnstyledButton>
             <Text
               fz="2.8rem"
               fw={400}
@@ -94,7 +88,6 @@ export default function Navbar() {
             <Anchor
               c={textColor}
               style={{
-                ...noOutlineStyle,
                 textDecoration: "none",
                 fontSize: "1.2rem",
                 letterSpacing: "0.05em",
@@ -111,7 +104,6 @@ export default function Navbar() {
                 footer?.scrollIntoView({ behavior: "smooth" });
               }}
               style={{
-                ...noOutlineStyle,
                 textDecoration: "none",
                 fontSize: "1.2rem",
                 letterSpacing: "0.05em",
@@ -123,41 +115,21 @@ export default function Navbar() {
           </Group>
 
           <Group gap="lg">
-            <ActionIcon
-              variant="subtle"
-              color={textColor}
-              size="xl"
-              style={noOutlineStyle}
-            >
+            <ActionIcon variant="subtle" color={textColor} size="xl">
               <IconSearch size={28} />
             </ActionIcon>
 
-            <ActionIcon
-              variant="subtle"
-              color={textColor}
-              size="xl"
-              style={noOutlineStyle}
-            >
+            <ActionIcon variant="subtle" color={textColor} size="xl">
               <IconHeart size={28} />
             </ActionIcon>
 
-            <ActionIcon
-              variant="subtle"
-              color={textColor}
-              size="xl"
-              style={noOutlineStyle}
-            >
+            <ActionIcon variant="subtle" color={textColor} size="xl">
               <IconShoppingBag size={28} />
             </ActionIcon>
 
             <Menu shadow="md" width={240}>
               <Menu.Target>
-                <ActionIcon
-                  variant="subtle"
-                  color={textColor}
-                  size="xl"
-                  style={noOutlineStyle}
-                >
+                <ActionIcon variant="subtle" color={textColor} size="xl">
                   <IconUser size={28} />
                 </ActionIcon>
               </Menu.Target>

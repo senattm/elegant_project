@@ -25,7 +25,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:5001";
+  import.meta.env.VITE_API_URL ?? "http://localhost:5000/api";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const data = await authRequest("/api/users/login", { email, password });
+      const data = await authRequest("/users/login", { email, password });
 
       setUser(data.user);
       setToken(data.token);
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (name: string, email: string, password: string) => {
     setLoading(true);
     try {
-      const data = await authRequest("/api/users/register", {
+      const data = await authRequest("/users/register", {
         name,
         email,
         password,

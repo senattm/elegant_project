@@ -39,7 +39,6 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        // GİRİŞ YAP
         if (!formData.email || !formData.password) {
           addNotification("Lütfen tüm alanları doldurun", "error");
           setLoading(false);
@@ -47,10 +46,9 @@ const Auth = () => {
         }
 
         await authLogin(formData.email, formData.password);
-        addNotification("Başarıyla giriş yaptınız! 🎉", "success");
+        addNotification("Başarıyla giriş yaptınız!", "success");
         navigate("/");
       } else {
-        // KAYIT OL
         if (
           !formData.name ||
           !formData.email ||
@@ -75,11 +73,14 @@ const Auth = () => {
         }
 
         await authRegister(formData.name, formData.email, formData.password);
-        addNotification("Hesabınız oluşturuldu! 🎉", "success");
+        addNotification("Hesabınız oluşturuldu!", "success");
         navigate("/");
       }
-    } catch (error: any) {
-      addNotification(error.message || "Bir hata oluştu", "error");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Bir hata oluştu";
+
+      addNotification(message, "error");
     } finally {
       setLoading(false);
     }
@@ -96,13 +97,12 @@ const Auth = () => {
       <Box
         style={{
           flex: "0 0 55%",
-          backgroundImage: "url(http://localhost:5001/images/deneme.jpg)",
+          backgroundImage: "url(http://localhost:5000/images/deneme.jpg)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           position: "relative",
         }}
       >
-
         <Box
           style={{
             position: "absolute",

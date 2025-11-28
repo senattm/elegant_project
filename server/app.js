@@ -7,18 +7,17 @@ const pool = require("./db");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Statik dosyalar
 app.use("/images", express.static(path.join(__dirname, "images")));
 
-// Routes
 const productsRouter = require("./routes/products");
-app.use("/api/products", productsRouter);
+const usersRouter = require("./routes/users");
 
-// Test endpoint
+app.use("/api/products", productsRouter);
+app.use("/api/users", usersRouter);
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", message: "Server çalışıyor" });
 });

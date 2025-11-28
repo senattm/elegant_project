@@ -10,7 +10,7 @@ import {
 } from "@mantine/core";
 import Hero from "../components/Hero";
 import ProductCard from "../components/ProductCard";
-import type { Product } from "../types/product";
+import type { Product } from "@/types";
 import { productsApi } from "../api/client";
 
 const Home = () => {

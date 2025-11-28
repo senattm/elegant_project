@@ -22,11 +22,13 @@ import {
   IconLogout,
 } from "@tabler/icons-react";
 import { useAuth } from "../store/hooks";
+import { useFavorites } from "../store/hooks/useFavorites";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const { favorites } = useFavorites();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 100);
@@ -119,8 +121,35 @@ export default function Navbar() {
               <IconSearch size={28} />
             </ActionIcon>
 
-            <ActionIcon variant="subtle" color={textColor} size="xl">
+            <ActionIcon 
+              variant="subtle" 
+              color={textColor} 
+              size="xl"
+              onClick={() => navigate("/favorites")}
+              style={{ position: "relative" }}
+            >
               <IconHeart size={28} />
+              {favorites.length > 0 && (
+                <Box
+                  style={{
+                    position: "absolute",
+                    top: -2,
+                    right: -2,
+                    backgroundColor: "#e63946",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "18px",
+                    height: "18px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {favorites.length}
+                </Box>
+              )}
             </ActionIcon>
 
             <ActionIcon variant="subtle" color={textColor} size="xl">

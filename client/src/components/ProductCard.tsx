@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Box, Text, UnstyledButton } from "@mantine/core";
 import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import { motion } from "framer-motion";
-import type { Product } from "../types/product";
+import type { Product } from "../store/atoms";
+import { useFavorites } from "../store/hooks";
 
 interface ProductCardProps {
   product: Product;
@@ -12,9 +13,11 @@ const SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL"];
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [hoveredSize, setHoveredSize] = useState<string | null>(null);
+
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isProductFavorite = isFavorite(product.id);
 
   const serverUrl =
     import.meta.env.VITE_API_URL?.replace("/api", "") ||
@@ -74,7 +77,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <UnstyledButton
           onClick={(e) => {
             e.stopPropagation();
-            setIsFavorite(!isFavorite);
+            toggleFavorite(product.id);
           }}
           style={{
             position: "absolute",
@@ -97,7 +100,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             e.currentTarget.style.transform = "scale(1)";
           }}
         >
-          {isFavorite ? (
+          {isProductFavorite ? (
             <IconHeartFilled size={20} color="#000" />
           ) : (
             <IconHeart size={20} color="#000" />

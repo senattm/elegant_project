@@ -21,7 +21,7 @@ import {
   IconPackage,
   IconLogout,
 } from "@tabler/icons-react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../store/hooks";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);

@@ -74,7 +74,7 @@ router.post("/login", async (req, res) => {
       message: "Giriş başarılı",
       user: {
         id: user.id,
-        name: user.name,
+        name: user.name || email.split("@")[0],
         email: user.email,
       },
       token: "token-" + user.id,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   Container,
   Text,
@@ -10,31 +10,12 @@ import {
 } from "@mantine/core";
 import Hero from "../components/Hero";
 import ProductCard from "../components/ProductCard";
-import type { Product } from "@/types";
-import { productsApi } from "../api/client";
+import { useProducts } from "../store/hooks";
 
 const Home = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { products, loading, fetchProducts } = useProducts();
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        console.log("Ürünler yükleniyor...");
-        const response = await productsApi.getAll();
-        setProducts(response.data);
-      } catch (err) {
-        console.error("Ürünler yüklenirken hata:", err);
-        setError(
-          "Ürünler yüklenirken bir hata oluştu. Server çalışıyor mu kontrol edin."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
   }, []);
 
@@ -59,7 +40,7 @@ const Home = () => {
           </Text>
         </Container>
       </Box>
-      
+
       <Container size="xl" py={60}>
         <Box mb={40}>
           <Title
@@ -92,27 +73,13 @@ const Home = () => {
           </Center>
         )}
 
-        {error && (
-          <Center py={60}>
-            <Box>
-              <Text c="red" ta="center" mb={8}>
-                {error}
-              </Text>
-              <Text size="sm" c="dimmed" ta="center">
-                Server'ın çalıştığından ve veritabanı bağlantısının doğru
-                olduğundan emin olun.
-              </Text>
-            </Box>
-          </Center>
-        )}
-
-        {!loading && !error && products.length === 0 && (
+        {!loading && products.length === 0 && (
           <Center py={60}>
             <Text c="dimmed">Henüz ürün bulunmuyor.</Text>
           </Center>
         )}
 
-        {!loading && !error && products.length > 0 && (
+        {!loading && products.length > 0 && (
           <Box>
             <Text mb={16} c="dimmed" size="sm">
               Toplam {products.length} ürün gösteriliyor

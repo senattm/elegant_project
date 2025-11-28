@@ -16,8 +16,7 @@ import {
   IconUser,
   IconArrowLeft,
 } from "@tabler/icons-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useNotification } from "../contexts/NotificationContext";
+import { useAuth, useNotification } from "../store/hooks";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -46,7 +45,6 @@ const Auth = () => {
         }
 
         await authLogin(formData.email, formData.password);
-        addNotification("Başarıyla giriş yaptınız!", "success");
         navigate("/");
       } else {
         if (
@@ -73,14 +71,10 @@ const Auth = () => {
         }
 
         await authRegister(formData.name, formData.email, formData.password);
-        addNotification("Hesabınız oluşturuldu!", "success");
         navigate("/");
       }
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Bir hata oluştu";
-
-      addNotification(message, "error");
+      // Hata notification'ı useAuth hook'unda zaten gösteriliyor
     } finally {
       setLoading(false);
     }

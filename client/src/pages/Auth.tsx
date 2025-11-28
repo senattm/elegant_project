@@ -16,8 +16,8 @@ import {
   IconUser,
   IconArrowLeft,
 } from "@tabler/icons-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNotification } from "@/contexts/NotificationContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -93,7 +93,6 @@ const Auth = () => {
         position: "relative",
       }}
     >
-      {/* Sol Taraf - Fotoğraf */}
       <Box
         style={{
           flex: "0 0 55%",
@@ -103,7 +102,7 @@ const Auth = () => {
           position: "relative",
         }}
       >
-        {/* Logo Overlay */}
+
         <Box
           style={{
             position: "absolute",
@@ -125,7 +124,6 @@ const Auth = () => {
           </Text>
         </Box>
 
-        {/* Ana Sayfaya Dön Butonu */}
         <Button
           variant="subtle"
           leftSection={<IconArrowLeft size={18} />}

@@ -1,9 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../db");
 
-router.get("/", async (req, res) => {
-  res.json({ message: "Orders endpoint" });
-});
+// Orders routes will be implemented later
+// Placeholder for now
 
 module.exports = router;

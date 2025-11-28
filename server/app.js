@@ -1,12 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const productsRouter = require("./routes/products");
-const usersRouter = require("./routes/users");
-const ordersRouter = require("./routes/orders");
+const pool = require("./db");
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -16,13 +15,12 @@ app.use(express.json());
 app.use("/images", express.static(path.join(__dirname, "images")));
 
 // Routes
+const productsRouter = require("./routes/products");
 app.use("/api/products", productsRouter);
-app.use("/api/users", usersRouter);
-app.use("/api/orders", ordersRouter);
 
 // Test endpoint
-app.get("/", (req, res) => {
-  res.json({ message: "ELEGĀNT API çalışıyor!" });
+app.get("/api/health", (req, res) => {
+  res.json({ status: "OK", message: "Server çalışıyor" });
 });
 
 app.listen(PORT, () => {

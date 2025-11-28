@@ -11,7 +11,7 @@ const Hero = () => {
         pos="absolute"
         inset={0}
         style={{
-          backgroundImage: "url('http://localhost:5001/images/login.jpg')",
+          backgroundImage: "url('http://localhost:5000/images/login.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundColor: "rgba(0,0,0,0.40)",

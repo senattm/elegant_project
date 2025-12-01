@@ -1,13 +1,8 @@
 import { notifications } from "@mantine/notifications";
-import {
-  IconCheck,
-  IconX,
-  IconInfoCircle,
-  IconAlertTriangle,
-} from "@tabler/icons-react";
+import { IconCheck, IconX, IconInfoCircle } from "@tabler/icons-react";
 import { createElement } from "react";
 
-type NotificationType = "success" | "error" | "info" | "warning";
+type NotificationType = "success" | "error" | "info";
 
 export const notificationConfig = {
   position: "top-right" as const,
@@ -35,11 +30,6 @@ export const useNotification = () => {
         color: "red",
         Icon: IconInfoCircle,
         title: "Başarılı",
-      },
-      warning: {
-        color: "yellow",
-        Icon: IconAlertTriangle,
-        title: "Uyarı",
       },
     };
 

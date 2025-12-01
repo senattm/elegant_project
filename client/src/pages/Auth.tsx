@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
+  Flex,
   TextInput,
   PasswordInput,
   Button,
@@ -31,6 +32,64 @@ const Auth = () => {
   const { login: authLogin, register: authRegister } = useAuth();
   const { addNotification } = useNotification();
   const navigate = useNavigate();
+
+  const inputStyles = {
+    label: {
+      fontSize: "13px",
+      fontWeight: 500,
+      marginBottom: 8,
+      color: "#333",
+      letterSpacing: "0.05em",
+    },
+    input: {
+      borderColor: "#ddd",
+      "&:focus": {
+        borderColor: "black",
+      },
+    },
+  };
+
+  const logoStyle = {
+    fontFamily: "Playfair Display, serif",
+    fontSize: "2rem",
+    color: "white",
+    letterSpacing: "0.2em",
+    fontWeight: 400,
+    textShadow: "0 2px 10px rgba(0,0,0,0.3)",
+  };
+
+  const titleStyle = {
+    fontFamily: "Playfair Display, serif",
+    fontSize: "2.2rem",
+    fontWeight: 400,
+    letterSpacing: "0.05em",
+  };
+
+  const buttonStyles = {
+    root: {
+      backgroundColor: "black",
+      height: 48,
+      fontSize: "14px",
+      letterSpacing: "0.1em",
+      fontWeight: 500,
+      "&:hover": {
+        backgroundColor: "#333",
+      },
+    },
+  };
+
+  const linkStyle = {
+    color: "black",
+    fontWeight: 600,
+    cursor: "pointer",
+    textDecoration: "underline",
+  };
+
+  const imageBoxStyle = {
+    backgroundImage: "url(http://localhost:5000/images/deneme.jpg)",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,60 +133,26 @@ const Auth = () => {
         navigate("/");
       }
     } catch (error: unknown) {
-      // Hata notification'ı useAuth hook'unda zaten gösteriliyor
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        position: "relative",
-      }}
-    >
-      <Box
-        style={{
-          flex: "0 0 55%",
-          backgroundImage: "url(http://localhost:5000/images/deneme.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          position: "relative",
-        }}
-      >
-        <Box
-          style={{
-            position: "absolute",
-            top: 40,
-            left: 40,
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: "Playfair Display, serif",
-              fontSize: "2rem",
-              color: "white",
-              letterSpacing: "0.2em",
-              fontWeight: 400,
-              textShadow: "0 2px 10px rgba(0,0,0,0.3)",
-            }}
-          >
-            ELEGĀNT
-          </Text>
+    <Flex mih="100vh" pos="relative">
+      <Box w="55%" style={imageBoxStyle} pos="relative">
+        <Box pos="absolute" top={40} left={40}>
+          <Text style={logoStyle}>ELEGĀNT</Text>
         </Box>
 
         <Button
           variant="subtle"
           leftSection={<IconArrowLeft size={18} />}
           onClick={() => navigate("/")}
-          style={{
-            position: "absolute",
-            top: 40,
-            right: 40,
-            color: "white",
-          }}
+          pos="absolute"
+          top={40}
+          right={40}
+          c="white"
           styles={{
             root: {
               "&:hover": {
@@ -140,27 +165,9 @@ const Auth = () => {
         </Button>
       </Box>
 
-      <Box
-        style={{
-          flex: "0 0 45%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "white",
-          padding: "40px",
-        }}
-      >
-        <Box style={{ width: "100%", maxWidth: 420 }}>
-          <Title
-            order={1}
-            mb="xs"
-            style={{
-              fontFamily: "Playfair Display, serif",
-              fontSize: "2.2rem",
-              fontWeight: 400,
-              letterSpacing: "0.05em",
-            }}
-          >
+      <Flex w="45%" align="center" justify="center" bg="white" p={40}>
+        <Box w="100%" maw={420}>
+          <Title order={1} mb="xs" style={titleStyle}>
             {isLogin ? "Hoş Geldiniz" : "Hesap Oluştur"}
           </Title>
 
@@ -183,20 +190,7 @@ const Auth = () => {
                   }
                   required
                   size="md"
-                  styles={{
-                    label: {
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      marginBottom: 8,
-                      color: "#333",
-                    },
-                    input: {
-                      borderColor: "#ddd",
-                      "&:focus": {
-                        borderColor: "black",
-                      },
-                    },
-                  }}
+                  styles={inputStyles}
                 />
               )}
 
@@ -211,21 +205,7 @@ const Auth = () => {
                 }
                 required
                 size="md"
-                styles={{
-                  label: {
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    marginBottom: 8,
-                    color: "#333",
-                    letterSpacing: "0.05em",
-                  },
-                  input: {
-                    borderColor: "#ddd",
-                    "&:focus": {
-                      borderColor: "black",
-                    },
-                  },
-                }}
+                styles={inputStyles}
               />
 
               <PasswordInput
@@ -238,21 +218,7 @@ const Auth = () => {
                 }
                 required
                 size="md"
-                styles={{
-                  label: {
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    marginBottom: 8,
-                    color: "#333",
-                    letterSpacing: "0.05em",
-                  },
-                  input: {
-                    borderColor: "#ddd",
-                    "&:focus": {
-                      borderColor: "black",
-                    },
-                  },
-                }}
+                styles={inputStyles}
               />
 
               {!isLogin && (
@@ -269,21 +235,7 @@ const Auth = () => {
                   }
                   required
                   size="md"
-                  styles={{
-                    label: {
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      marginBottom: 8,
-                      color: "#333",
-                      letterSpacing: "0.05em",
-                    },
-                    input: {
-                      borderColor: "#ddd",
-                      "&:focus": {
-                        borderColor: "black",
-                      },
-                    },
-                  }}
+                  styles={inputStyles}
                 />
               )}
 
@@ -292,18 +244,7 @@ const Auth = () => {
                 fullWidth
                 size="lg"
                 loading={loading}
-                styles={{
-                  root: {
-                    backgroundColor: "black",
-                    height: 48,
-                    fontSize: "14px",
-                    letterSpacing: "0.1em",
-                    fontWeight: 500,
-                    "&:hover": {
-                      backgroundColor: "#333",
-                    },
-                  },
-                }}
+                styles={buttonStyles}
               >
                 {isLogin ? "GİRİŞ YAP" : "HESAP OLUŞTUR"}
               </Button>
@@ -316,20 +257,15 @@ const Auth = () => {
             {isLogin ? "Hesabınız yok mu?" : "Zaten hesabınız var mı?"}{" "}
             <Text
               component="span"
-              style={{
-                color: "black",
-                fontWeight: 600,
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
+              style={linkStyle}
               onClick={() => setIsLogin(!isLogin)}
             >
               {isLogin ? "Kayıt Ol" : "Giriş Yap"}
             </Text>
           </Text>
         </Box>
-      </Box>
-    </Box>
+      </Flex>
+    </Flex>
   );
 };
 

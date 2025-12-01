@@ -148,9 +148,9 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               <IconSearch size={28} />
             </ActionIcon>
 
-            <ActionIcon 
-              variant="subtle" 
-              color={textColor} 
+            <ActionIcon
+              variant="subtle"
+              color={textColor}
               size="xl"
               onClick={() => navigate("/favorites")}
               style={iconStyle}
@@ -161,17 +161,15 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               )}
             </ActionIcon>
 
-            <ActionIcon 
-              variant="subtle" 
-              color={textColor} 
+            <ActionIcon
+              variant="subtle"
+              color={textColor}
               size="xl"
               onClick={() => navigate("/cart")}
               style={iconStyle}
             >
               <IconShoppingBag size={28} />
-              {cartCount > 0 && (
-                <Box style={badgeStyle}>{cartCount}</Box>
-              )}
+              {cartCount > 0 && <Box style={badgeStyle}>{cartCount}</Box>}
             </ActionIcon>
 
             <Menu shadow="md" width={240}>

@@ -44,7 +44,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   }, [product.price]);
 
   const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     if (!selectedSize) return;
     addToCart(product, 1, selectedSize);
     setSelectedSize(null);
@@ -162,13 +162,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
               fullWidth
               size="sm"
               onClick={handleAddToCart}
-              styles={{
-                root: {
-                  backgroundColor: "#000000",
-                  color: "#fff",
-                  letterSpacing: "0.1em",
-                  fontWeight: 500,
-                },
+              style={{
+                backgroundColor: "#000000",
+                color: "#fff",
+                letterSpacing: "0.1em",
+                fontWeight: 600,
               }}
             >
               SEPETE EKLE ({selectedSize})
@@ -182,7 +180,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
           size="sm"
           c="#666"
           style={{
-         
             marginBottom: "4px",
           }}
         >

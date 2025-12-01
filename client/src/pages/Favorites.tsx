@@ -18,7 +18,6 @@ const Favorites = () => {
   );
 
   const titleStyle = {
-    fontSize: "42px",
     fontWeight: 300,
     marginBottom: "12px",
     letterSpacing: "0.1em",
@@ -31,10 +30,12 @@ const Favorites = () => {
   };
 
   return (
-    <Box mih="100vh" pt={{ base: 100, md: 140 }} pb={60}>
+    <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={60}>
       <Container size="xl">
         <Box mb={50} ta="center">
-          <Text style={titleStyle}>FAVORİLERİM</Text>
+          <Text fz={{ base: 28, sm: 36, md: 42 }} style={titleStyle}>
+            FAVORİLERİM
+          </Text>
           <Text
             size="sm"
             c="dimmed"

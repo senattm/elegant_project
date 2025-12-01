@@ -5,6 +5,7 @@ import { notificationConfig } from "./store/hooks/useNotification";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
+import Cart from "./pages/Cart";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import "./App.css";
@@ -29,7 +30,18 @@ function App() {
           path="/favorites"
           element={
             <>
+              <Navbar alwaysWhite />
               <Favorites />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <>
+              <Navbar alwaysWhite />
+              <Cart />
               <Footer />
             </>
           }

@@ -1,19 +1,19 @@
+
 export interface Product {
   id: number;
   name: string;
   description?: string;
   price: number | string;
   stock?: number;
-  category?: string;
   images: string[];
+  category?: string;
 }
 
 export interface User {
-  id?: number;
-  name?: string;
-  email?: string;
-  isAuthenticated: boolean;
-  addresses?: Address[];
+  id: number;
+  name: string;
+  email: string;
+  addresses?: Address[]; 
 }
 
 export interface Address {
@@ -28,9 +28,9 @@ export interface Address {
 }
 
 export interface CartItem {
-  id: number;
   product: Product;
   quantity: number;
+  selectedSize?: string;
 }
 
 export interface Order {

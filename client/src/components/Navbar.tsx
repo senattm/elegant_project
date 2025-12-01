@@ -23,12 +23,18 @@ import {
 } from "@tabler/icons-react";
 import { useAuth } from "../store/hooks";
 import { useFavorites } from "../store/hooks/useFavorites";
+import { useCart } from "../store/hooks/useCart";
 
-export default function Navbar() {
+interface NavbarProps {
+  alwaysWhite?: boolean;
+}
+
+export default function Navbar({ alwaysWhite = false }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const { favorites } = useFavorites();
+  const { cartCount } = useCart();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 100);
@@ -36,8 +42,8 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const bgColor = isScrolled ? "white" : "transparent";
-  const textColor = isScrolled ? "black" : "white";
+  const bgColor = alwaysWhite || isScrolled ? "white" : "transparent";
+  const textColor = alwaysWhite || isScrolled ? "black" : "white";
 
   return (
     <Box
@@ -53,7 +59,7 @@ export default function Navbar() {
         zIndex: 100,
         backgroundColor: bgColor,
         transition: "all 0.3s",
-        boxShadow: isScrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
+        boxShadow: alwaysWhite || isScrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
       }}
       py={isScrolled ? "lg" : "xl"}
     >
@@ -152,8 +158,35 @@ export default function Navbar() {
               )}
             </ActionIcon>
 
-            <ActionIcon variant="subtle" color={textColor} size="xl">
+            <ActionIcon 
+              variant="subtle" 
+              color={textColor} 
+              size="xl"
+              onClick={() => navigate("/cart")}
+              style={{ position: "relative" }}
+            >
               <IconShoppingBag size={28} />
+              {cartCount > 0 && (
+                <Box
+                  style={{
+                    position: "absolute",
+                    top: -2,
+                    right: -2,
+                    backgroundColor: "#e63946",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "18px",
+                    height: "18px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {cartCount}
+                </Box>
+              )}
             </ActionIcon>
 
             <Menu shadow="md" width={240}>

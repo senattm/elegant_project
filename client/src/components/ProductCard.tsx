@@ -2,14 +2,14 @@ import { useState } from "react";
 import { Box, Text, UnstyledButton } from "@mantine/core";
 import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import { motion } from "framer-motion";
+import { useFavorites, useCart } from "../store/hooks";
 import type { Product } from "../store/atoms";
-import { useFavorites } from "../store/hooks";
 
 interface ProductCardProps {
   product: Product;
 }
 
-const SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL"];
+const SIZES = ["XS", "S", "M", "L", "XL"];
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -17,7 +17,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [hoveredSize, setHoveredSize] = useState<string | null>(null);
 
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { addToCart } = useCart();
   const isProductFavorite = isFavorite(product.id);
+
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      return;
+    }
+    addToCart(product, 1, selectedSize);
+    setSelectedSize(null);
+    setIsHovered(false);
+  };
 
   const serverUrl =
     import.meta.env.VITE_API_URL?.replace("/api", "") ||
@@ -134,31 +144,67 @@ const ProductCard = ({ product }: ProductCardProps) => {
             padding: "10px 16px",
             backgroundColor: "rgba(255,255,255,0.96)",
             pointerEvents: isHovered ? "auto" : "none",
-            display: "flex",
-            justifyContent: "center",
-            gap: 14,
           }}
         >
-          {SIZES.map((size) => {
-            const isActive = selectedSize === size || hoveredSize === size;
+          {!selectedSize ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 14,
+              }}
+            >
+              {SIZES.map((size) => {
+                const isActive = hoveredSize === size;
 
-            return (
-              <button
-                key={size}
-                type="button"
-                style={{
-                  ...sizeButtonBase,
-                  color: isActive ? "#000000" : "#b0b0b0",
-                  fontWeight: isActive ? 600 : 400,
-                }}
-                onMouseEnter={() => setHoveredSize(size)}
-                onMouseLeave={() => setHoveredSize(null)}
-                onClick={(e) => handleSizeClick(size, e)}
-              >
-                {size}
-              </button>
-            );
-          })}
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    style={{
+                      ...sizeButtonBase,
+                      color: isActive ? "#000000" : "#b0b0b0",
+                      fontWeight: isActive ? 600 : 400,
+                    }}
+                    onMouseEnter={() => setHoveredSize(size)}
+                    onMouseLeave={() => setHoveredSize(null)}
+                    onClick={(e) => handleSizeClick(size, e)}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddToCart();
+              }}
+              style={{
+                width: "100%",
+                backgroundColor: "#000",
+                color: "#fff",
+                border: "none",
+                padding: "10px 20px",
+                fontSize: "12px",
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#333";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#000";
+              }}
+            >
+              Sepete Ekle ({selectedSize})
+            </button>
+          )}
         </motion.div>
       </Box>
 

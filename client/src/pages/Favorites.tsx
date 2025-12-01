@@ -17,62 +17,41 @@ const Favorites = () => {
     favorites.includes(product.id)
   );
 
+  const titleStyle = {
+    fontSize: "42px",
+    fontWeight: 300,
+    marginBottom: "12px",
+    letterSpacing: "0.1em",
+    fontFamily: "Playfair Display, serif",
+  };
+
+  const emptyIconStyle = {
+    color: "#e9ecef",
+    marginBottom: "20px",
+  };
+
   return (
-    <Box style={{ minHeight: "100vh", paddingTop: "140px", paddingBottom: "60px" }}>
+    <Box mih="100vh" pt={{ base: 100, md: 140 }} pb={60}>
       <Container size="xl">
-        <Box style={{ marginBottom: "50px", textAlign: "center" }}>
+        <Box mb={50} ta="center">
+          <Text style={titleStyle}>FAVORİLERİM</Text>
           <Text
-            style={{
-              fontSize: "42px",
-              fontWeight: 300,
-              marginBottom: "12px",
-              letterSpacing: "0.1em",
-              fontFamily: "Playfair Display, serif",
-            }}
-          >
-            FAVORİLERİM
-          </Text>
-          <Text
-            style={{
-              fontSize: "13px",
-              color: "#868e96",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-            }}
+            size="sm"
+            c="dimmed"
+            tt="uppercase"
+            style={{ letterSpacing: "0.08em" }}
           >
             {favoriteProducts.length} Ürün
           </Text>
         </Box>
 
         {favoriteProducts.length === 0 ? (
-          <Box
-            style={{
-              textAlign: "center",
-              padding: "100px 20px",
-            }}
-          >
-            <IconHeart
-              size={64}
-              style={{
-                color: "#e9ecef",
-                marginBottom: "20px",
-              }}
-            />
-            <Text
-              style={{
-                fontSize: "18px",
-                color: "#495057",
-                marginBottom: "10px",
-              }}
-            >
+          <Box ta="center" py={100}>
+            <IconHeart size={64} style={emptyIconStyle} />
+            <Text size="lg" c="#495057" mb={10}>
               Henüz favori ürününüz yok
             </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                color: "#adb5bd",
-              }}
-            >
+            <Text size="sm" c="#adb5bd">
               Beğendiğiniz ürünleri favorilerinize ekleyebilirsiniz
             </Text>
           </Box>

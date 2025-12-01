@@ -20,6 +20,29 @@
   padding: 0;
 }
 
+*:focus,
+*:active,
+*:focus-visible,
+button:focus,
+button:active,
+a:focus,
+a:active,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.mantine-ActionIcon-root {
+  transition: transform 0.2s ease;
+}
+
+.mantine-ActionIcon-root:hover {
+  transform: scale(1.1);
+}
+
 a {
   color: inherit;
   text-decoration: none;

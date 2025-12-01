@@ -45,6 +45,26 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
   const bgColor = alwaysWhite || isScrolled ? "white" : "transparent";
   const textColor = alwaysWhite || isScrolled ? "black" : "white";
 
+  const iconStyle = {
+    position: "relative" as const,
+  };
+
+  const badgeStyle = {
+    position: "absolute" as const,
+    top: 0,
+    right: 0,
+    backgroundColor: "#e63946",
+    color: "white",
+    borderRadius: "50%",
+    width: "16px",
+    height: "16px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "9px",
+    fontWeight: 600,
+  };
+
   return (
     <Box
       component={motion.nav}
@@ -59,7 +79,8 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
         zIndex: 100,
         backgroundColor: bgColor,
         transition: "all 0.3s",
-        boxShadow: alwaysWhite || isScrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
+        boxShadow:
+          alwaysWhite || isScrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
       }}
       py={isScrolled ? "lg" : "xl"}
     >
@@ -132,29 +153,11 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               color={textColor} 
               size="xl"
               onClick={() => navigate("/favorites")}
-              style={{ position: "relative" }}
+              style={iconStyle}
             >
               <IconHeart size={28} />
               {favorites.length > 0 && (
-                <Box
-                  style={{
-                    position: "absolute",
-                    top: -2,
-                    right: -2,
-                    backgroundColor: "#e63946",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "18px",
-                    height: "18px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "10px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {favorites.length}
-                </Box>
+                <Box style={badgeStyle}>{favorites.length}</Box>
               )}
             </ActionIcon>
 
@@ -163,29 +166,11 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               color={textColor} 
               size="xl"
               onClick={() => navigate("/cart")}
-              style={{ position: "relative" }}
+              style={iconStyle}
             >
               <IconShoppingBag size={28} />
               {cartCount > 0 && (
-                <Box
-                  style={{
-                    position: "absolute",
-                    top: -2,
-                    right: -2,
-                    backgroundColor: "#e63946",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "18px",
-                    height: "18px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "10px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {cartCount}
-                </Box>
+                <Box style={badgeStyle}>{cartCount}</Box>
               )}
             </ActionIcon>
 

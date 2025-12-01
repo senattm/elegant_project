@@ -1,5 +1,12 @@
-import { useState } from "react";
-import { Box, Text, UnstyledButton } from "@mantine/core";
+import { useState, MouseEvent, useMemo } from "react";
+import {
+  Box,
+  Text,
+  UnstyledButton,
+  Button,
+  Group,
+  ActionIcon,
+} from "@mantine/core";
 import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import { useFavorites, useCart } from "../store/hooks";
@@ -11,6 +18,14 @@ interface ProductCardProps {
 
 const SIZES = ["XS", "S", "M", "L", "XL"];
 
+const SERVER_URL =
+  import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+
+const getImageUrl = (url: string) => {
+  if (!url) return "";
+  return url.startsWith("http") ? url : `${SERVER_URL}${url}`;
+};
+
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -20,57 +35,38 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
   const isProductFavorite = isFavorite(product.id);
 
-  const handleAddToCart = () => {
-    if (!selectedSize) {
-      return;
-    }
+  const formattedPrice = useMemo(() => {
+    const price =
+      typeof product.price === "number"
+        ? product.price
+        : parseFloat(product.price);
+    return price.toFixed(2);
+  }, [product.price]);
+
+  const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation(); 
+    if (!selectedSize) return;
     addToCart(product, 1, selectedSize);
     setSelectedSize(null);
     setIsHovered(false);
   };
 
-  const serverUrl =
-    import.meta.env.VITE_API_URL?.replace("/api", "") ||
-    "http://localhost:5000";
-
-  const getImageUrl = (url: string) => {
-    if (!url) return "";
-    return url.startsWith("http") ? url : `${serverUrl}${url}`;
-  };
-
-  const images = product.images || [];
-  const currentImage =
-    isHovered && images[1]
-      ? getImageUrl(images[1])
-      : images[0]
-      ? getImageUrl(images[0])
-      : "https://via.placeholder.com/400x600?text=No+Image";
-
-  const sizeButtonBase: React.CSSProperties = {
-    background: "transparent",
-    border: "none",
-    padding: "0 6px",
-    fontSize: 12,
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    cursor: "pointer",
-    color: "#b0b0b0",
-  };
-
-  const handleSizeClick = (
-    size: string,
-    e: React.MouseEvent<HTMLButtonElement>
-  ) => {
+  const handleSizeClick = (size: string, e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setSelectedSize(size);
   };
 
+  const images = product.images || [];
+
+  const currentImage = useMemo(() => {
+    if (isHovered && images[1]) return getImageUrl(images[1]);
+    if (images[0]) return getImageUrl(images[0]);
+    return "https://via.placeholder.com/400x600?text=No+Image";
+  }, [isHovered, images]);
+
   return (
     <Box
-      style={{
-        cursor: "pointer",
-        position: "relative",
-      }}
+      style={{ cursor: "pointer", position: "relative" }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -78,13 +74,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
         setHoveredSize(null);
       }}
     >
-      <Box
-        style={{
-          position: "relative",
-          aspectRatio: "3/4",
-        }}
-      >
-        <UnstyledButton
+      <Box style={{ position: "relative", aspectRatio: "3/4" }}>
+        <ActionIcon
+          variant="filled"
+          radius="xl"
+          size="lg"
           onClick={(e) => {
             e.stopPropagation();
             toggleFavorite(product.id);
@@ -94,28 +88,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
             top: 12,
             right: 12,
             zIndex: 10,
-            padding: 8,
-            backgroundColor: "white",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            transition: "transform 0.2s ease",
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
+          styles={{
+            root: {
+              backgroundColor: "white",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              transition: "transform 0.2s ease",
+            },
           }}
         >
           {isProductFavorite ? (
-            <IconHeartFilled size={20} color="#000" />
+            <IconHeartFilled size={22} color="red" />
           ) : (
-            <IconHeart size={20} color="#000" />
+            <IconHeart size={22} color="red" />
           )}
-        </UnstyledButton>
+        </ActionIcon>
 
         <motion.img
           key={currentImage}
@@ -143,67 +130,49 @@ const ProductCard = ({ product }: ProductCardProps) => {
             right: 0,
             padding: "10px 16px",
             backgroundColor: "rgba(255,255,255,0.96)",
-            pointerEvents: isHovered ? "auto" : "none",
           }}
         >
           {!selectedSize ? (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: 14,
-              }}
-            >
+            <Group justify="center" gap={14}>
               {SIZES.map((size) => {
                 const isActive = hoveredSize === size;
-
                 return (
-                  <button
+                  <UnstyledButton
                     key={size}
-                    type="button"
-                    style={{
-                      ...sizeButtonBase,
-                      color: isActive ? "#000000" : "#b0b0b0",
-                      fontWeight: isActive ? 600 : 400,
-                    }}
                     onMouseEnter={() => setHoveredSize(size)}
                     onMouseLeave={() => setHoveredSize(null)}
                     onClick={(e) => handleSizeClick(size, e)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      padding: "6px",
+                      fontSize: 14,
+                      cursor: "pointer",
+                      color: isActive ? "#000000" : "#b0b0b0",
+                      fontWeight: isActive ? 600 : 400,
+                    }}
                   >
                     {size}
-                  </button>
+                  </UnstyledButton>
                 );
               })}
-            </div>
+            </Group>
           ) : (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddToCart();
-              }}
-              style={{
-                width: "100%",
-                backgroundColor: "#000",
-                color: "#fff",
-                border: "none",
-                padding: "10px 20px",
-                fontSize: "12px",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#333";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#000";
+            <Button
+              fullWidth
+              size="sm"
+              onClick={handleAddToCart}
+              styles={{
+                root: {
+                  backgroundColor: "#000000",
+                  color: "#fff",
+                  letterSpacing: "0.1em",
+                  fontWeight: 500,
+                },
               }}
             >
-              Sepete Ekle ({selectedSize})
-            </button>
+              SEPETE EKLE ({selectedSize})
+            </Button>
           )}
         </motion.div>
       </Box>
@@ -213,31 +182,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
           size="sm"
           c="#666"
           style={{
-            lineHeight: 1.4,
-            fontWeight: 400,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
+         
             marginBottom: "4px",
           }}
         >
           {product.name}
         </Text>
 
-        <Text
-          size="sm"
-          fw={600}
-          c="black"
-          style={{
-            lineHeight: 1.4,
-          }}
-        >
-          {typeof product.price === "number"
-            ? product.price.toFixed(2)
-            : parseFloat(product.price).toFixed(2)}{" "}
-          TL
+        <Text size="sm" fw={600} c="black">
+          {formattedPrice} TL
         </Text>
       </Box>
     </Box>

@@ -4,10 +4,21 @@ import { useFavorites } from "../store/hooks/useFavorites";
 import { useProducts } from "../store/hooks/useProducts";
 import { useEffect } from "react";
 import ProductCard from "../components/ProductCard";
+import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { isAuthenticatedAtom } from "../store/atoms";
 
 const Favorites = () => {
+  const navigate = useNavigate();
+  const [isAuthenticated] = useAtom(isAuthenticatedAtom);
   const { favorites } = useFavorites();
   const { products, fetchProducts } = useProducts();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     fetchProducts();

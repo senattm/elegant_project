@@ -10,11 +10,21 @@ import {
 import { IconTrash, IconMinus, IconPlus } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../store/hooks/useCart";
+import { useAtom } from "jotai";
+import { isAuthenticatedAtom } from "../store/atoms";
+import { useEffect } from "react";
 
 const Cart = () => {
   const navigate = useNavigate();
+  const [isAuthenticated] = useAtom(isAuthenticatedAtom);
   const { cart, removeFromCart, updateQuantity, getTotalPrice, clearCart } =
     useCart();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
 
   const total = getTotalPrice();
 
@@ -56,7 +66,7 @@ const Cart = () => {
               color="dark"
               size="md"
               onClick={() => navigate("/")}
-              >
+            >
               ALIŞVERİŞE BAŞLA
             </Button>
           </Box>
@@ -96,11 +106,7 @@ const Cart = () => {
                       <Text fz={18} fw={500} mb={12}>
                         {item.product.name}
                       </Text>
-                      <Text
-                        fz={14}
-                        c="dimmed"
-                        mb={12}
-                      >
+                      <Text fz={14} c="dimmed" mb={12}>
                         BEDEN: {item.selectedSize}
                       </Text>
                       <Text fz={18} fw={600}>
@@ -148,7 +154,7 @@ const Cart = () => {
 
                     <ActionIcon
                       variant="subtle"
-                      color="red"   
+                      color="red"
                       onClick={() =>
                         removeFromCart(item.product.id, item.selectedSize)
                       }
@@ -160,15 +166,9 @@ const Cart = () => {
               })}
             </Box>
 
-            <Flex
-              justify="space-between"
-            >
+            <Flex justify="space-between">
               <Box>
-                <Text          
-                  c="dimmed"
-                >
-                  TOPLAM
-                </Text>
+                <Text c="dimmed">TOPLAM</Text>
                 <Text fz={32} fw={600}>
                   {total.toFixed(2)} TL
                 </Text>
@@ -179,15 +179,11 @@ const Cart = () => {
                   variant="outline"
                   color="dark"
                   size="lg"
-                  onClick={clearCart}              
+                  onClick={clearCart}
                 >
                   SEPETİ TEMİZLE
                 </Button>
-                <Button
-                  variant="filled"
-                  color="dark"
-                  size="lg"
-                >
+                <Button variant="filled" color="dark" size="lg">
                   ÖDEMEYE GEÇ
                 </Button>
               </Group>

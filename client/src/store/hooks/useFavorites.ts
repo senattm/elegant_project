@@ -1,39 +1,108 @@
 import { useAtom } from "jotai";
-import { favoritesAtom } from "../atoms";
+import { favoritesAtom, tokenAtom } from "../atoms";
 import { useNotification } from "./useNotification";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export const useFavorites = () => {
   const [favorites, setFavorites] = useAtom(favoritesAtom);
+  const [token] = useAtom(tokenAtom);
   const { addNotification } = useNotification();
 
-  const toggleFavorite = (productId: number) => {
-    setFavorites((prev) => {
-      const isFavorite = prev.includes(productId);
+  const getAuthHeader = () => ({
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-      if (isFavorite) {
-        addNotification("Favorilerden çıkarıldı", "info");
-        return prev.filter((id) => id !== productId);
-      } else {
-        addNotification("Favorilere eklendi!", "success");
-        return [...prev, productId];
+  const fetchFavorites = async () => {
+    if (!token) {
+      setFavorites([]);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_URL}/favorites`, getAuthHeader());
+      const favoriteIds = response.data.map((item: any) => item.product_id);
+      setFavorites(favoriteIds);
+    } catch (error: any) {
+      console.error("Favoriler yüklenemedi:", error);
+      if (error.response?.status === 401) {
+        addNotification("Lütfen giriş yapın", "error");
       }
-    });
+    }
+  };
+
+  const toggleFavorite = async (productId: number) => {
+    if (!token) {
+      addNotification("Favorilere eklemek için giriş yapın", "error");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/favorites/toggle`,
+        { productId },
+        getAuthHeader()
+      );
+
+      if (response.data.isFavorite) {
+        addNotification("Favorilere eklendi!", "success");
+      } else {
+        addNotification("Favorilerden çıkarıldı", "info");
+      }
+
+      await fetchFavorites();
+    } catch (error: any) {
+      console.error("Favori işlemi başarısız:", error);
+      addNotification(
+        error.response?.data?.message || "İşlem başarısız",
+        "error"
+      );
+    }
   };
 
   const isFavorite = (productId: number) => {
     return favorites.includes(productId);
   };
 
-  const clearFavorites = () => {
-    setFavorites([]);
-    addNotification("Tüm favoriler temizlendi", "info");
+  const removeFavorite = async (productId: number) => {
+    if (!token) return;
+
+    try {
+      await axios.delete(`${API_URL}/favorites/${productId}`, getAuthHeader());
+      addNotification("Favorilerden çıkarıldı", "info");
+      await fetchFavorites();
+    } catch (error: any) {
+      console.error("Favorilerden çıkarılamadı:", error);
+      addNotification(
+        error.response?.data?.message || "Favorilerden çıkarılamadı",
+        "error"
+      );
+    }
+  };
+
+  const clearFavorites = async () => {
+    if (!token) return;
+
+    try {
+      await axios.delete(`${API_URL}/favorites`, getAuthHeader());
+      addNotification("Tüm favoriler temizlendi", "info");
+      setFavorites([]);
+    } catch (error: any) {
+      console.error("Favoriler temizlenemedi:", error);
+      addNotification(
+        error.response?.data?.message || "Favoriler temizlenemedi",
+        "error"
+      );
+    }
   };
 
   return {
     favorites,
     toggleFavorite,
     isFavorite,
+    removeFavorite,
     clearFavorites,
+    fetchFavorites,
   };
 };
-

@@ -73,6 +73,8 @@ export const useAuth = () => {
   const logout = () => {
     setUser(null);
     setToken(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
     addNotification("Çıkış yapıldı", "info");
   };
 
@@ -85,4 +87,3 @@ export const useAuth = () => {
     logout,
   };
 };
-

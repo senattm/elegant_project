@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
 import Cart from "./pages/Cart";
+import Store from "./pages/Store";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import "./App.css";
@@ -42,6 +43,16 @@ function App() {
             <>
               <Navbar alwaysWhite />
               <Cart />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/store"
+          element={
+            <>
+              <Navbar alwaysWhite />
+              <Store />
               <Footer />
             </>
           }

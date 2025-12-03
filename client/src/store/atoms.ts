@@ -13,7 +13,7 @@ export const loadingProductsAtom = atom<boolean>(false);
 
 export const cartAtom = atom<CartItem[]>([]);
 export const cartCountAtom = atom((get) =>
-  get(cartAtom).reduce((sum, item) => sum + item.quantity, 0
+  get(cartAtom).reduce((sum, item) => sum + item.quantity, 0)
 );
 
-export const favoritesAtom = atom<number[]>([]);
+export const favoritesAtom = atomWithStorage<number[]>("favorites", []);

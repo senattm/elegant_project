@@ -14,4 +14,5 @@ export const productsApi = {
   getById: (id: number) => api.get(`/products/${id}`),
   getByCategory: (categoryName: string) =>
     api.get(`/products/category/${categoryName}`),
+  getCategories: () => api.get("/products/categories"),
 };

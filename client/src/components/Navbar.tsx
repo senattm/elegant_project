@@ -11,7 +11,6 @@ import {
   UnstyledButton,
   Anchor,
 } from "@mantine/core";
-
 import {
   IconSearch,
   IconHeart,
@@ -86,7 +85,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
     >
       <Container size="xl">
         <Group justify="space-between" align="center">
-          <UnstyledButton>
+          <UnstyledButton onClick={() => navigate("/")}>
             <Text
               fz="2.8rem"
               fw={400}
@@ -103,7 +102,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
           <Group gap="xl">
             <Anchor
               c={textColor}
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              onClick={() => navigate("/")}
               style={{
                 textDecoration: "none",
                 fontSize: "1.2rem",
@@ -116,6 +115,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
 
             <Anchor
               c={textColor}
+              onClick={() => navigate("/store")}
               style={{
                 textDecoration: "none",
                 fontSize: "1.2rem",

@@ -3,4 +3,4 @@ export { useNotification } from "./useNotification";
 export { useProducts } from "./useProducts";
 export { useCart } from "./useCart";
 export { useFavorites } from "./useFavorites";
-
+export { useOrders } from "./useOrders";

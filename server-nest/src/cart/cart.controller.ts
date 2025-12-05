@@ -25,31 +25,43 @@ export class CartController {
   @Post()
   addToCart(
     @Request() req,
-    @Body() body: { productId: number; quantity?: number },
+    @Body()
+    body: { productId: number; quantity?: number; selectedSize?: string },
   ) {
     return this.cartService.addToCart(
       req.user.id,
       body.productId,
       body.quantity || 1,
+      body.selectedSize,
     );
   }
 
-  @Put(':productId')
+  @Put(':productId/:selectedSize?')
   updateQuantity(
     @Request() req,
     @Param('productId') productId: string,
+    @Param('selectedSize') selectedSize: string,
     @Body() body: { quantity: number },
   ) {
     return this.cartService.updateQuantity(
       req.user.id,
       +productId,
       body.quantity,
+      selectedSize,
     );
   }
 
-  @Delete(':productId')
-  removeFromCart(@Request() req, @Param('productId') productId: string) {
-    return this.cartService.removeFromCart(req.user.id, +productId);
+  @Delete(':productId/:selectedSize?')
+  removeFromCart(
+    @Request() req,
+    @Param('productId') productId: string,
+    @Param('selectedSize') selectedSize: string,
+  ) {
+    return this.cartService.removeFromCart(
+      req.user.id,
+      +productId,
+      selectedSize,
+    );
   }
 
   @Delete()
@@ -57,5 +69,3 @@ export class CartController {
     return this.cartService.clearCart(req.user.id);
   }
 }
-
-

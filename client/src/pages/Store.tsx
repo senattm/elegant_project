@@ -157,11 +157,7 @@ const Store = () => {
             {" "}
             MAĞAZA{" "}
           </Title>{" "}
-          <Text
-            fz="sm"
-            c="dimmed"
-            fw={500}
-          >
+          <Text fz="sm" c="dimmed" fw={500}>
             {" "}
             {filteredAndSortedProducts.length} ÜRÜN{" "}
             {hasActiveFilters && (
@@ -262,11 +258,7 @@ const Store = () => {
                 {" "}
                 <Stack gap="md">
                   {" "}
-                  <Text
-                    fw={600}
-                    size="sm"
-                    c="dark"
-                  >
+                  <Text fw={600} size="sm" c="dark">
                     {" "}
                     Kategoriler{" "}
                   </Text>{" "}
@@ -326,11 +318,7 @@ const Store = () => {
                 </Stack>{" "}
                 <Stack gap="md">
                   {" "}
-                  <Text
-                    fw={600}
-                    size="sm"
-                    c="dark"
-                  >
+                  <Text fw={600} size="sm" c="dark">
                     {" "}
                     Fiyat Aralığı{" "}
                   </Text>{" "}

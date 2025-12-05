@@ -11,6 +11,7 @@ export class CartService {
       SELECT 
         ci.id,
         ci.quantity,
+        ci.selected_size,
         p.id as product_id,
         p.name,
         p.description,
@@ -23,7 +24,7 @@ export class CartService {
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id
       WHERE ci.user_id = $1
-      GROUP BY ci.id, ci.quantity, p.id, p.name, p.description, p.price, p.stock, c.name
+      GROUP BY ci.id, ci.quantity, ci.selected_size, p.id, p.name, p.description, p.price, p.stock, c.name
       ORDER BY ci.id DESC
     `,
       [userId],
@@ -32,10 +33,15 @@ export class CartService {
     return result.rows;
   }
 
-  async addToCart(userId: number, productId: number, quantity: number = 1) {
+  async addToCart(
+    userId: number,
+    productId: number,
+    quantity: number = 1,
+    selectedSize?: string,
+  ) {
     const existingItem = await this.db.query(
-      'SELECT id, quantity FROM cart_items WHERE user_id = $1 AND product_id = $2',
-      [userId, productId],
+      'SELECT id, quantity FROM cart_items WHERE user_id = $1 AND product_id = $2 AND (selected_size = $3 OR (selected_size IS NULL AND $3 IS NULL))',
+      [userId, productId, selectedSize || null],
     );
 
     if (existingItem.rows.length > 0) {
@@ -48,21 +54,26 @@ export class CartService {
     }
 
     const result = await this.db.query(
-      'INSERT INTO cart_items (user_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING *',
-      [userId, productId, quantity],
+      'INSERT INTO cart_items (user_id, product_id, quantity, selected_size) VALUES ($1, $2, $3, $4) RETURNING *',
+      [userId, productId, quantity, selectedSize || null],
     );
 
     return result.rows[0];
   }
 
-  async updateQuantity(userId: number, productId: number, quantity: number) {
+  async updateQuantity(
+    userId: number,
+    productId: number,
+    quantity: number,
+    selectedSize?: string,
+  ) {
     if (quantity <= 0) {
-      return this.removeFromCart(userId, productId);
+      return this.removeFromCart(userId, productId, selectedSize);
     }
 
     const result = await this.db.query(
-      'UPDATE cart_items SET quantity = $1 WHERE user_id = $2 AND product_id = $3 RETURNING *',
-      [quantity, userId, productId],
+      'UPDATE cart_items SET quantity = $1 WHERE user_id = $2 AND product_id = $3 AND (selected_size = $4 OR (selected_size IS NULL AND $4 IS NULL)) RETURNING *',
+      [quantity, userId, productId, selectedSize || null],
     );
 
     if (result.rows.length === 0) {
@@ -72,10 +83,14 @@ export class CartService {
     return result.rows[0];
   }
 
-  async removeFromCart(userId: number, productId: number) {
+  async removeFromCart(
+    userId: number,
+    productId: number,
+    selectedSize?: string,
+  ) {
     const result = await this.db.query(
-      'DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2 RETURNING *',
-      [userId, productId],
+      'DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2 AND (selected_size = $3 OR (selected_size IS NULL AND $3 IS NULL)) RETURNING *',
+      [userId, productId, selectedSize || null],
     );
 
     if (result.rows.length === 0) {
@@ -90,5 +105,3 @@ export class CartService {
     return { message: 'Sepet temizlendi' };
   }
 }
-
-

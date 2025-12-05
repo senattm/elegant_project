@@ -1,43 +1,40 @@
-
-export interface Product {
-  id: number;
-  name: string;
-  description?: string;
-  price: number | string;
-  stock?: number;
-  images: string[];
-  category?: string;
-}
-
 export interface User {
   id: number;
   name: string;
   email: string;
-  addresses?: Address[]; 
 }
 
-export interface Address {
-  id: string;
-  title: string;
-  fullName: string;
-  phone: string;
-  addressLine: string;
-  city: string;
-  district: string;
-  isDefault: boolean;
+export interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number | string;
+  stock: number;
+  category: string;
+  images: string[];
 }
 
 export interface CartItem {
   product: Product;
   quantity: number;
-  selectedSize?: string;
+  selectedSize: string;
+}
+
+export interface OrderItem {
+  id: number;
+  productName: string;
+  productImages: string[];
+  selectedSize: string;
+  quantity: number;
+  price: number;
 }
 
 export interface Order {
-  id: number;
   orderNumber: string;
-  items: CartItem[];
-  totalAmount: number;
   status: string;
   createdAt: string;
+  totalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  items: OrderItem[];
 }

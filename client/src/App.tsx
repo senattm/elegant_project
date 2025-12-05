@@ -7,6 +7,7 @@ import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
 import Cart from "./pages/Cart";
 import Store from "./pages/Store";
+import OrderDetail from "./pages/OrderDetail";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import "./App.css";
@@ -53,6 +54,16 @@ function App() {
             <>
               <Navbar alwaysWhite />
               <Store />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/orders/:orderId"
+          element={
+            <>
+              <Navbar alwaysWhite />
+              <OrderDetail />
               <Footer />
             </>
           }

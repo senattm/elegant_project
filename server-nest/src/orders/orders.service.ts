@@ -5,21 +5,13 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { PoolClient } from 'pg';
+import { OrderItemDto } from './dto';
 
 @Injectable()
 export class OrdersService {
   constructor(private db: DatabaseService) {}
 
-  async createOrder(
-    userId: number,
-    items: Array<{
-      productId: number;
-      quantity: number;
-      selectedSize?: string;
-      price: number;
-    }>,
-    addressId?: number,
-  ) {
+  async createOrder(userId: number, items: OrderItemDto[], addressId?: number) {
     if (!items || items.length === 0) {
       throw new BadRequestException('Sipariş için en az bir ürün gerekli');
     }
@@ -63,12 +55,7 @@ export class OrdersService {
       );
 
       const order = orderResult.rows[0];
-      const orderItemsToReturn: Array<{
-        productId: number;
-        quantity: number;
-        selectedSize: string | undefined;
-        price: number;
-      }> = [];
+      const orderItemsToReturn: OrderItemDto[] = [];
 
       for (const item of items) {
         const productStockResult = await client.query(

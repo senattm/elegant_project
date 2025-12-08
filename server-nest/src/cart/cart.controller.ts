@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AddToCartDto, UpdateQuantityDto } from './dto';
 
 @Controller('cart')
 @UseGuards(JwtAuthGuard)
@@ -23,16 +24,12 @@ export class CartController {
   }
 
   @Post()
-  addToCart(
-    @Request() req,
-    @Body()
-    body: { productId: number; quantity?: number; selectedSize?: string },
-  ) {
+  addToCart(@Request() req, @Body() dto: AddToCartDto) {
     return this.cartService.addToCart(
       req.user.id,
-      body.productId,
-      body.quantity || 1,
-      body.selectedSize,
+      dto.productId,
+      dto.quantity || 1,
+      dto.selectedSize,
     );
   }
 
@@ -40,12 +37,12 @@ export class CartController {
   updateQuantityWithoutSize(
     @Request() req,
     @Param('productId') productId: string,
-    @Body() body: { quantity: number },
+    @Body() dto: UpdateQuantityDto,
   ) {
     return this.cartService.updateQuantity(
       req.user.id,
       +productId,
-      body.quantity,
+      dto.quantity,
       undefined,
     );
   }
@@ -55,12 +52,12 @@ export class CartController {
     @Request() req,
     @Param('productId') productId: string,
     @Param('selectedSize') selectedSize: string,
-    @Body() body: { quantity: number },
+    @Body() dto: UpdateQuantityDto,
   ) {
     return this.cartService.updateQuantity(
       req.user.id,
       +productId,
-      body.quantity,
+      dto.quantity,
       selectedSize,
     );
   }
@@ -79,7 +76,11 @@ export class CartController {
     @Param('productId') productId: string,
     @Param('selectedSize') selectedSize: string,
   ) {
-    return this.cartService.removeFromCart(req.user.id, +productId, selectedSize);
+    return this.cartService.removeFromCart(
+      req.user.id,
+      +productId,
+      selectedSize,
+    );
   }
 
   @Delete()

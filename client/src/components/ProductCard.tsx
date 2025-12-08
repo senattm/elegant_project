@@ -1,4 +1,5 @@
 import { useState, useMemo, type MouseEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Text,
@@ -27,6 +28,7 @@ const getImageUrl = (url: string) => {
 };
 
 const ProductCard = ({ product }: ProductCardProps) => {
+  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [hoveredSize, setHoveredSize] = useState<string | null>(null);
@@ -63,6 +65,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
     if (images[0]) return getImageUrl(images[0]);
     return "https://via.placeholder.com/400x600?text=No+Image";
   }, [isHovered, images]);
+
+  const handleImageClick = (e: MouseEvent<HTMLImageElement>) => {
+    e.stopPropagation();
+    navigate(`/product/${product.id}`);
+  };
 
   return (
     <Box
@@ -111,11 +118,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
+          onClick={handleImageClick}
           style={{
             width: "100%",
             height: "100%",
             objectFit: "cover",
             display: "block",
+            cursor: "pointer",
           }}
         />
 
@@ -175,7 +184,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </motion.div>
       </Box>
 
-      <Box pt={8}>
+      <Box pt={8} onClick={() => navigate(`/product/${product.id}`)}>
         <Text
           size="sm"
           c="#666"

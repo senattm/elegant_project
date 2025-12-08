@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { FavoritesService } from './favorites.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { FavoriteDto } from './dto';
 
 @Controller('favorites')
 @UseGuards(JwtAuthGuard)
@@ -22,13 +23,13 @@ export class FavoritesController {
   }
 
   @Post()
-  addToFavorites(@Request() req, @Body() body: { productId: number }) {
-    return this.favoritesService.addToFavorites(req.user.id, body.productId);
+  addToFavorites(@Request() req, @Body() dto: FavoriteDto) {
+    return this.favoritesService.addToFavorites(req.user.id, dto.productId);
   }
 
   @Post('toggle')
-  toggleFavorite(@Request() req, @Body() body: { productId: number }) {
-    return this.favoritesService.toggleFavorite(req.user.id, body.productId);
+  toggleFavorite(@Request() req, @Body() dto: FavoriteDto) {
+    return this.favoritesService.toggleFavorite(req.user.id, dto.productId);
   }
 
   @Delete(':productId')
@@ -41,5 +42,3 @@ export class FavoritesController {
     return this.favoritesService.clearFavorites(req.user.id);
   }
 }
-
-

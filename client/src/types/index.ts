@@ -38,3 +38,7 @@ export interface Order {
   finalAmount: number;
   items: OrderItem[];
 }
+export interface JwtPayload {
+  id: number;
+  email: string;
+}

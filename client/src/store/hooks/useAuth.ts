@@ -42,7 +42,7 @@ export const useAuth = () => {
 
   const login = async (email: string, password: string) => {
     try {
-      const data = await authRequest("/users/login", { email, password });
+      const data = await authRequest("/auth/login", { email, password });
       setUser(data.user);
       setToken(data.token);
       addNotification("Başarıyla giriş yaptınız!", "success");
@@ -55,7 +55,7 @@ export const useAuth = () => {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const data = await authRequest("/users/register", {
+      const data = await authRequest("/auth/register", {
         name,
         email,
         password,

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database/database.service';
+import { RegisterDto, LoginDto } from './dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -14,14 +15,8 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(name: string, email: string, password: string) {
-    if (!name || !email || !password) {
-      throw new BadRequestException('Tüm alanları doldurun');
-    }
-
-    if (password.length < 6) {
-      throw new BadRequestException('Şifre en az 6 karakter olmalı');
-    }
+  async register(dto: RegisterDto) {
+    const { name, email, password } = dto;
 
     const emailCheck = await this.db.query(
       'SELECT id FROM users WHERE email = $1',
@@ -55,10 +50,8 @@ export class AuthService {
     };
   }
 
-  async login(email: string, password: string) {
-    if (!email || !password) {
-      throw new BadRequestException('Email ve şifre gerekli');
-    }
+  async login(dto: LoginDto) {
+    const { email, password } = dto;
 
     const result = await this.db.query(
       'SELECT id, name, email, password_hash FROM users WHERE email = $1',

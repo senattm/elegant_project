@@ -186,7 +186,10 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                     <Menu.Item leftSection={<IconUserCircle size={22} />}>
                       Profilim
                     </Menu.Item>
-                    <Menu.Item leftSection={<IconPackage size={22} />}>
+                    <Menu.Item
+                      leftSection={<IconPackage size={22} />}
+                      onClick={() => navigate("/orders")}
+                    >
                       Siparişlerim
                     </Menu.Item>
                     <Menu.Divider />

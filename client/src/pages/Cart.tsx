@@ -35,9 +35,9 @@ const Cart = () => {
 
     setIsCreatingOrder(true);
     try {
-      const order = await createOrder(cart);
+      await createOrder(cart);
       await clearCart();
-      navigate(`/orders/${order.id}`);
+      navigate("/orders");
     } catch (error) {
       console.error("Sipariş oluşturulamadı:", error);
     } finally {

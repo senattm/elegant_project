@@ -35,7 +35,7 @@ export const useCart = () => {
           category: item.category,
         },
         quantity: item.quantity,
-        selectedSize: "M", // TODO: Beden bilgisi db'de yok, eklenecek
+        selectedSize: "M",
       }));
       setCart(cartItems);
     } catch (error: any) {
@@ -127,7 +127,6 @@ export const useCart = () => {
 
     try {
       await axios.delete(`${API_URL}/cart`, getAuthHeader());
-      addNotification("Sepet temizlendi", "info");
       setCart([]);
     } catch (error: any) {
       console.error("Sepet temizlenemedi:", error);

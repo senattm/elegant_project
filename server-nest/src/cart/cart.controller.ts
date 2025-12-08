@@ -36,8 +36,22 @@ export class CartController {
     );
   }
 
-  @Put(':productId/:selectedSize?')
-  updateQuantity(
+  @Put(':productId')
+  updateQuantityWithoutSize(
+    @Request() req,
+    @Param('productId') productId: string,
+    @Body() body: { quantity: number },
+  ) {
+    return this.cartService.updateQuantity(
+      req.user.id,
+      +productId,
+      body.quantity,
+      undefined,
+    );
+  }
+
+  @Put(':productId/:selectedSize')
+  updateQuantityWithSize(
     @Request() req,
     @Param('productId') productId: string,
     @Param('selectedSize') selectedSize: string,
@@ -51,17 +65,21 @@ export class CartController {
     );
   }
 
-  @Delete(':productId/:selectedSize?')
-  removeFromCart(
+  @Delete(':productId')
+  removeFromCartWithoutSize(
+    @Request() req,
+    @Param('productId') productId: string,
+  ) {
+    return this.cartService.removeFromCart(req.user.id, +productId, undefined);
+  }
+
+  @Delete(':productId/:selectedSize')
+  removeFromCartWithSize(
     @Request() req,
     @Param('productId') productId: string,
     @Param('selectedSize') selectedSize: string,
   ) {
-    return this.cartService.removeFromCart(
-      req.user.id,
-      +productId,
-      selectedSize,
-    );
+    return this.cartService.removeFromCart(req.user.id, +productId, selectedSize);
   }
 
   @Delete()

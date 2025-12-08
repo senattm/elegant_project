@@ -33,7 +33,6 @@ export class OrdersService {
         0,
       );
 
-      // Check if user has used first order discount
       const userResult = await client.query(
         'SELECT first_order_discount_used FROM users WHERE id = $1',
         [userId],
@@ -44,16 +43,11 @@ export class OrdersService {
       }
 
       const hasUsedDiscount = userResult.rows[0].first_order_discount_used;
-      const discountAmount = !hasUsedDiscount ? totalAmount * 0.1 : 0; // 10% discount for first order
+      const discountAmount = !hasUsedDiscount ? totalAmount * 0.1 : 0;
       const finalAmount = totalAmount - discountAmount;
 
-      // Generate order number
-      const orderNumber = `ORD-${Date.now()}-${Math.random()
-        .toString(36)
-        .substr(2, 9)
-        .toUpperCase()}`;
+      const orderNumber = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
-      // Create order
       const orderResult = await client.query(
         `INSERT INTO orders (user_id, address_id, order_number, total_amount, discount_amount, final_amount, status) 
           VALUES ($1, $2, $3, $4, $5, $6, 'PREPARING') 
@@ -69,11 +63,14 @@ export class OrdersService {
       );
 
       const order = orderResult.rows[0];
-      const orderItemsToReturn = [];
+      const orderItemsToReturn: Array<{
+        productId: number;
+        quantity: number;
+        selectedSize: string | undefined;
+        price: number;
+      }> = [];
 
-      // Create order items and update stock
       for (const item of items) {
-        // Check product stock
         const productStockResult = await client.query(
           'SELECT stock FROM products WHERE id = $1 FOR UPDATE',
           [item.productId],
@@ -89,10 +86,8 @@ export class OrdersService {
           );
         }
 
-        // Calculate item total
         const itemTotal = item.price * item.quantity;
 
-        // Insert order item
         await client.query(
           `INSERT INTO order_items (order_id, product_id, quantity, price, total, selected_size) 
             VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -106,7 +101,6 @@ export class OrdersService {
           ],
         );
 
-        // Update product stock
         await client.query(
           'UPDATE products SET stock = stock - $1 WHERE id = $2',
           [item.quantity, item.productId],
@@ -120,7 +114,6 @@ export class OrdersService {
         });
       }
 
-      // Update user's first_order_discount_used if this is their first order
       if (!hasUsedDiscount) {
         await client.query(
           'UPDATE users SET first_order_discount_used = true WHERE id = $1',

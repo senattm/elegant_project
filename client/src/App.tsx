@@ -8,6 +8,7 @@ import Favorites from "./pages/Favorites";
 import Cart from "./pages/Cart";
 import Store from "./pages/Store";
 import OrderDetail from "./pages/OrderDetail";
+import Orders from "./pages/Orders";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import "./App.css";
@@ -54,6 +55,16 @@ function App() {
             <>
               <Navbar alwaysWhite />
               <Store />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <>
+              <Navbar alwaysWhite />
+              <Orders />
               <Footer />
             </>
           }

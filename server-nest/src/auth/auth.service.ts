@@ -8,77 +8,110 @@ import { DatabaseService } from '../database/database.service';
 import { RegisterDto, LoginDto } from './dto';
 import * as bcrypt from 'bcrypt';
 
+export interface UserEntity {
+  id: number;
+  name: string;
+  email: string;
+  password_hash?: string;
+  created_at?: Date;
+}
+
+export interface JwtPayload {
+  sub: number;
+  iat?: number;
+  exp?: number;
+}
 @Injectable()
 export class AuthService {
+  private readonly SALT_ROUNDS = 10;
+
   constructor(
-    private db: DatabaseService,
-    private jwtService: JwtService,
+    private readonly db: DatabaseService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
-    const { name, email, password } = dto;
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
 
-    const emailCheck = await this.db.query(
-      'SELECT id FROM users WHERE email = $1',
-      [email],
-    );
+  private signToken(user: Pick<UserEntity, 'id'>): string {
+    const payload: JwtPayload = {
+      sub: user.id,
+    };
+    return this.jwtService.sign(payload);
+  }
 
-    if (emailCheck.rows.length > 0) {
-      throw new BadRequestException('Bu email zaten kayıtlı');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result = await this.db.query(
-      `INSERT INTO users (name, email, password_hash) 
-       VALUES ($1, $2, $3) 
-       RETURNING id, name, email, created_at`,
-      [name, email, hashedPassword],
-    );
-
-    const user = result.rows[0];
-    const token = this.jwtService.sign({ id: user.id, email: user.email });
-
+  private toUserResponse(user: UserEntity) {
     return {
-      message: 'Kayıt başarılı',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-      token,
+      id: user.id,
+      name: user.name,
+      email: user.email,
     };
   }
 
-  async login(dto: LoginDto) {
-    const { email, password } = dto;
+  private async findUserByEmail(email: string): Promise<UserEntity | null> {
+    const normalizedEmail = this.normalizeEmail(email);
 
     const result = await this.db.query(
       'SELECT id, name, email, password_hash FROM users WHERE email = $1',
-      [email],
+      [normalizedEmail],
     );
 
-    if (result.rows.length === 0) {
+    return (result.rows[0] as UserEntity) || null;
+  }
+
+  async register(dto: RegisterDto) {
+    const email = this.normalizeEmail(dto.email);
+    const name = dto.name.trim();
+    const { password } = dto;
+
+    const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
+
+    try {
+      const result = await this.db.query(
+        `INSERT INTO users (name, email, password_hash) 
+         VALUES ($1, $2, $3) 
+         RETURNING id, name, email, created_at`,
+        [name, email, hashedPassword],
+      );
+
+      const user = result.rows[0] as UserEntity;
+      const token = this.signToken(user);
+
+      return {
+        message: 'Kayıt başarılı',
+        user: this.toUserResponse(user),
+        token,
+      };
+    } catch (error: any) {
+      if (error.code === '23505') {
+        throw new BadRequestException('Bu email zaten kayıtlı');
+      }
+      throw error;
+    }
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.findUserByEmail(dto.email);
+
+    if (!user || !user.password_hash) {
       throw new UnauthorizedException('Email veya şifre hatalı');
     }
 
-    const user = result.rows[0];
-
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.password_hash,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email veya şifre hatalı');
     }
 
-    const token = this.jwtService.sign({ id: user.id, email: user.email });
+    const token = this.signToken(user);
 
     return {
       message: 'Giriş başarılı',
-      user: {
-        id: user.id,
-        name: user.name || email.split('@')[0],
-        email: user.email,
-      },
+      user: this.toUserResponse(user),
       token,
     };
   }
@@ -89,6 +122,11 @@ export class AuthService {
       [id],
     );
 
-    return result.rows[0] || null;
+    const row = result.rows[0];
+    if (!row) {
+      return null;
+    }
+
+    return row as UserEntity;
   }
 }

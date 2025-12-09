@@ -34,7 +34,10 @@ export const useAuth = () => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || data.error || "İşlem başarısız");
+      const message = Array.isArray(data.message) 
+        ? data.message[0] 
+        : data.message || data.error || "İşlem başarısız";
+      throw new Error(message);
     }
 
     return data;

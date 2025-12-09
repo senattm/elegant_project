@@ -1,17 +1,9 @@
-import { IsEmail, IsString, IsNotEmpty, MinLength } from 'class-validator';
+import { IsString, IsNotEmpty, MinLength } from 'class-validator';
+import { LoginDto } from './login.dto'; // LoginDto'yu import et
 
-export class RegisterDto {
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(2)
+export class RegisterDto extends LoginDto {
+  @IsString({ message: 'İsim metin olmalı' })
+  @IsNotEmpty({ message: 'İsim gerekli' })
+  @MinLength(2, { message: 'İsim en az 2 karakter olmalı' })
   name: string;
-
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
 }

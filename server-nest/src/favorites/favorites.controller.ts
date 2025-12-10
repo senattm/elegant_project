@@ -2,9 +2,7 @@ import {
   Controller,
   Get,
   Post,
-  Delete,
   Body,
-  Param,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -22,18 +20,8 @@ export class FavoritesController {
     return this.favoritesService.getFavorites(req.user.id);
   }
 
-  @Post()
-  addToFavorites(@Request() req, @Body() dto: FavoriteDto) {
-    return this.favoritesService.addToFavorites(req.user.id, dto.productId);
-  }
-
   @Post('toggle')
   toggleFavorite(@Request() req, @Body() dto: FavoriteDto) {
     return this.favoritesService.toggleFavorite(req.user.id, dto.productId);
-  }
-
-  @Delete(':productId')
-  removeFromFavorites(@Request() req, @Param('productId') productId: string) {
-    return this.favoritesService.removeFromFavorites(req.user.id, +productId);
   }
 }

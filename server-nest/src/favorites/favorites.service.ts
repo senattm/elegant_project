@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
@@ -31,37 +31,6 @@ export class FavoritesService {
     return result.rows;
   }
 
-  async addToFavorites(userId: number, productId: number) {
-    const existingFavorite = await this.db.query(
-      'SELECT id FROM favorites WHERE user_id = $1 AND product_id = $2',
-      [userId, productId],
-    );
-
-    if (existingFavorite.rows.length > 0) {
-      return { message: 'Ürün zaten favorilerde', alreadyExists: true };
-    }
-
-    const result = await this.db.query(
-      'INSERT INTO favorites (user_id, product_id) VALUES ($1, $2) RETURNING *',
-      [userId, productId],
-    );
-
-    return result.rows[0];
-  }
-
-  async removeFromFavorites(userId: number, productId: number) {
-    const result = await this.db.query(
-      'DELETE FROM favorites WHERE user_id = $1 AND product_id = $2 RETURNING *',
-      [userId, productId],
-    );
-
-    if (result.rows.length === 0) {
-      throw new NotFoundException('Favori bulunamadı');
-    }
-
-    return { message: 'Ürün favorilerden çıkarıldı' };
-  }
-
   async toggleFavorite(userId: number, productId: number) {
     const existingFavorite = await this.db.query(
       'SELECT id FROM favorites WHERE user_id = $1 AND product_id = $2',
@@ -83,5 +52,3 @@ export class FavoritesService {
     return { message: 'Favorilere eklendi', isFavorite: true };
   }
 }
-
-

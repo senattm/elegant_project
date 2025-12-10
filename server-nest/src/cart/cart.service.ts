@@ -9,6 +9,23 @@ import { DatabaseService } from '../database/database.service';
 export class CartService {
   constructor(private db: DatabaseService) {}
 
+  private async validateStock(productId: number, requiredQuantity: number) {
+    const productCheck = await this.db.query(
+      'SELECT stock FROM products WHERE id = $1',
+      [productId],
+    );
+
+    if (productCheck.rows.length === 0) {
+      throw new NotFoundException('Ürün bulunamadı');
+    }
+
+    const currentStock = productCheck.rows[0].stock;
+
+    if (requiredQuantity > currentStock) {
+      throw new BadRequestException(`Stok yetersiz. Mevcut stok: ${currentStock}`);
+    }
+  }
+
   async getCartItems(userId: number) {
     const result = await this.db.query(
       `
@@ -43,33 +60,22 @@ export class CartService {
     quantity: number = 1,
     selectedSize?: string,
   ) {
-    const productStock = await this.db.query(
-      'SELECT stock FROM products WHERE id = $1',
-      [productId],
-    );
-
-    if (productStock.rows.length === 0) {
-      throw new NotFoundException('Ürün stok dışı');
-    }
-
     const existingItem = await this.db.query(
       'SELECT id, quantity FROM cart_items WHERE user_id = $1 AND product_id = $2 AND (selected_size = $3 OR (selected_size IS NULL AND $3 IS NULL))',
       [userId, productId, selectedSize || null],
     );
 
-    const newQuantity =
+    const totalQuantity =
       existingItem.rows.length > 0
         ? existingItem.rows[0].quantity + quantity
         : quantity;
 
-    if (newQuantity > productStock.rows[0].stock) {
-      throw new BadRequestException('Yeterli stok yok');
-    }
+    await this.validateStock(productId, totalQuantity);
 
     if (existingItem.rows.length > 0) {
       const result = await this.db.query(
         'UPDATE cart_items SET quantity = $1 WHERE id = $2 RETURNING *',
-        [newQuantity, existingItem.rows[0].id],
+        [totalQuantity, existingItem.rows[0].id],
       );
       return result.rows[0];
     }
@@ -78,7 +84,7 @@ export class CartService {
       'INSERT INTO cart_items (user_id, product_id, quantity, selected_size) VALUES ($1, $2, $3, $4) RETURNING *',
       [userId, productId, quantity, selectedSize || null],
     );
-   return result.rows[0];
+    return result.rows[0];
   }
 
   async updateQuantity(
@@ -91,18 +97,7 @@ export class CartService {
       return this.removeFromCart(userId, productId, selectedSize);
     }
 
-    const productStock = await this.db.query(
-      'SELECT stock FROM products WHERE id = $1',
-      [productId],
-    );
-
-    if (productStock.rows.length === 0) {
-      throw new NotFoundException('Ürün bulunamadı');
-    }
-
-    if (quantity > productStock.rows[0].stock) {
-      throw new BadRequestException('Yeterli stok yok');
-    }
+    await this.validateStock(productId, quantity);
 
     const result = await this.db.query(
       'UPDATE cart_items SET quantity = $1 WHERE user_id = $2 AND product_id = $3 AND (selected_size = $4 OR (selected_size IS NULL AND $4 IS NULL)) RETURNING *',

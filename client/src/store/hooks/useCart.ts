@@ -77,7 +77,11 @@ export const useCart = () => {
     if (!token) return;
 
     try {
-      await axios.delete(`${API_URL}/cart/${productId}`, getAuthHeader());
+      const url = selectedSize
+        ? `${API_URL}/cart/${productId}?selectedSize=${selectedSize}`
+        : `${API_URL}/cart/${productId}`;
+
+      await axios.delete(url, getAuthHeader());
       addNotification("Ürün sepetten çıkarıldı", "info");
       await fetchCart();
     } catch (error: any) {
@@ -99,7 +103,7 @@ export const useCart = () => {
     try {
       await axios.put(
         `${API_URL}/cart/${productId}`,
-        { quantity },
+        { quantity, selectedSize },
         getAuthHeader()
       );
       await fetchCart();

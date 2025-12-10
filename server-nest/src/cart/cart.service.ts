@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
@@ -39,13 +43,30 @@ export class CartService {
     quantity: number = 1,
     selectedSize?: string,
   ) {
+    const productStock = await this.db.query(
+      'SELECT stock FROM products WHERE id = $1',
+      [productId],
+    );
+
+    if (productStock.rows.length === 0) {
+      throw new NotFoundException('Ürün stok dışı');
+    }
+
     const existingItem = await this.db.query(
       'SELECT id, quantity FROM cart_items WHERE user_id = $1 AND product_id = $2 AND (selected_size = $3 OR (selected_size IS NULL AND $3 IS NULL))',
       [userId, productId, selectedSize || null],
     );
 
+    const newQuantity =
+      existingItem.rows.length > 0
+        ? existingItem.rows[0].quantity + quantity
+        : quantity;
+
+    if (newQuantity > productStock.rows[0].stock) {
+      throw new BadRequestException('Yeterli stok yok');
+    }
+
     if (existingItem.rows.length > 0) {
-      const newQuantity = existingItem.rows[0].quantity + quantity;
       const result = await this.db.query(
         'UPDATE cart_items SET quantity = $1 WHERE id = $2 RETURNING *',
         [newQuantity, existingItem.rows[0].id],
@@ -57,8 +78,7 @@ export class CartService {
       'INSERT INTO cart_items (user_id, product_id, quantity, selected_size) VALUES ($1, $2, $3, $4) RETURNING *',
       [userId, productId, quantity, selectedSize || null],
     );
-
-    return result.rows[0];
+   return result.rows[0];
   }
 
   async updateQuantity(
@@ -69,6 +89,19 @@ export class CartService {
   ) {
     if (quantity <= 0) {
       return this.removeFromCart(userId, productId, selectedSize);
+    }
+
+    const productStock = await this.db.query(
+      'SELECT stock FROM products WHERE id = $1',
+      [productId],
+    );
+
+    if (productStock.rows.length === 0) {
+      throw new NotFoundException('Ürün bulunamadı');
+    }
+
+    if (quantity > productStock.rows[0].stock) {
+      throw new BadRequestException('Yeterli stok yok');
     }
 
     const result = await this.db.query(

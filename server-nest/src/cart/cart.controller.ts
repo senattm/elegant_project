@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -34,7 +35,7 @@ export class CartController {
   }
 
   @Put(':productId')
-  updateQuantityWithoutSize(
+  updateQuantity(
     @Request() req,
     @Param('productId') productId: string,
     @Body() dto: UpdateQuantityDto,
@@ -43,38 +44,15 @@ export class CartController {
       req.user.id,
       +productId,
       dto.quantity,
-      undefined,
-    );
-  }
-
-  @Put(':productId/:selectedSize')
-  updateQuantityWithSize(
-    @Request() req,
-    @Param('productId') productId: string,
-    @Param('selectedSize') selectedSize: string,
-    @Body() dto: UpdateQuantityDto,
-  ) {
-    return this.cartService.updateQuantity(
-      req.user.id,
-      +productId,
-      dto.quantity,
-      selectedSize,
+      dto.selectedSize,
     );
   }
 
   @Delete(':productId')
-  removeFromCartWithoutSize(
+  removeFromCart(
     @Request() req,
     @Param('productId') productId: string,
-  ) {
-    return this.cartService.removeFromCart(req.user.id, +productId, undefined);
-  }
-
-  @Delete(':productId/:selectedSize')
-  removeFromCartWithSize(
-    @Request() req,
-    @Param('productId') productId: string,
-    @Param('selectedSize') selectedSize: string,
+    @Query('selectedSize') selectedSize?: string,
   ) {
     return this.cartService.removeFromCart(
       req.user.id,

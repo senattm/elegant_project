@@ -36,9 +36,4 @@ export class FavoritesController {
   removeFromFavorites(@Request() req, @Param('productId') productId: string) {
     return this.favoritesService.removeFromFavorites(req.user.id, +productId);
   }
-
-  @Delete()
-  clearFavorites(@Request() req) {
-    return this.favoritesService.clearFavorites(req.user.id);
-  }
 }

@@ -82,11 +82,6 @@ export class FavoritesService {
     );
     return { message: 'Favorilere eklendi', isFavorite: true };
   }
-
-  async clearFavorites(userId: number) {
-    await this.db.query('DELETE FROM favorites WHERE user_id = $1', [userId]);
-    return { message: 'Tüm favoriler temizlendi' };
-  }
 }
 
 

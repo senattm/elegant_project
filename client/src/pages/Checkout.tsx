@@ -540,20 +540,18 @@ const Checkout = () => {
               </Group>
 
               <Stack gap="xs">
-                {shippingCost > 0 && (
-                  <Group gap="xs" justify="center">
-                    <IconTruck size={18} color="#16a34a" />
-                    <Text
-                      fz={12}
-                      fw={500}
-                      c="#16a34a"
-                      ta="center"
-                      style={{ letterSpacing: "0.05em" }}
-                    >
-                      7500 TL üzeri alışverişlerde ücretsiz kargo
-                    </Text>
-                  </Group>
-                )}
+                <Group gap="xs" justify="center">
+                  <IconTruck size={18} color="#16a34a" />
+                  <Text
+                    fz={12}
+                    fw={500}
+                    c="#16a34a"
+                    ta="center"
+                    style={{ letterSpacing: "0.05em" }}
+                  >
+                    7500 TL üzeri alışverişlerde ücretsiz kargo
+                  </Text>
+                </Group>
               </Stack>
             </Paper>
           </Box>

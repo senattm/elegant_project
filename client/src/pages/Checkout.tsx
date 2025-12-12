@@ -11,7 +11,6 @@ import {
   Divider,
   Image,
   Flex,
-  Badge,
 } from "@mantine/core";
 import {
   IconCreditCard,
@@ -498,8 +497,14 @@ const Checkout = () => {
                       Kargo
                     </Text>
                   </Group>
-                  <Text fz={14} fw={500} c={shippingCost === 0 ? "green" : "dark"}>
-                    {shippingCost === 0 ? "ÜCRETSİZ" : `${shippingCost.toFixed(2)} TL`}
+                  <Text
+                    fz={14}
+                    fw={500}
+                    c={shippingCost === 0 ? "green" : "dark"}
+                  >
+                    {shippingCost === 0
+                      ? "ÜCRETSİZ"
+                      : `${shippingCost.toFixed(2)} TL`}
                   </Text>
                 </Group>
 
@@ -531,39 +536,69 @@ const Checkout = () => {
 
               <Stack gap="xs">
                 {shippingCost === 0 ? (
-                  <Badge
-                    color="green"
-                    variant="light"
-                    size="lg"
-                    leftSection={<IconTruck size={16} />}
-                    fullWidth
-                    radius={0}
+                  <Box
+                    p="md"
+                    style={{
+                      backgroundColor: "#f0fdf4",
+                      border: "1px solid #86efac",
+                    }}
                   >
-                    Ücretsiz Kargo
-                  </Badge>
+                    <Group gap="xs" justify="center">
+                      <IconTruck size={18} color="#16a34a" />
+                      <Text
+                        fz={13}
+                        fw={500}
+                        c="#16a34a"
+                        tt="uppercase"
+                        style={{ letterSpacing: "0.05em" }}
+                      >
+                        Ücretsiz Kargo
+                      </Text>
+                    </Group>
+                  </Box>
                 ) : (
-                  <Badge
-                    color="orange"
-                    variant="light"
-                    size="lg"
-                    leftSection={<IconTruck size={16} />}
-                    fullWidth
-                    radius={0}
+                  <Box
+                    p="md"
+                    style={{
+                      backgroundColor: "#fef3c7",
+                      border: "1px solid #fcd34d",
+                    }}
                   >
-                    7500 TL üzeri alışverişlerde ücretsiz kargo
-                  </Badge>
+                    <Group gap="xs" justify="center">
+                      <IconTruck size={18} color="#d97706" />
+                      <Text
+                        fz={12}
+                        fw={500}
+                        c="#d97706"
+                        ta="center"
+                        style={{ letterSpacing: "0.05em" }}
+                      >
+                        7500 TL üzeri alışverişlerde ücretsiz kargo
+                      </Text>
+                    </Group>
+                  </Box>
                 )}
                 {isFirstOrder && (
-                  <Badge
-                    color="blue"
-                    variant="light"
-                    size="lg"
-                    leftSection={<IconDiscount size={16} />}
-                    fullWidth
-                    radius={0}
+                  <Box
+                    p="md"
+                    style={{
+                      backgroundColor: "#eff6ff",
+                      border: "1px solid #93c5fd",
+                    }}
                   >
-                    İlk Siparişinize Özel %10 İndirim Uygulandı
-                  </Badge>
+                    <Group gap="xs" justify="center">
+                      <IconDiscount size={18} color="#2563eb" />
+                      <Text
+                        fz={13}
+                        fw={500}
+                        c="#2563eb"
+                        tt="uppercase"
+                        style={{ letterSpacing: "0.05em" }}
+                      >
+                        İlk Siparişinize Özel %10 İndirim
+                      </Text>
+                    </Group>
+                  </Box>
                 )}
               </Stack>
             </Paper>

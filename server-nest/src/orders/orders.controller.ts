@@ -43,13 +43,13 @@ export class OrdersController {
     return this.ordersService.getUserOrders(req.user.id);
   }
 
-  @Get(':id')
-  async getOrderById(@Request() req, @Param('id') id: string) {
-    return this.ordersService.getOrderById(+id, req.user.id);
-  }
-
   @Get('check/first-order')
   async checkFirstOrder(@Request() req) {
     return this.ordersService.checkFirstOrder(req.user.id);
+  }
+
+  @Get(':id')
+  async getOrderById(@Request() req, @Param('id') id: string) {
+    return this.ordersService.getOrderById(+id, req.user.id);
   }
 }

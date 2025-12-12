@@ -31,7 +31,33 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const SERVER_URL =
   import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
-const SIZES = ["XS", "S", "M", "L", "XL"];
+const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"];
+const SHOE_SIZES = ["36", "37", "38", "39", "40", "41"];
+const BAG_SIZES = ["STD"];
+
+const getSizesForCategory = (category: string): string[] => {
+  const lowerCategory = category?.toLowerCase().trim() || "";
+
+  if (
+    lowerCategory.includes("çanta") ||
+    lowerCategory.includes("bag") ||
+    lowerCategory === "çantalar" ||
+    lowerCategory === "bags"
+  ) {
+    return BAG_SIZES;
+  }
+
+  if (
+    lowerCategory.includes("ayakkabı") ||
+    lowerCategory.includes("shoe") ||
+    lowerCategory === "ayakkabılar" ||
+    lowerCategory === "shoes"
+  ) {
+    return SHOE_SIZES;
+  }
+
+  return CLOTHING_SIZES;
+};
 
 const getImageUrl = (url: string) => {
   if (!url) return "";
@@ -105,6 +131,7 @@ const ProductDetail = () => {
     typeof product.price === "number"
       ? product.price
       : parseFloat(product.price);
+  const availableSizes = getSizesForCategory(product.category || "");
 
   return (
     <Box mih="100vh" pt={{ base: 120, md: 140 }} pb={80}>
@@ -228,7 +255,7 @@ const ProductDetail = () => {
                   Beden
                 </Text>
                 <Group gap="sm">
-                  {SIZES.map((size) => (
+                  {availableSizes.map((size) => (
                     <UnstyledButton
                       key={size}
                       onClick={() => setSelectedSize(size)}
@@ -317,4 +344,3 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
-

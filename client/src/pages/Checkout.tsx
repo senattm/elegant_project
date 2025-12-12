@@ -118,7 +118,8 @@ const Checkout = () => {
 
   const total = getTotalPrice();
   const discount = isFirstOrder ? total * 0.1 : 0;
-  const finalTotal = total - discount;
+  const shippingCost = total >= 7500 ? 0 : 79;
+  const finalTotal = total - discount + shippingCost;
 
   const getImageUrl = (imageUrl: string) => {
     const serverUrl =
@@ -221,7 +222,7 @@ const Checkout = () => {
             ÖDEME
           </Text>
           <Text size="sm" c="dimmed" tt="uppercase">
-            Sipariş Toplam: {total.toFixed(2)} TL
+            Sipariş Toplam: {finalTotal.toFixed(2)} TL
           </Text>
         </Box>
 
@@ -493,12 +494,12 @@ const Checkout = () => {
                 <Group justify="space-between">
                   <Group gap="xs">
                     <IconTruck size={16} />
-                    <Text fz={14} c="green">
+                    <Text fz={14} c={shippingCost === 0 ? "green" : "dark"}>
                       Kargo
                     </Text>
                   </Group>
-                  <Text fz={14} fw={500} c="green">
-                    ÜCRETSİZ
+                  <Text fz={14} fw={500} c={shippingCost === 0 ? "green" : "dark"}>
+                    {shippingCost === 0 ? "ÜCRETSİZ" : `${shippingCost.toFixed(2)} TL`}
                   </Text>
                 </Group>
 
@@ -529,16 +530,29 @@ const Checkout = () => {
               </Group>
 
               <Stack gap="xs">
-                <Badge
-                  color="green"
-                  variant="light"
-                  size="lg"
-                  leftSection={<IconTruck size={16} />}
-                  fullWidth
-                  radius={0}
-                >
-                  Ücretsiz Kargo
-                </Badge>
+                {shippingCost === 0 ? (
+                  <Badge
+                    color="green"
+                    variant="light"
+                    size="lg"
+                    leftSection={<IconTruck size={16} />}
+                    fullWidth
+                    radius={0}
+                  >
+                    Ücretsiz Kargo
+                  </Badge>
+                ) : (
+                  <Badge
+                    color="orange"
+                    variant="light"
+                    size="lg"
+                    leftSection={<IconTruck size={16} />}
+                    fullWidth
+                    radius={0}
+                  >
+                    7500 TL üzeri alışverişlerde ücretsiz kargo
+                  </Badge>
+                )}
                 {isFirstOrder && (
                   <Badge
                     color="blue"

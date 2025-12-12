@@ -74,7 +74,11 @@ export class OrdersService {
       );
 
       const userResult = await client.query(
-        'SELECT first_order_discount_used FROM users WHERE id = $1',
+        `SELECT 
+          u.first_order_discount_used,
+          (SELECT COUNT(*) FROM orders WHERE user_id = $1) as order_count
+        FROM users u 
+        WHERE u.id = $1`,
         [userId],
       );
 
@@ -83,7 +87,11 @@ export class OrdersService {
       }
 
       const hasUsedDiscount = userResult.rows[0].first_order_discount_used;
-      const discountAmount = !hasUsedDiscount ? totalAmount * 0.1 : 0;
+      const orderCount = parseInt(userResult.rows[0].order_count, 10);
+
+      // İlk sipariş indirimi: flag kullanılmamış VE sipariş sayısı 0
+      const isFirstOrder = !hasUsedDiscount && orderCount === 0;
+      const discountAmount = isFirstOrder ? totalAmount * 0.1 : 0;
       const finalAmount = totalAmount - discountAmount;
 
       await client.query(
@@ -172,7 +180,7 @@ export class OrdersService {
         });
       }
 
-      if (!hasUsedDiscount) {
+      if (isFirstOrder) {
         await client.query(
           'UPDATE users SET first_order_discount_used = true WHERE id = $1',
           [userId],
@@ -236,7 +244,11 @@ export class OrdersService {
 
   async checkFirstOrder(userId: number) {
     const result = await this.db.query(
-      'SELECT first_order_discount_used FROM users WHERE id = $1',
+      `SELECT 
+        u.first_order_discount_used,
+        (SELECT COUNT(*) FROM orders WHERE user_id = $1) as order_count
+      FROM users u 
+      WHERE u.id = $1`,
       [userId],
     );
 
@@ -245,10 +257,14 @@ export class OrdersService {
     }
 
     const hasUsedDiscount = result.rows[0].first_order_discount_used;
+    const orderCount = parseInt(result.rows[0].order_count, 10);
+
+    // İlk sipariş: hem flag kullanılmamış hem de sipariş sayısı 0
+    const isFirstOrder = !hasUsedDiscount && orderCount === 0;
 
     return {
-      isFirstOrder: !hasUsedDiscount,
-      discountPercentage: !hasUsedDiscount ? 10 : 0,
+      isFirstOrder,
+      discountPercentage: isFirstOrder ? 10 : 0,
     };
   }
 }

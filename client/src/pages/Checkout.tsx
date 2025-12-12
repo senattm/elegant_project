@@ -112,8 +112,10 @@ const Checkout = () => {
       }
     };
 
-    checkDiscount();
-  }, []);
+    if (isAuthenticated) {
+      checkDiscount();
+    }
+  }, [isAuthenticated]);
 
   const total = getTotalPrice();
   const discount = isFirstOrder ? total * 0.1 : 0;
@@ -490,37 +492,40 @@ const Checkout = () => {
                   </Text>
                 </Group>
 
+                {isFirstOrder && (
+                  <Group justify="space-between">
+                    <Group gap="xs">
+                      <IconDiscount size={16} color="#16a34a" />
+                      <Text fz={14} c="#16a34a" fw={500}>
+                        İlk Sipariş İndirimi
+                      </Text>
+                    </Group>
+                    <Text fz={14} fw={600} c="#16a34a">
+                      -{discount.toFixed(2)} TL
+                    </Text>
+                  </Group>
+                )}
+
                 <Group justify="space-between">
                   <Group gap="xs">
-                    <IconTruck size={16} />
-                    <Text fz={14} c={shippingCost === 0 ? "green" : "dark"}>
+                    <IconTruck
+                      size={16}
+                      color={shippingCost === 0 ? "#16a34a" : undefined}
+                    />
+                    <Text fz={14} c={shippingCost === 0 ? "#16a34a" : "dark"}>
                       Kargo
                     </Text>
                   </Group>
                   <Text
                     fz={14}
                     fw={500}
-                    c={shippingCost === 0 ? "green" : "dark"}
+                    c={shippingCost === 0 ? "#16a34a" : "dark"}
                   >
                     {shippingCost === 0
                       ? "ÜCRETSİZ"
                       : `${shippingCost.toFixed(2)} TL`}
                   </Text>
                 </Group>
-
-                {isFirstOrder && (
-                  <Group justify="space-between">
-                    <Group gap="xs">
-                      <IconDiscount size={16} />
-                      <Text fz={14} c="blue">
-                        İlk Sipariş İndirimi (%10)
-                      </Text>
-                    </Group>
-                    <Text fz={14} fw={500} c="blue">
-                      -{discount.toFixed(2)} TL
-                    </Text>
-                  </Group>
-                )}
               </Stack>
 
               <Divider mb="md" />
@@ -535,70 +540,19 @@ const Checkout = () => {
               </Group>
 
               <Stack gap="xs">
-                {shippingCost === 0 ? (
-                  <Box
-                    p="md"
-                    style={{
-                      backgroundColor: "#f0fdf4",
-                      border: "1px solid #86efac",
-                    }}
-                  >
-                    <Group gap="xs" justify="center">
-                      <IconTruck size={18} color="#16a34a" />
-                      <Text
-                        fz={13}
-                        fw={500}
-                        c="#16a34a"
-                        tt="uppercase"
-                        style={{ letterSpacing: "0.05em" }}
-                      >
-                        Ücretsiz Kargo
-                      </Text>
-                    </Group>
-                  </Box>
-                ) : (
-                  <Box
-                    p="md"
-                    style={{
-                      backgroundColor: "#fef3c7",
-                      border: "1px solid #fcd34d",
-                    }}
-                  >
-                    <Group gap="xs" justify="center">
-                      <IconTruck size={18} color="#d97706" />
-                      <Text
-                        fz={12}
-                        fw={500}
-                        c="#d97706"
-                        ta="center"
-                        style={{ letterSpacing: "0.05em" }}
-                      >
-                        7500 TL üzeri alışverişlerde ücretsiz kargo
-                      </Text>
-                    </Group>
-                  </Box>
-                )}
-                {isFirstOrder && (
-                  <Box
-                    p="md"
-                    style={{
-                      backgroundColor: "#eff6ff",
-                      border: "1px solid #93c5fd",
-                    }}
-                  >
-                    <Group gap="xs" justify="center">
-                      <IconDiscount size={18} color="#2563eb" />
-                      <Text
-                        fz={13}
-                        fw={500}
-                        c="#2563eb"
-                        tt="uppercase"
-                        style={{ letterSpacing: "0.05em" }}
-                      >
-                        İlk Siparişinize Özel %10 İndirim
-                      </Text>
-                    </Group>
-                  </Box>
+                {shippingCost > 0 && (
+                  <Group gap="xs" justify="center">
+                    <IconTruck size={18} color="#16a34a" />
+                    <Text
+                      fz={12}
+                      fw={500}
+                      c="#16a34a"
+                      ta="center"
+                      style={{ letterSpacing: "0.05em" }}
+                    >
+                      7500 TL üzeri alışverişlerde ücretsiz kargo
+                    </Text>
+                  </Group>
                 )}
               </Stack>
             </Paper>

@@ -50,7 +50,6 @@ const Auth = () => {
   };
 
   const logoStyle = {
-    fontFamily: "Playfair Display, serif",
     fontSize: "2rem",
     color: "white",
     letterSpacing: "0.2em",
@@ -59,23 +58,9 @@ const Auth = () => {
   };
 
   const titleStyle = {
-    fontFamily: "Playfair Display, serif",
     fontSize: "2.2rem",
     fontWeight: 400,
     letterSpacing: "0.05em",
-  };
-
-  const buttonStyles = {
-    root: {
-      backgroundColor: "black",
-      height: 48,
-      fontSize: "14px",
-      letterSpacing: "0.1em",
-      fontWeight: 500,
-      "&:hover": {
-        backgroundColor: "#333",
-      },
-    },
   };
 
   const linkStyle = {
@@ -239,13 +224,7 @@ const Auth = () => {
                 />
               )}
 
-              <Button
-                type="submit"
-                fullWidth
-                size="lg"
-                loading={loading}
-                styles={buttonStyles}
-              >
+              <Button type="submit" fullWidth loading={loading}>
                 {isLogin ? "GİRİŞ YAP" : "HESAP OLUŞTUR"}
               </Button>
             </Stack>

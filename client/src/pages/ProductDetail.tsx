@@ -89,16 +89,10 @@ const ProductDetail = () => {
     addToCart(product, quantity, selectedSize);
   };
 
-  const titleStyle = {
-    fontWeight: 300,
-    letterSpacing: "0.1em",
-    fontFamily: "Playfair Display, serif",
-  };
-
   if (loading) {
     return (
       <Center mih="100vh">
-        <Loader color="black" size="lg" />
+        <Loader color="black" />
       </Center>
     );
   }
@@ -107,10 +101,8 @@ const ProductDetail = () => {
     return (
       <Center mih="100vh">
         <Stack align="center" gap="md">
-          <Text size="lg" c="dimmed">
-            Ürün bulunamadı
-          </Text>
-          <Button variant="outline" color="dark" onClick={() => navigate("/")}>
+          <Text c="dimmed">Ürün bulunamadı</Text>
+          <Button variant="outline" onClick={() => navigate("/")}>
             Ana Sayfaya Dön
           </Button>
         </Stack>
@@ -222,7 +214,7 @@ const ProductDetail = () => {
                 >
                   {product.category}
                 </Text>
-                <Title order={1} style={titleStyle} fz={{ base: 28, md: 36 }}>
+                <Title order={1} fz={{ base: 28, md: 36 }}>
                   {product.name}
                 </Title>
               </Box>
@@ -288,8 +280,6 @@ const ProductDetail = () => {
                 <Group gap="sm">
                   <ActionIcon
                     variant="outline"
-                    color="dark"
-                    size="lg"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   >
                     <IconMinus size={18} />
@@ -299,8 +289,6 @@ const ProductDetail = () => {
                   </Text>
                   <ActionIcon
                     variant="outline"
-                    color="dark"
-                    size="lg"
                     onClick={() => setQuantity(quantity + 1)}
                   >
                     <IconPlus size={18} />
@@ -310,13 +298,9 @@ const ProductDetail = () => {
 
               <Button
                 fullWidth
-                size="xl"
-                color="dark"
                 disabled={!selectedSize}
                 onClick={handleAddToCart}
                 style={{
-                  letterSpacing: "0.1em",
-                  fontWeight: 600,
                   height: 56,
                 }}
               >

@@ -11,6 +11,7 @@ import {
   Divider,
   Image,
   Flex,
+  Select,
 } from "@mantine/core";
 import {
   IconCreditCard,
@@ -26,8 +27,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useCart, useOrders } from "../store/hooks";
 import { useAtom } from "jotai";
-import { isAuthenticatedAtom } from "../store/atoms";
+import { isAuthenticatedAtom, tokenAtom } from "../store/atoms";
 import { useEffect, useState } from "react";
+import { addressesApi } from "../api/client";
+import type { Address } from "../types";
 
 interface PaymentData {
   cardNumber: string;
@@ -48,6 +51,7 @@ interface AddressData {
 const Checkout = () => {
   const navigate = useNavigate();
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
+  const [token] = useAtom(tokenAtom);
   const { cart, getTotalPrice, clearCart, fetchCart } = useCart();
   const { createOrder } = useOrders();
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
@@ -58,6 +62,12 @@ const Checkout = () => {
     expiryDate: "",
     cvv: "",
   });
+
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    null
+  );
+  const [useNewAddress, setUseNewAddress] = useState(false);
 
   const [addressData, setAddressData] = useState<AddressData>({
     title: "",
@@ -78,7 +88,21 @@ const Checkout = () => {
     }
 
     fetchCart();
+    loadSavedAddresses();
   }, [isAuthenticated]);
+
+  const loadSavedAddresses = async () => {
+    if (!token) return;
+    try {
+      const response = await addressesApi.getAll(token);
+      setSavedAddresses(response.data);
+      if (response.data.length > 0 && !selectedAddressId) {
+        setSelectedAddressId(response.data[0].id.toString());
+      }
+    } catch (error) {
+      console.error("Adresler yüklenemedi:", error);
+    }
+  };
 
   useEffect(() => {
     if (cart.length === 0 && isAuthenticated) {
@@ -154,24 +178,26 @@ const Checkout = () => {
   const validate = (): boolean => {
     const newErrors: any = {};
 
-    if (!addressData.fullName || addressData.fullName.length < 3) {
-      newErrors.fullName = "Ad soyad en az 3 karakter olmalıdır";
-    }
+    if (useNewAddress || !selectedAddressId) {
+      if (!addressData.fullName || addressData.fullName.length < 3) {
+        newErrors.fullName = "Ad soyad en az 3 karakter olmalıdır";
+      }
 
-    if (!addressData.phone || addressData.phone.length < 10) {
-      newErrors.phone = "Telefon numarası en az 10 haneli olmalıdır";
-    }
+      if (!addressData.phone || addressData.phone.length < 10) {
+        newErrors.phone = "Telefon numarası en az 10 haneli olmalıdır";
+      }
 
-    if (!addressData.addressLine || addressData.addressLine.length < 10) {
-      newErrors.addressLine = "Adres en az 10 karakter olmalıdır";
-    }
+      if (!addressData.addressLine || addressData.addressLine.length < 10) {
+        newErrors.addressLine = "Adres en az 10 karakter olmalıdır";
+      }
 
-    if (!addressData.city || addressData.city.length < 2) {
-      newErrors.city = "Şehir gerekli";
-    }
+      if (!addressData.city || addressData.city.length < 2) {
+        newErrors.city = "Şehir gerekli";
+      }
 
-    if (!addressData.district || addressData.district.length < 2) {
-      newErrors.district = "İlçe gerekli";
+      if (!addressData.district || addressData.district.length < 2) {
+        newErrors.district = "İlçe gerekli";
+      }
     }
 
     if (paymentData.cardNumber.length !== 16) {
@@ -209,17 +235,18 @@ const Checkout = () => {
     }
   };
 
-  const titleStyle = {
-    fontWeight: 300,
-    letterSpacing: "0.1em",
-    fontFamily: "Playfair Display, serif",
-  };
-
   return (
     <Box mih="100vh" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
-      <Container size="lg">
+      <Container>
         <Box mb={50} ta="center">
-          <Text fz={{ base: 28, sm: 36, md: 42 }} mb={12} style={titleStyle}>
+          <Text
+            fz={{ base: 28, sm: 36, md: 42 }}
+            mb={12}
+            style={{
+              fontWeight: 300,
+              letterSpacing: "0.1em",
+            }}
+          >
             ÖDEME
           </Text>
           <Text size="sm" c="dimmed" tt="uppercase">
@@ -234,105 +261,141 @@ const Checkout = () => {
         >
           <Box style={{ flex: 1 }}>
             <Stack gap="xl">
-              <Paper shadow="none" p="xl" radius={0} withBorder>
+              <Paper shadow="none" p="xl" withBorder>
                 <Text fz={20} fw={500} mb="md">
                   Teslimat Adresi
                 </Text>
                 <Stack gap="md">
-                  <TextInput
-                    label="Adres Başlığı"
-                    placeholder="Ev, İş, vb."
-                    leftSection={<IconHome size={18} />}
-                    value={addressData.title}
-                    onChange={(e) =>
-                      setAddressData({ ...addressData, title: e.target.value })
-                    }
-                    radius={0}
-                  />
+                  {savedAddresses.length > 0 && !useNewAddress ? (
+                    <>
+                      <Select
+                        label="Kayıtlı Adreslerim"
+                        placeholder="Adres seçin"
+                        data={savedAddresses.map((addr) => ({
+                          value: addr.id.toString(),
+                          label: `${addr.title || "Adres"} - ${
+                            addr.full_name
+                          } - ${addr.city}/${addr.district}`,
+                        }))}
+                        value={selectedAddressId}
+                        onChange={(value) => setSelectedAddressId(value)}
+                      />
+                      <Button
+                        variant="subtle"
+                        size="sm"
+                        onClick={() => setUseNewAddress(true)}
+                      >
+                        Yeni Adres Kullan
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {savedAddresses.length > 0 && (
+                        <Button
+                          variant="subtle"
+                          size="sm"
+                          onClick={() => setUseNewAddress(false)}
+                          mb="md"
+                        >
+                          Kayıtlı Adreslerime Dön
+                        </Button>
+                      )}
+                      <TextInput
+                        label="Adres Başlığı"
+                        placeholder="Ev, İş, vb."
+                        leftSection={<IconHome size={18} />}
+                        value={addressData.title}
+                        onChange={(e) =>
+                          setAddressData({
+                            ...addressData,
+                            title: e.target.value,
+                          })
+                        }
+                      />
 
-                  <TextInput
-                    label="Ad Soyad"
-                    placeholder="Ahmet Yılmaz"
-                    leftSection={<IconUser size={18} />}
-                    value={addressData.fullName}
-                    onChange={(e) =>
-                      setAddressData({
-                        ...addressData,
-                        fullName: e.target.value,
-                      })
-                    }
-                    error={errors.fullName}
-                    required
-                    radius={0}
-                  />
+                      <TextInput
+                        label="Ad Soyad"
+                        placeholder="Ahmet Yılmaz"
+                        leftSection={<IconUser size={18} />}
+                        value={addressData.fullName}
+                        onChange={(e) =>
+                          setAddressData({
+                            ...addressData,
+                            fullName: e.target.value,
+                          })
+                        }
+                        error={errors.fullName}
+                        required
+                      />
 
-                  <TextInput
-                    label="Telefon"
-                    placeholder="05XX XXX XX XX"
-                    leftSection={<IconPhone size={18} />}
-                    value={addressData.phone}
-                    onChange={(e) =>
-                      setAddressData({
-                        ...addressData,
-                        phone: formatPhone(e.target.value),
-                      })
-                    }
-                    error={errors.phone}
-                    required
-                    radius={0}
-                  />
+                      <TextInput
+                        label="Telefon"
+                        placeholder="05XX XXX XX XX"
+                        leftSection={<IconPhone size={18} />}
+                        value={addressData.phone}
+                        onChange={(e) =>
+                          setAddressData({
+                            ...addressData,
+                            phone: formatPhone(e.target.value),
+                          })
+                        }
+                        error={errors.phone}
+                        required
+                      />
 
-                  <Textarea
-                    label="Adres"
-                    placeholder="Mahalle, Sokak, No, vb."
-                    leftSection={<IconMapPin size={18} />}
-                    value={addressData.addressLine}
-                    onChange={(e) =>
-                      setAddressData({
-                        ...addressData,
-                        addressLine: e.target.value,
-                      })
-                    }
-                    error={errors.addressLine}
-                    minRows={3}
-                    required
-                    radius={0}
-                  />
+                      <Textarea
+                        label="Adres"
+                        placeholder="Mahalle, Sokak, No, vb."
+                        leftSection={<IconMapPin size={18} />}
+                        value={addressData.addressLine}
+                        onChange={(e) =>
+                          setAddressData({
+                            ...addressData,
+                            addressLine: e.target.value,
+                          })
+                        }
+                        error={errors.addressLine}
+                        minRows={3}
+                        required
+                      />
 
-                  <Group grow>
-                    <TextInput
-                      label="Şehir"
-                      placeholder="İstanbul"
-                      value={addressData.city}
-                      onChange={(e) =>
-                        setAddressData({ ...addressData, city: e.target.value })
-                      }
-                      error={errors.city}
-                      required
-                      radius={0}
-                    />
+                      <Group grow>
+                        <TextInput
+                          label="Şehir"
+                          placeholder="İstanbul"
+                          value={addressData.city}
+                          onChange={(e) =>
+                            setAddressData({
+                              ...addressData,
+                              city: e.target.value,
+                            })
+                          }
+                          error={errors.city}
+                          required
+                        />
 
-                    <TextInput
-                      label="İlçe"
-                      placeholder="Kadıköy"
-                      value={addressData.district}
-                      onChange={(e) =>
-                        setAddressData({
-                          ...addressData,
-                          district: e.target.value,
-                        })
-                      }
-                      error={errors.district}
-                      required
-                      radius={0}
-                    />
-                  </Group>
+                        <TextInput
+                          label="İlçe"
+                          placeholder="Kadıköy"
+                          value={addressData.district}
+                          onChange={(e) =>
+                            setAddressData({
+                              ...addressData,
+                              district: e.target.value,
+                            })
+                          }
+                          error={errors.district}
+                          required
+                        />
+                      </Group>
+                    </>
+                  )}
                 </Stack>
               </Paper>
 
               <Divider />
 
-              <Paper shadow="none" p="xl" radius={0} withBorder>
+              <Paper shadow="none" p="xl" withBorder>
                 <Text fz={20} fw={500} mb="md">
                   Kart Bilgileri
                 </Text>
@@ -350,7 +413,6 @@ const Checkout = () => {
                     }
                     error={errors.cardNumber}
                     required
-                    radius={0}
                   />
 
                   <TextInput
@@ -366,7 +428,6 @@ const Checkout = () => {
                     }
                     error={errors.cardHolderName}
                     required
-                    radius={0}
                   />
 
                   <Group grow>
@@ -383,7 +444,6 @@ const Checkout = () => {
                       }
                       error={errors.expiryDate}
                       required
-                      radius={0}
                     />
 
                     <TextInput
@@ -400,29 +460,19 @@ const Checkout = () => {
                       }
                       error={errors.cvv}
                       required
-                      radius={0}
                     />
                   </Group>
                 </Stack>
               </Paper>
 
               <Group justify="space-between" mt="xl">
-                <Button
-                  variant="outline"
-                  color="dark"
-                  size="lg"
-                  onClick={() => navigate("/cart")}
-                  radius={0}
-                >
+                <Button variant="outline" onClick={() => navigate("/cart")}>
                   Sepete Dön
                 </Button>
                 <Button
                   variant="filled"
-                  color="dark"
-                  size="lg"
                   onClick={handleSubmit}
                   loading={isCreatingOrder}
-                  radius={0}
                 >
                   Siparişi Tamamla
                 </Button>
@@ -437,7 +487,7 @@ const Checkout = () => {
               top: 140,
             }}
           >
-            <Paper shadow="none" p="xl" radius={0} withBorder>
+            <Paper shadow="none" p="xl" withBorder>
               <Text fz={20} fw={500} mb="md">
                 Sipariş Özeti
               </Text>
@@ -464,7 +514,6 @@ const Checkout = () => {
                         w={60}
                         h={80}
                         fit="cover"
-                        radius={0}
                       />
                       <Box style={{ flex: 1 }}>
                         <Text fz={14} fw={500} lineClamp={1}>

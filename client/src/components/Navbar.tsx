@@ -85,7 +85,12 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
     >
       <Container size="xl">
         <Group justify="space-between" align="center">
-          <UnstyledButton onClick={() => navigate("/")}>
+          <UnstyledButton
+            onClick={() => {
+              navigate("/");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
             <Text
               fz="2.8rem"
               fw={400}
@@ -102,7 +107,10 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
           <Group gap="xl">
             <Anchor
               c={textColor}
-              onClick={() => navigate("/")}
+              onClick={() => {
+                navigate("/");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               style={{
                 textDecoration: "none",
                 fontSize: "1.2rem",
@@ -183,7 +191,10 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                 {isAuthenticated ? (
                   <>
                     <Menu.Label>{user?.name || user?.email}</Menu.Label>
-                    <Menu.Item leftSection={<IconUserCircle size={22} />}>
+                    <Menu.Item
+                      leftSection={<IconUserCircle size={22} />}
+                      onClick={() => navigate("/profile")}
+                    >
                       Profilim
                     </Menu.Item>
                     <Menu.Item

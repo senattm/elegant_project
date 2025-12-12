@@ -45,16 +45,6 @@ const Cart = () => {
     navigate("/checkout");
   };
 
-  const titleStyle = {
-    fontWeight: 300,
-    letterSpacing: "0.1em",
-    fontFamily: "Playfair Display, serif",
-  };
-
-  const uppercaseStyle = {
-    letterSpacing: "0.05em",
-  };
-
   const imageStyle = {
     width: "180px",
     height: "240px",
@@ -65,10 +55,25 @@ const Cart = () => {
     <Box mih="100vh" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
       <Container size="xl">
         <Box mb={50} ta="center">
-          <Text fz={{ base: 28, sm: 36, md: 42 }} mb={12} style={titleStyle}>
+          <Text
+            fz={{ base: 28, sm: 36, md: 42 }}
+            mb={12}
+            style={{
+              fontWeight: 300,
+              letterSpacing: "0.1em",
+            }}
+          >
             SEPETİM
           </Text>
-          <Text size="sm" c="dimmed" tt="uppercase" style={uppercaseStyle}>
+          <Text
+            size="sm"
+            c="dimmed"
+            tt="uppercase"
+            style={{
+              fontWeight: 300,
+              letterSpacing: "0.1em",
+            }}
+          >
             {cart.length} Ürün
           </Text>
         </Box>
@@ -78,12 +83,7 @@ const Cart = () => {
             <Text fz={18} c="gray.7" mb={30}>
               Sepetiniz boş
             </Text>
-            <Button
-              variant="filled"
-              color="dark"
-              size="md"
-              onClick={() => navigate("/")}
-            >
+            <Button variant="filled" size="md" onClick={() => navigate("/")}>
               ALIŞVERİŞE BAŞLA
             </Button>
           </Box>
@@ -134,8 +134,6 @@ const Cart = () => {
                     <Group gap="sm">
                       <ActionIcon
                         variant="subtle"
-                        color="dark"
-                        size="lg"
                         onClick={() =>
                           updateQuantity(
                             item.product.id,
@@ -151,8 +149,6 @@ const Cart = () => {
                       </Text>
                       <ActionIcon
                         variant="subtle"
-                        color="dark"
-                        size="lg"
                         onClick={() =>
                           updateQuantity(
                             item.product.id,
@@ -192,20 +188,10 @@ const Cart = () => {
               </Box>
 
               <Group gap="md">
-                <Button
-                  variant="outline"
-                  color="dark"
-                  size="lg"
-                  onClick={clearCart}
-                >
+                <Button variant="outline" onClick={clearCart}>
                   SEPETİ TEMİZLE
                 </Button>
-                <Button
-                  variant="filled"
-                  color="dark"
-                  size="lg"
-                  onClick={handleCheckout}
-                >
+                <Button variant="filled" onClick={handleCheckout}>
                   ÖDEMEYE GEÇ
                 </Button>
               </Group>

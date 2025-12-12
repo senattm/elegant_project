@@ -136,11 +136,6 @@ const Store = () => {
     sortBy !== "default" ||
     priceRange[0] !== initialPriceRange[0] ||
     priceRange[1] !== initialPriceRange[1];
-  const titleStyle = {
-    fontWeight: 300,
-    letterSpacing: "0.1em",
-    fontFamily: "Playfair Display, serif",
-  };
   return (
     <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={80}>
       {" "}
@@ -148,12 +143,7 @@ const Store = () => {
         {" "}
         <Box mb={60} ta="center">
           {" "}
-          <Title
-            order={1}
-            fz={{ base: 32, sm: 40, md: 48 }}
-            style={titleStyle}
-            mb={12}
-          >
+          <Title order={1} fz={{ base: 32, sm: 40, md: 48 }} mb={12}>
             {" "}
             MAĞAZA{" "}
           </Title>{" "}
@@ -187,7 +177,6 @@ const Store = () => {
               {" "}
               <Button
                 variant={showFilters ? "filled" : "light"}
-                color="dark"
                 leftSection={<IconFilter size={18} />}
                 rightSection={
                   <IconChevronDown
@@ -376,7 +365,7 @@ const Store = () => {
             {" "}
             <Stack gap="md" align="center">
               {" "}
-              <Loader color="black" size="lg" />{" "}
+              <Loader color="black" />{" "}
               <Text c="dimmed" fw={500}>
                 {" "}
                 Ürünler yükleniyor...{" "}
@@ -396,7 +385,6 @@ const Store = () => {
               {hasActiveFilters && (
                 <Button
                   variant="outline"
-                  color="dark"
                   onClick={clearFilters}
                   size="md"
                   style={{ fontWeight: 500, letterSpacing: "0.05em" }}

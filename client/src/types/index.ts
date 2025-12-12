@@ -43,3 +43,14 @@ export interface JwtPayload {
   id: number;
   email: string;
 }
+
+export interface Address {
+  id: number;
+  title?: string;
+  full_name: string;
+  phone: string;
+  address_line: string;
+  city: string;
+  district: string;
+  created_at: string;
+}

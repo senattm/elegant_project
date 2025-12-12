@@ -44,3 +44,43 @@ export const ordersApi = {
   checkFirstOrder: (token: string) =>
     api.get("/orders/check/first-order", getAuthHeader(token)),
 };
+
+export const authApi = {
+  updateProfile: (data: { name: string }, token: string) =>
+    api.patch("/auth/profile", data, getAuthHeader(token)),
+  changePassword: (
+    data: { currentPassword: string; newPassword: string },
+    token: string
+  ) => api.post("/auth/change-password", data, getAuthHeader(token)),
+};
+
+export const addressesApi = {
+  getAll: (token: string) => api.get("/addresses", getAuthHeader(token)),
+  getById: (id: number, token: string) =>
+    api.get(`/addresses/${id}`, getAuthHeader(token)),
+  create: (
+    data: {
+      title?: string;
+      fullName: string;
+      phone: string;
+      addressLine: string;
+      city: string;
+      district: string;
+    },
+    token: string
+  ) => api.post("/addresses", data, getAuthHeader(token)),
+  update: (
+    id: number,
+    data: {
+      title?: string;
+      fullName?: string;
+      phone?: string;
+      addressLine?: string;
+      city?: string;
+      district?: string;
+    },
+    token: string
+  ) => api.patch(`/addresses/${id}`, data, getAuthHeader(token)),
+  delete: (id: number, token: string) =>
+    api.delete(`/addresses/${id}`, getAuthHeader(token)),
+};

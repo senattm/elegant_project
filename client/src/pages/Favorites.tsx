@@ -28,13 +28,6 @@ const Favorites = () => {
     favorites.includes(product.id)
   );
 
-  const titleStyle = {
-    fontWeight: 300,
-    marginBottom: "12px",
-    letterSpacing: "0.1em",
-    fontFamily: "Playfair Display, serif",
-  };
-
   const emptyIconStyle = {
     color: "#e9ecef",
     marginBottom: "20px",
@@ -44,7 +37,13 @@ const Favorites = () => {
     <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={60}>
       <Container size="xl">
         <Box mb={50} ta="center">
-          <Text fz={{ base: 28, sm: 36, md: 42 }} style={titleStyle}>
+          <Text
+            fz={{ base: 28, sm: 36, md: 42 }}
+            style={{
+              fontWeight: 300,
+              letterSpacing: "0.1em",
+            }}
+          >
             FAVORİLERİM
           </Text>
           <Text
@@ -60,7 +59,7 @@ const Favorites = () => {
         {favoriteProducts.length === 0 ? (
           <Box ta="center" py={100}>
             <IconHeart size={64} style={emptyIconStyle} />
-            <Text size="lg" c="#495057" mb={10}>
+            <Text c="#495057" mb={10}>
               Henüz favori ürününüz yok
             </Text>
             <Text size="sm" c="#adb5bd">

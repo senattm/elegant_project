@@ -46,14 +46,6 @@ const Orders = () => {
     fetchOrders();
   }, [isAuthenticated, navigate]);
 
-  const titleStyle = {
-    fontWeight: 300,
-    letterSpacing: "0.1em",
-    fontFamily: "Playfair Display, serif",
-  };
-
-  const uppercaseStyle = { letterSpacing: "0.05em" };
-
   const getStatusColor = (status: string) => {
     const s = status.toLowerCase();
     if (s === "completed") return "green";
@@ -78,7 +70,7 @@ const Orders = () => {
     return (
       <Center mih="100vh">
         <Stack align="center" gap="md">
-          <Loader color="black" size="lg" />
+          <Loader color="black" />
           <Text>Siparişler yükleniyor...</Text>
         </Stack>
       </Center>
@@ -89,19 +81,17 @@ const Orders = () => {
     <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={80}>
       <Container size="xl">
         <Box mb={60} ta="center">
-          <Title
-            order={1}
-            fz={{ base: 32, sm: 40, md: 48 }}
-            style={titleStyle}
-            mb={12}
-          >
+          <Title order={1} fz={{ base: 32, sm: 40, md: 48 }} mb={12}>
             SİPARİŞLERİM
           </Title>
           <Text
             fz="sm"
             c="dimmed"
             tt="uppercase"
-            style={uppercaseStyle}
+            style={{
+              fontWeight: 300,
+              letterSpacing: "0.1em",
+            }}
             fw={500}
           >
             {orders.length} Sipariş
@@ -113,12 +103,7 @@ const Orders = () => {
             <Text fz={18} c="gray.7" mb={30}>
               Henüz siparişiniz bulunmuyor
             </Text>
-            <Button
-              variant="filled"
-              color="dark"
-              size="md"
-              onClick={() => navigate("/store")}
-            >
+            <Button variant="filled" onClick={() => navigate("/store")}>
               ALIŞVERİŞE BAŞLA
             </Button>
           </Box>
@@ -126,11 +111,11 @@ const Orders = () => {
           <Stack gap="lg">
             {orders.map((order) => (
               <Paper
-                key={order.id}
+                key={order.orderNumber}
                 p="xl"
                 withBorder
                 style={{ cursor: "pointer", transition: "box-shadow 0.2s" }}
-                onClick={() => navigate(`/orders/${order.id}`)}
+                onClick={() => navigate(`/orders/${order.orderNumber}`)}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow =
                     "0 4px 20px rgba(0,0,0,0.1)";
@@ -141,9 +126,7 @@ const Orders = () => {
               >
                 <Group justify="space-between" mb="lg">
                   <Box>
-                    <Text fw={600} size="lg">
-                      {order.orderNumber}
-                    </Text>
+                    <Text fw={600}>{order.orderNumber}</Text>
                     <Text size="sm" c="dimmed">
                       {new Date(order.createdAt).toLocaleDateString("tr-TR", {
                         year: "numeric",
@@ -160,7 +143,10 @@ const Orders = () => {
                       c={getStatusColor(order.status)}
                       tt="uppercase"
                       size="sm"
-                      style={uppercaseStyle}
+                      style={{
+                        fontWeight: 300,
+                        letterSpacing: "0.1em",
+                      }}
                     >
                       {getStatusText(order.status)}
                     </Text>

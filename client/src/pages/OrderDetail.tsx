@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   Container,
   Text,
@@ -18,7 +18,6 @@ import type { Order } from "../types";
 
 const OrderDetail = () => {
   const { orderId } = useParams<{ orderId: string }>();
-  const navigate = useNavigate();
   const { getOrderById } = useOrders();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,19 +43,11 @@ const OrderDetail = () => {
     fetchOrder();
   }, [orderId, getOrderById]);
 
-  const titleStyle = {
-    fontWeight: 300,
-    letterSpacing: "0.1em",
-    fontFamily: "Playfair Display, serif",
-  };
-
-  const uppercaseStyle = { letterSpacing: "0.05em" };
-
   if (loading) {
     return (
       <Center mih="100vh">
         <Stack align="center" gap="md">
-          <Loader color="black" size="lg" />
+          <Loader color="black" />
           <Text>Sipariş yükleniyor...</Text>
         </Stack>
       </Center>
@@ -66,9 +57,7 @@ const OrderDetail = () => {
   if (error) {
     return (
       <Center mih="100vh">
-        <Text c="red" size="lg">
-          Hata: {error}
-        </Text>
+        <Text c="red">Hata: {error}</Text>
       </Center>
     );
   }
@@ -76,9 +65,7 @@ const OrderDetail = () => {
   if (!order) {
     return (
       <Center mih="100vh">
-        <Text c="dimmed" size="lg">
-          Sipariş bulunamadı.
-        </Text>
+        <Text c="dimmed">Sipariş bulunamadı.</Text>
       </Center>
     );
   }
@@ -91,19 +78,17 @@ const OrderDetail = () => {
     <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={80}>
       <Container size="xl">
         <Box mb={60} ta="center">
-          <Title
-            order={1}
-            fz={{ base: 32, sm: 40, md: 48 }}
-            style={titleStyle}
-            mb={12}
-          >
+          <Title order={1} fz={{ base: 32, sm: 40, md: 48 }} mb={12}>
             SİPARİŞ DETAYI
           </Title>
           <Text
             fz="sm"
             c="dimmed"
             tt="uppercase"
-            style={uppercaseStyle}
+            style={{
+              fontWeight: 300,
+              letterSpacing: "0.1em",
+            }}
             fw={500}
           >
             {order.orderNumber}
@@ -113,14 +98,30 @@ const OrderDetail = () => {
         <Paper p="xl" mb="xl" withBorder>
           <Stack gap="lg">
             <Group justify="space-between">
-              <Text fw={600} size="sm" tt="uppercase" style={uppercaseStyle}>
+              <Text
+                fw={600}
+                size="sm"
+                tt="uppercase"
+                style={{
+                  fontWeight: 300,
+                  letterSpacing: "0.1em",
+                }}
+              >
                 Sipariş Numarası
               </Text>
               <Text fw={600}>{order.orderNumber}</Text>
             </Group>
 
             <Group justify="space-between">
-              <Text fw={600} size="sm" tt="uppercase" style={uppercaseStyle}>
+              <Text
+                fw={600}
+                size="sm"
+                tt="uppercase"
+                style={{
+                  fontWeight: 300,
+                  letterSpacing: "0.1em",
+                }}
+              >
                 Durum
               </Text>
               <Text
@@ -147,7 +148,15 @@ const OrderDetail = () => {
             </Group>
 
             <Group justify="space-between">
-              <Text fw={600} size="sm" tt="uppercase" style={uppercaseStyle}>
+              <Text
+                fw={600}
+                size="sm"
+                tt="uppercase"
+                style={{
+                  fontWeight: 300,
+                  letterSpacing: "0.1em",
+                }}
+              >
                 Tarih
               </Text>
               <Text>
@@ -168,7 +177,10 @@ const OrderDetail = () => {
                     fw={600}
                     size="sm"
                     tt="uppercase"
-                    style={uppercaseStyle}
+                    style={{
+                      fontWeight: 300,
+                      letterSpacing: "0.1em",
+                    }}
                   >
                     Ara Toplam
                   </Text>
@@ -179,7 +191,10 @@ const OrderDetail = () => {
                     fw={600}
                     size="sm"
                     tt="uppercase"
-                    style={uppercaseStyle}
+                    style={{
+                      fontWeight: 300,
+                      letterSpacing: "0.1em",
+                    }}
                   >
                     İndirim
                   </Text>
@@ -189,7 +204,15 @@ const OrderDetail = () => {
             )}
 
             <Group justify="space-between">
-              <Text fw={600} size="sm" tt="uppercase" style={uppercaseStyle}>
+              <Text
+                fw={600}
+                size="sm"
+                tt="uppercase"
+                style={{
+                  fontWeight: 300,
+                  letterSpacing: "0.1em",
+                }}
+              >
                 Toplam Tutar
               </Text>
               <Text fz="lg" fw={700}>
@@ -199,7 +222,7 @@ const OrderDetail = () => {
           </Stack>
         </Paper>
 
-        <Title order={2} fz="xl" mb="lg" style={titleStyle}>
+        <Title order={2} fz="xl" mb="lg">
           Sipariş Edilen Ürünler
         </Title>
         <Stack gap="md">

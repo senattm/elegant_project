@@ -36,7 +36,7 @@ const Home = () => {
             >
               %10
             </Text>{" "}
-          indirim kazanın
+            indirim kazanın
           </Text>
         </Container>
       </Box>
@@ -48,7 +48,6 @@ const Home = () => {
             ta="center"
             mb={8}
             style={{
-              fontWeight: 300,
               fontSize: "32px",
               letterSpacing: "1px",
               textTransform: "uppercase",
@@ -68,7 +67,7 @@ const Home = () => {
 
         {loading && (
           <Center py={60}>
-            <Loader color="black" size="lg" />
+            <Loader color="black" />
             <Text ml={16}>Ürünler yükleniyor...</Text>
           </Center>
         )}

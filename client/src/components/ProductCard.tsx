@@ -188,17 +188,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               })}
             </Group>
           ) : (
-            <Button
-              fullWidth
-              size="sm"
-              onClick={handleAddToCart}
-              style={{
-                backgroundColor: "#000000",
-                color: "#fff",
-                letterSpacing: "0.1em",
-                fontWeight: 600,
-              }}
-            >
+            <Button fullWidth size="sm" onClick={handleAddToCart}>
               SEPETE EKLE ({selectedSize})
             </Button>
           )}

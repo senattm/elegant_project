@@ -31,7 +31,6 @@ const Hero = () => {
               c="white"
               mb="xl"
               style={{
-                fontFamily: "Playfair Display, serif",
                 fontSize: "clamp(3rem, 7vw, 6rem)",
                 fontWeight: 400,
                 letterSpacing: "0.3em",
@@ -87,7 +86,7 @@ const Hero = () => {
 
               <Box
                 component="button"
-                onClick={() => navigate("/shop")}
+                onClick={() => navigate("/store")}
                 style={{
                   padding: "14px 38px",
                   fontWeight: 500,

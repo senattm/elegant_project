@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { notificationConfig } from "./store/hooks/useNotification";
+import { theme } from "./theme";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
@@ -12,6 +13,7 @@ import Store from "./pages/Store";
 import OrderDetail from "./pages/OrderDetail";
 import Orders from "./pages/Orders";
 import ProductDetail from "./pages/ProductDetail";
+import Profile from "./pages/Profile";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import { useCart } from "./store/hooks/useCart";
@@ -30,7 +32,7 @@ function App() {
   }, [isAuthenticated]);
 
   return (
-    <MantineProvider>
+    <MantineProvider theme={theme}>
       <Notifications {...notificationConfig} />
       <Routes>
         <Route path="/auth" element={<Auth />} />
@@ -110,6 +112,16 @@ function App() {
             <>
               <Navbar alwaysWhite />
               <OrderDetail />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <>
+              <Navbar alwaysWhite />
+              <Profile />
               <Footer />
             </>
           }

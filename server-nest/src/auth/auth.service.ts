@@ -2,10 +2,16 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database/database.service';
-import { RegisterDto, LoginDto } from './dto';
+import {
+  RegisterDto,
+  LoginDto,
+  UpdateProfileDto,
+  ChangePasswordDto,
+} from './dto';
 import * as bcrypt from 'bcrypt';
 
 export interface UserEntity {
@@ -128,5 +134,57 @@ export class AuthService {
     }
 
     return row as UserEntity;
+  }
+
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const name = dto.name.trim();
+
+    const result = await this.db.query(
+      'UPDATE users SET name = $1 WHERE id = $2 RETURNING id, name, email',
+      [name, userId],
+    );
+
+    if (result.rowCount === 0) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const user = result.rows[0] as UserEntity;
+
+    return {
+      message: 'Profil güncellendi',
+      user: this.toUserResponse(user),
+    };
+  }
+
+  async changePassword(userId: number, dto: ChangePasswordDto) {
+    const result = await this.db.query(
+      'SELECT password_hash FROM users WHERE id = $1',
+      [userId],
+    );
+
+    if (result.rowCount === 0) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const user = result.rows[0];
+    const isPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.password_hash,
+    );
+
+    if (!isPasswordValid) {
+      throw new BadRequestException('Mevcut şifre hatalı');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, this.SALT_ROUNDS);
+
+    await this.db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [
+      hashedPassword,
+      userId,
+    ]);
+
+    return {
+      message: 'Şifre değiştirildi',
+    };
   }
 }

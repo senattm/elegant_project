@@ -6,6 +6,7 @@ import {
   ActionIcon,
   Button,
   Flex,
+  Title,
 } from "@mantine/core";
 import { IconTrash, IconMinus, IconPlus } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
@@ -55,16 +56,14 @@ const Cart = () => {
     <Box mih="100vh" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
       <Container size="xl">
         <Box mb={50} ta="center">
-          <Text
+          <Title
+            order={2}
             fz={{ base: 28, sm: 36, md: 42 }}
             mb={12}
-            style={{
-              fontWeight: 300,
-              letterSpacing: "0.1em",
-            }}
+            tt="uppercase"
           >
             SEPETİM
-          </Text>
+          </Title>
           <Text
             size="sm"
             c="dimmed"

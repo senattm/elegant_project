@@ -1,4 +1,4 @@
-import { Container, Text, SimpleGrid, Box } from "@mantine/core";
+import { Container, Text, SimpleGrid, Box, Title } from "@mantine/core";
 import { IconHeart } from "@tabler/icons-react";
 import { useFavorites } from "../store/hooks/useFavorites";
 import { useProducts } from "../store/hooks/useProducts";
@@ -37,15 +37,9 @@ const Favorites = () => {
     <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={60}>
       <Container size="xl">
         <Box mb={50} ta="center">
-          <Text
-            fz={{ base: 28, sm: 36, md: 42 }}
-            style={{
-              fontWeight: 300,
-              letterSpacing: "0.1em",
-            }}
-          >
+          <Title order={2} fz={{ base: 28, sm: 36, md: 42 }} tt="uppercase">
             FAVORİLERİM
-          </Text>
+          </Title>
           <Text
             size="sm"
             c="dimmed"

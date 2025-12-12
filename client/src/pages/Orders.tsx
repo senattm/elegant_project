@@ -46,22 +46,6 @@ const Orders = () => {
     fetchOrders();
   }, [isAuthenticated, navigate]);
 
-  const getStatusColor = (status: string) => {
-    const s = status.toLowerCase();
-    if (s === "completed") return "green";
-    if (s === "preparing") return "orange";
-    if (s === "shipped") return "blue";
-    return "gray";
-  };
-
-  const getStatusText = (status: string) => {
-    const s = status.toLowerCase();
-    if (s === "completed") return "Tamamlandı";
-    if (s === "preparing") return "Hazırlanıyor";
-    if (s === "shipped") return "Kargoda";
-    return status;
-  };
-
   const serverUrl =
     import.meta.env.VITE_API_URL?.replace("/api", "") ||
     "http://localhost:5000";
@@ -81,7 +65,12 @@ const Orders = () => {
     <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={80}>
       <Container size="xl">
         <Box mb={60} ta="center">
-          <Title order={1} fz={{ base: 32, sm: 40, md: 48 }} mb={12}>
+          <Title
+            order={2}
+            fz={{ base: 32, sm: 40, md: 48 }}
+            mb={12}
+            tt="uppercase"
+          >
             SİPARİŞLERİM
           </Title>
           <Text
@@ -140,7 +129,7 @@ const Orders = () => {
                   <Box ta="right">
                     <Text
                       fw={600}
-                      c={getStatusColor(order.status)}
+                      c="orange"
                       tt="uppercase"
                       size="sm"
                       style={{
@@ -148,7 +137,7 @@ const Orders = () => {
                         letterSpacing: "0.1em",
                       }}
                     >
-                      {getStatusText(order.status)}
+                      Hazırlanıyor
                     </Text>
                     <Text fw={700} fz="lg" mt={4}>
                       {order.finalAmount.toFixed(2)} TL

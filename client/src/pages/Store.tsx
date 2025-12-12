@@ -143,10 +143,14 @@ const Store = () => {
         {" "}
         <Box mb={60} ta="center">
           {" "}
-          <Title order={1} fz={{ base: 32, sm: 40, md: 48 }} mb={12}>
-            {" "}
-            MAĞAZA{" "}
-          </Title>{" "}
+          <Title
+            order={2}
+            fz={{ base: 32, sm: 40, md: 48 }}
+            mb={12}
+            tt="uppercase"
+          >
+            Mağaza
+          </Title>
           <Text fz="sm" c="dimmed" fw={500}>
             {" "}
             {filteredAndSortedProducts.length} ÜRÜN{" "}

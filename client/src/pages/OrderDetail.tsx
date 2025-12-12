@@ -78,8 +78,13 @@ const OrderDetail = () => {
     <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={80}>
       <Container size="xl">
         <Box mb={60} ta="center">
-          <Title order={1} fz={{ base: 32, sm: 40, md: 48 }} mb={12}>
-            SİPARİŞ DETAYI
+          <Title
+            order={2}
+            fz={{ base: 32, sm: 40, md: 48 }}
+            mb={12}
+            tt="uppercase"
+          >
+            Sipariş Detayı
           </Title>
           <Text
             fz="sm"
@@ -124,26 +129,8 @@ const OrderDetail = () => {
               >
                 Durum
               </Text>
-              <Text
-                fw={600}
-                c={
-                  order.status === "COMPLETED" || order.status === "completed"
-                    ? "green"
-                    : order.status === "PREPARING" ||
-                      order.status === "preparing"
-                    ? "orange"
-                    : order.status === "SHIPPED" || order.status === "shipped"
-                    ? "blue"
-                    : "gray"
-                }
-              >
-                {order.status === "COMPLETED" || order.status === "completed"
-                  ? "Tamamlandı"
-                  : order.status === "PREPARING" || order.status === "preparing"
-                  ? "Hazırlanıyor"
-                  : order.status === "SHIPPED" || order.status === "shipped"
-                  ? "Kargoda"
-                  : order.status}
+              <Text fw={600} c="orange">
+                Hazırlanıyor
               </Text>
             </Group>
 

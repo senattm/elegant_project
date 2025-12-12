@@ -12,6 +12,7 @@ import {
   Image,
   Flex,
   Select,
+  Title,
 } from "@mantine/core";
 import {
   IconCreditCard,
@@ -239,16 +240,14 @@ const Checkout = () => {
     <Box mih="100vh" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
       <Container>
         <Box mb={50} ta="center">
-          <Text
+          <Title
+            order={2}
             fz={{ base: 28, sm: 36, md: 42 }}
             mb={12}
-            style={{
-              fontWeight: 300,
-              letterSpacing: "0.1em",
-            }}
+            tt="uppercase"
           >
-            ÖDEME
-          </Text>
+            Ödeme
+          </Title>
           <Text size="sm" c="dimmed" tt="uppercase">
             Sipariş Toplam: {finalTotal.toFixed(2)} TL
           </Text>

@@ -21,6 +21,11 @@ const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"];
 const SHOE_SIZES = ["36", "37", "38", "39", "40", "41"];
 const BAG_SIZES = ["STD"];
 
+const CATEGORY_IDS = {
+  SHOES: 7,
+  BAGS: 8,
+};
+
 const SERVER_URL =
   import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
@@ -29,24 +34,12 @@ const getImageUrl = (url: string) => {
   return url.startsWith("http") ? url : `${SERVER_URL}${url}`;
 };
 
-const getSizesForCategory = (category: string): string[] => {
-  const lowerCategory = category?.toLowerCase().trim() || "";
-
-  if (
-    lowerCategory.includes("çanta") ||
-    lowerCategory.includes("bag") ||
-    lowerCategory === "çantalar" ||
-    lowerCategory === "bags"
-  ) {
+const getSizesForCategory = (categoryId: number): string[] => {
+  if (categoryId === CATEGORY_IDS.BAGS) {
     return BAG_SIZES;
   }
 
-  if (
-    lowerCategory.includes("ayakkabı") ||
-    lowerCategory.includes("shoe") ||
-    lowerCategory === "ayakkabılar" ||
-    lowerCategory === "shoes"
-  ) {
+  if (categoryId === CATEGORY_IDS.SHOES) {
     return SHOE_SIZES;
   }
 
@@ -71,7 +64,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     return price.toFixed(2);
   }, [product.price]);
 
-  const availableSizes = getSizesForCategory(product.category || "");
+  const availableSizes = getSizesForCategory(product.category_id);
 
   const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();

@@ -34,9 +34,9 @@ const Home = () => {
                 paddingBottom: 2,
               }}
             >
-              İLK10
+              %10
             </Text>{" "}
-            koduyla %10 indirim kazanın
+          indirim kazanın
           </Text>
         </Container>
       </Box>

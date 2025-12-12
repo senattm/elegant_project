@@ -9,18 +9,22 @@ import {
 } from "@mantine/core";
 import { IconTrash, IconMinus, IconPlus } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
-import { useCart, useOrders } from "../store/hooks";
+import { useCart } from "../store/hooks";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../store/atoms";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const Cart = () => {
   const navigate = useNavigate();
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
-  const { cart, removeFromCart, updateQuantity, getTotalPrice, clearCart } =
-    useCart();
-  const { createOrder } = useOrders();
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const {
+    cart,
+    removeFromCart,
+    updateQuantity,
+    getTotalPrice,
+    clearCart,
+    fetchCart,
+  } = useCart();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -28,21 +32,17 @@ const Cart = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCart();
+    }
+  }, [isAuthenticated]);
+
   const total = getTotalPrice();
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cart.length === 0) return;
-
-    setIsCreatingOrder(true);
-    try {
-      await createOrder(cart);
-      await clearCart();
-      navigate("/orders");
-    } catch (error) {
-      console.error("Sipariş oluşturulamadı:", error);
-    } finally {
-      setIsCreatingOrder(false);
-    }
+    navigate("/checkout");
   };
 
   const titleStyle = {
@@ -205,7 +205,6 @@ const Cart = () => {
                   color="dark"
                   size="lg"
                   onClick={handleCheckout}
-                  loading={isCreatingOrder}
                 >
                   ÖDEMEYE GEÇ
                 </Button>

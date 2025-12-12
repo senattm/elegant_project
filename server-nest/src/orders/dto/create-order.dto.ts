@@ -7,6 +7,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { PaymentDto } from '../../payment/dto';
 
 export class OrderItemDto {
   @IsNumber()
@@ -30,6 +31,10 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)
   items: OrderItemDto[];
+
+  @ValidateNested()
+  @Type(() => PaymentDto)
+  payment: PaymentDto;
 
   @IsNumber()
   @IsOptional()

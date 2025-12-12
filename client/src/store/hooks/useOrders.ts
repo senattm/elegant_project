@@ -4,11 +4,22 @@ import { useNotification } from "./useNotification";
 import { ordersApi } from "../../api/client";
 import type { CartItem } from "../../types";
 
+interface PaymentData {
+  cardNumber: string;
+  cardHolderName: string;
+  expiryDate: string;
+  cvv: string;
+}
+
 export const useOrders = () => {
   const [token] = useAtom(tokenAtom);
   const { addNotification } = useNotification();
 
-  const createOrder = async (items: CartItem[], addressId?: number) => {
+  const createOrder = async (
+    items: CartItem[],
+    payment: PaymentData,
+    addressId?: number
+  ) => {
     if (!token) {
       addNotification("Sipariş oluşturmak için giriş yapın", "error");
       throw new Error("Token gerekli");
@@ -34,15 +45,20 @@ export const useOrders = () => {
         };
       });
 
-      const response = await ordersApi.create(orderItems, addressId, token);
+      const response = await ordersApi.create(
+        orderItems,
+        payment,
+        token,
+        addressId
+      );
       addNotification("Siparişiniz oluşturuldu!", "success");
       return response.data;
     } catch (error: any) {
       console.error("Sipariş oluşturulamadı:", error);
-      addNotification(
-        error.response?.data?.message || "Sipariş oluşturulamadı",
-        "error"
-      );
+      const errorMessage = Array.isArray(error.response?.data?.message)
+        ? error.response.data.message[0]
+        : error.response?.data?.message || "Sipariş oluşturulamadı";
+      addNotification(errorMessage, "error");
       throw error;
     }
   };

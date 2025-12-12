@@ -29,10 +29,18 @@ export const ordersApi = {
       selectedSize?: string;
       price: number;
     }>,
-    addressId?: number,
-    token: string
-  ) => api.post("/orders", { items, addressId }, getAuthHeader(token)),
+    payment: {
+      cardNumber: string;
+      cardHolderName: string;
+      expiryDate: string;
+      cvv: string;
+    },
+    token: string,
+    addressId?: number
+  ) => api.post("/orders", { items, payment, addressId }, getAuthHeader(token)),
   getAll: (token: string) => api.get("/orders", getAuthHeader(token)),
   getById: (orderId: number, token: string) =>
     api.get(`/orders/${orderId}`, getAuthHeader(token)),
+  checkFirstOrder: (token: string) =>
+    api.get("/orders/check/first-order", getAuthHeader(token)),
 };

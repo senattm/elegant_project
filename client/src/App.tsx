@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
 import Store from "./pages/Store";
 import OrderDetail from "./pages/OrderDetail";
 import Orders from "./pages/Orders";
@@ -46,6 +47,16 @@ function App() {
             <>
               <Navbar alwaysWhite />
               <Cart />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <>
+              <Navbar alwaysWhite />
+              <Checkout />
               <Footer />
             </>
           }

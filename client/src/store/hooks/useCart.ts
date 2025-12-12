@@ -35,7 +35,7 @@ export const useCart = () => {
           category: item.category,
         },
         quantity: item.quantity,
-        selectedSize: "M",
+        selectedSize: item.selected_size,
       }));
       setCart(cartItems);
     } catch (error: any) {
@@ -59,7 +59,7 @@ export const useCart = () => {
     try {
       await axios.post(
         `${API_URL}/cart`,
-        { productId: product.id, quantity },
+        { productId: product.id, quantity, selectedSize: size },
         getAuthHeader()
       );
       addNotification("Ürün sepete eklendi!", "success");

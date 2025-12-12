@@ -2,11 +2,14 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class CartService {
+  private readonly logger = new Logger(CartService.name);
+
   constructor(private db: DatabaseService) {}
 
   private async validateStock(productId: number, requiredQuantity: number) {
@@ -22,7 +25,9 @@ export class CartService {
     const currentStock = productCheck.rows[0].stock;
 
     if (requiredQuantity > currentStock) {
-      throw new BadRequestException(`Stok yetersiz. Mevcut stok: ${currentStock}`);
+      throw new BadRequestException(
+        `Stok yetersiz. Mevcut stok: ${currentStock}`,
+      );
     }
   }
 
@@ -60,9 +65,15 @@ export class CartService {
     quantity: number = 1,
     selectedSize?: string,
   ) {
+    const sizeValue = selectedSize || null;
+
     const existingItem = await this.db.query(
-      'SELECT id, quantity FROM cart_items WHERE user_id = $1 AND product_id = $2 AND (selected_size = $3 OR (selected_size IS NULL AND $3 IS NULL))',
-      [userId, productId, selectedSize || null],
+      `SELECT id, quantity 
+       FROM cart_items 
+       WHERE user_id = $1 
+         AND product_id = $2 
+         AND COALESCE(selected_size, '') = COALESCE($3, '')`,
+      [userId, productId, sizeValue],
     );
 
     const totalQuantity =
@@ -82,7 +93,7 @@ export class CartService {
 
     const result = await this.db.query(
       'INSERT INTO cart_items (user_id, product_id, quantity, selected_size) VALUES ($1, $2, $3, $4) RETURNING *',
-      [userId, productId, quantity, selectedSize || null],
+      [userId, productId, quantity, sizeValue],
     );
     return result.rows[0];
   }
@@ -93,18 +104,37 @@ export class CartService {
     quantity: number,
     selectedSize?: string,
   ) {
+    this.logger.log(
+      `updateQuantity called - userId: ${userId}, productId: ${productId}, quantity: ${quantity}, selectedSize: "${selectedSize}"`,
+    );
+
     if (quantity <= 0) {
       return this.removeFromCart(userId, productId, selectedSize);
     }
 
     await this.validateStock(productId, quantity);
 
+    const sizeValue = selectedSize || null;
+
     const result = await this.db.query(
-      'UPDATE cart_items SET quantity = $1 WHERE user_id = $2 AND product_id = $3 AND (selected_size = $4 OR (selected_size IS NULL AND $4 IS NULL)) RETURNING *',
-      [quantity, userId, productId, selectedSize || null],
+      `UPDATE cart_items 
+       SET quantity = $1 
+       WHERE user_id = $2 
+         AND product_id = $3 
+         AND COALESCE(selected_size, '') = COALESCE($4, '')
+       RETURNING *`,
+      [quantity, userId, productId, sizeValue],
     );
 
     if (result.rows.length === 0) {
+      const allItems = await this.db.query(
+        'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
+        [userId, productId],
+      );
+      this.logger.error(
+        `Sepet öğesi bulunamadı! Aranan: size="${sizeValue}", Mevcut items:`,
+        allItems.rows,
+      );
       throw new NotFoundException('Sepet öğesi bulunamadı');
     }
 
@@ -116,9 +146,15 @@ export class CartService {
     productId: number,
     selectedSize?: string,
   ) {
+    const sizeValue = selectedSize || null;
+
     const result = await this.db.query(
-      'DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2 AND (selected_size = $3 OR (selected_size IS NULL AND $3 IS NULL)) RETURNING *',
-      [userId, productId, selectedSize || null],
+      `DELETE FROM cart_items 
+       WHERE user_id = $1 
+         AND product_id = $2 
+         AND COALESCE(selected_size, '') = COALESCE($3, '')
+       RETURNING *`,
+      [userId, productId, sizeValue],
     );
 
     if (result.rows.length === 0) {

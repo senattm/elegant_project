@@ -11,7 +11,55 @@ import { OrderItemDto } from './dto';
 export class OrdersService {
   constructor(private db: DatabaseService) {}
 
-  async createOrder(userId: number, items: OrderItemDto[], addressId?: number) {
+  private readonly orderQuery = `
+    SELECT 
+      o.id,
+      o.order_number,
+      o.total_amount,
+      o.discount_amount,
+      o.final_amount,
+      o.status,
+      o.created_at,
+      ARRAY_AGG(
+        json_build_object(
+          'id', oi.id,
+          'productId', oi.product_id,
+          'quantity', oi.quantity,
+          'selectedSize', oi.selected_size,
+          'price', oi.price,
+          'productName', p.name,
+          'productImages', (
+            SELECT ARRAY_AGG(pi.image_url)
+            FROM product_images pi
+            WHERE pi.product_id = p.id
+          )
+        ) ORDER BY oi.id
+      ) AS items
+    FROM orders o
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    LEFT JOIN products p ON oi.product_id = p.id
+  `;
+
+  private mapOrderRow(row: any) {
+    return {
+      id: row.id,
+      orderNumber: row.order_number,
+      totalAmount: parseFloat(row.total_amount),
+      discountAmount: parseFloat(row.discount_amount),
+      finalAmount: parseFloat(row.final_amount),
+      status: row.status,
+      createdAt: row.created_at,
+      items: row.items.filter((item: any) => item.productId !== null),
+    };
+  }
+
+  async createOrder(
+    userId: number,
+    items: OrderItemDto[],
+    cardHolderName: string,
+    cardLast4: string,
+    addressId?: number,
+  ) {
     if (!items || items.length === 0) {
       throw new BadRequestException('Sipariş için en az bir ürün gerekli');
     }
@@ -38,7 +86,13 @@ export class OrdersService {
       const discountAmount = !hasUsedDiscount ? totalAmount * 0.1 : 0;
       const finalAmount = totalAmount - discountAmount;
 
-      const orderNumber = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      await client.query(
+        `INSERT INTO payment_methods (user_id, card_holder, card_last4, provider) 
+         VALUES ($1, $2, $3, $4)`,
+        [userId, cardHolderName, cardLast4, 'CREDIT_CARD'],
+      );
+
+      const orderNumber = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
       const orderResult = await client.query(
         `INSERT INTO orders (user_id, address_id, order_number, total_amount, discount_amount, final_amount, status) 
@@ -55,24 +109,41 @@ export class OrdersService {
       );
 
       const order = orderResult.rows[0];
+
+      const productIds = items.map((item) => item.productId);
+      const productsResult = await client.query(
+        'SELECT id, stock FROM products WHERE id = ANY($1) FOR UPDATE',
+        [productIds],
+      );
+
+      const stockMap = new Map<number, number>(
+        productsResult.rows.map((row) => [row.id, Number(row.stock)]),
+      );
+
+      const quantityByProduct = new Map<number, number>();
+
+      for (const item of items) {
+        const prev = quantityByProduct.get(item.productId) ?? 0;
+        quantityByProduct.set(item.productId, prev + item.quantity);
+      }
+
+      for (const [productId, totalQty] of quantityByProduct.entries()) {
+        const stock = stockMap.get(productId);
+
+        if (stock === undefined) {
+          throw new NotFoundException(`Ürün ID ${productId} bulunamadı.`);
+        }
+
+        if (stock < totalQty) {
+          throw new BadRequestException(
+            `Ürün ID ${productId} için yeterli stok yok.`,
+          );
+        }
+      }
+
       const orderItemsToReturn: OrderItemDto[] = [];
 
       for (const item of items) {
-        const productStockResult = await client.query(
-          'SELECT stock FROM products WHERE id = $1 FOR UPDATE',
-          [item.productId],
-        );
-
-        if (productStockResult.rows.length === 0) {
-          throw new NotFoundException(`Ürün ID ${item.productId} bulunamadı.`);
-        }
-
-        if (productStockResult.rows[0].stock < item.quantity) {
-          throw new BadRequestException(
-            `Ürün ID ${item.productId} için yeterli stok yok.`,
-          );
-        }
-
         const itemTotal = item.price * item.quantity;
 
         await client.query(
@@ -122,21 +193,15 @@ export class OrdersService {
       };
     } catch (error) {
       await client.query('ROLLBACK');
-      console.error('Sipariş oluşturma hatası:', error);
-      if (error instanceof Error) {
-        if (
-          error.message.includes('relation') &&
-          error.message.includes('does not exist')
-        ) {
-          throw new BadRequestException(
-            "Orders tabloları bulunamadı. Lütfen database'de order_items tablosunu oluşturun.",
-          );
-        }
-        throw new BadRequestException(
-          `Sipariş oluşturulamadı: ${error.message}`,
-        );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
       }
-      throw error;
+
+      throw new BadRequestException('Sipariş oluşturulamadı');
     } finally {
       client.release();
     }
@@ -144,84 +209,21 @@ export class OrdersService {
 
   async getUserOrders(userId: number) {
     const result = await this.db.query(
-      `
-      SELECT 
-        o.id,
-        o.order_number,
-        o.total_amount,
-        o.discount_amount,
-        o.final_amount,
-        o.status,
-        o.created_at,
-        ARRAY_AGG(
-          json_build_object(
-            'id', oi.id,
-            'productId', oi.product_id,
-            'quantity', oi.quantity,
-            'selectedSize', oi.selected_size,
-            'price', oi.price,
-            'productName', p.name,
-            'productImages', (
-              SELECT ARRAY_AGG(pi.image_url)
-              FROM product_images pi
-              WHERE pi.product_id = p.id
-            )
-          )
-        ) AS items
-      FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      LEFT JOIN products p ON oi.product_id = p.id
-      WHERE o.user_id = $1
-      GROUP BY o.id, o.order_number, o.total_amount, o.discount_amount, o.final_amount, o.status, o.created_at
-      ORDER BY o.created_at DESC
-    `,
+      `${this.orderQuery}
+       WHERE o.user_id = $1
+       GROUP BY o.id, o.order_number, o.total_amount, o.discount_amount, o.final_amount, o.status, o.created_at
+       ORDER BY o.created_at DESC`,
       [userId],
     );
 
-    return result.rows.map((row) => ({
-      id: row.id,
-      orderNumber: row.order_number,
-      totalAmount: parseFloat(row.total_amount),
-      discountAmount: parseFloat(row.discount_amount),
-      finalAmount: parseFloat(row.final_amount),
-      status: row.status,
-      createdAt: row.created_at,
-      items: row.items.filter((item) => item.productId !== null),
-    }));
+    return result.rows.map(this.mapOrderRow);
   }
 
   async getOrderById(orderId: number, userId: number) {
     const result = await this.db.query(
-      `
-      SELECT 
-        o.id,
-        o.order_number,
-        o.total_amount,
-        o.discount_amount,
-        o.final_amount,
-        o.status,
-        o.created_at,
-        ARRAY_AGG(
-          json_build_object(
-            'id', oi.id,
-            'productId', oi.product_id,
-            'quantity', oi.quantity,
-            'selectedSize', oi.selected_size,
-            'price', oi.price,
-            'productName', p.name,
-            'productImages', (
-              SELECT ARRAY_AGG(pi.image_url)
-              FROM product_images pi
-              WHERE pi.product_id = p.id
-            )
-          )
-        ) AS items
-      FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      LEFT JOIN products p ON oi.product_id = p.id
-      WHERE o.id = $1 AND o.user_id = $2
-      GROUP BY o.id, o.order_number, o.total_amount, o.discount_amount, o.final_amount, o.status, o.created_at
-    `,
+      `${this.orderQuery}
+       WHERE o.id = $1 AND o.user_id = $2
+       GROUP BY o.id, o.order_number, o.total_amount, o.discount_amount, o.final_amount, o.status, o.created_at`,
       [orderId, userId],
     );
 
@@ -229,16 +231,24 @@ export class OrdersService {
       return null;
     }
 
-    const row = result.rows[0];
+    return this.mapOrderRow(result.rows[0]);
+  }
+
+  async checkFirstOrder(userId: number) {
+    const result = await this.db.query(
+      'SELECT first_order_discount_used FROM users WHERE id = $1',
+      [userId],
+    );
+
+    if (result.rows.length === 0) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const hasUsedDiscount = result.rows[0].first_order_discount_used;
+
     return {
-      id: row.id,
-      orderNumber: row.order_number,
-      totalAmount: parseFloat(row.total_amount),
-      discountAmount: parseFloat(row.discount_amount),
-      finalAmount: parseFloat(row.final_amount),
-      status: row.status,
-      createdAt: row.created_at,
-      items: row.items.filter((item) => item.productId !== null),
+      isFirstOrder: !hasUsedDiscount,
+      discountPercentage: !hasUsedDiscount ? 10 : 0,
     };
   }
 }

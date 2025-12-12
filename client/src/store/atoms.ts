@@ -6,7 +6,11 @@ export type { User, Product, CartItem };
 
 export const userAtom = atomWithStorage<User | null>("user", null);
 export const tokenAtom = atomWithStorage<string | null>("token", null);
-export const isAuthenticatedAtom = atom((get) => !!get(userAtom));
+export const isAuthenticatedAtom = atom((get) => {
+  const token = get(tokenAtom);
+  const user = get(userAtom);
+  return !!token && !!user;
+});
 
 export const productsAtom = atom<Product[]>([]);
 export const loadingProductsAtom = atom<boolean>(false);

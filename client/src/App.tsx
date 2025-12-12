@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
@@ -13,9 +14,21 @@ import Orders from "./pages/Orders";
 import ProductDetail from "./pages/ProductDetail";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
+import { useCart } from "./store/hooks/useCart";
+import { useAuth } from "./store/hooks";
 import "./App.css";
 
 function App() {
+  const { fetchCart } = useCart();
+  const { isAuthenticated } = useAuth();
+
+  // Uygulama yüklendiğinde veya sayfa yenilendiğinde sepeti yükle
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCart();
+    }
+  }, [isAuthenticated]);
+
   return (
     <MantineProvider>
       <Notifications {...notificationConfig} />

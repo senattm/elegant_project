@@ -21,3 +21,5 @@ export const cartCountAtom = atom((get) =>
 );
 
 export const favoritesAtom = atomWithStorage<number[]>("favorites", []);
+
+export const searchQueryAtom = atom<string>("");

@@ -23,9 +23,12 @@ import ProductCard from "../components/ProductCard";
 import { useProducts } from "../store/hooks";
 import { productsApi } from "../api/client";
 import type { Product } from "../types";
+import { useAtom } from "jotai";
+import { searchQueryAtom } from "../store/atoms";
 type SortOption = "default" | "price-asc" | "price-desc" | "name-asc";
 const Store = () => {
   const { products, loading, fetchProducts } = useProducts();
+  const [searchQuery, setSearchQuery] = useAtom(searchQueryAtom);
   const [categories, setCategories] = useState<
     Array<{ name: string; product_count: number }>
   >([]);
@@ -69,6 +72,19 @@ const Store = () => {
   };
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = [...products];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (product) =>
+          product.name.toLowerCase().includes(query) ||
+          (product.category &&
+            product.category.toLowerCase().includes(query)) ||
+          (product.description &&
+            product.description.toLowerCase().includes(query))
+      );
+    }
+
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(
         (product) =>
@@ -101,7 +117,7 @@ const Store = () => {
         break;
     }
     return filtered;
-  }, [products, selectedCategories, priceRange, sortBy]);
+  }, [products, selectedCategories, priceRange, sortBy, searchQuery]);
   const clearFilters = () => {
     setSelectedCategories([]);
     if (products.length > 0) {
@@ -149,18 +165,28 @@ const Store = () => {
             mb={12}
             tt="uppercase"
           >
-            Mağaza
+            {searchQuery ? `"${searchQuery}" için sonuçlar` : "Mağaza"}
           </Title>
-          <Text fz="sm" c="dimmed" fw={500}>
-            {" "}
-            {filteredAndSortedProducts.length} ÜRÜN{" "}
-            {hasActiveFilters && (
-              <Text component="span" c="dark" ml={8}>
-                {" "}
-                • Filtrelenmiş{" "}
-              </Text>
-            )}{" "}
-          </Text>{" "}
+          <Group gap="xs" mb="xs">
+            <Text fz="sm" c="dimmed" fw={500}>
+              {filteredAndSortedProducts.length} ÜRÜN
+              {hasActiveFilters && (
+                <Text component="span" c="dark" ml={8}>
+                  • Filtrelenmiş
+                </Text>
+              )}
+            </Text>
+            {searchQuery && (
+              <Button
+                variant="subtle"
+                size="compact-xs"
+                onClick={() => setSearchQuery("")}
+                leftSection={<IconX size={14} />}
+              >
+                Aramayı Temizle
+              </Button>
+            )}
+          </Group>
         </Box>{" "}
         <Paper
           p={{ base: "md", sm: "lg" }}

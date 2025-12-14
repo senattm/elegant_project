@@ -87,9 +87,9 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
           boxShadow:
             alwaysWhite || isScrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
         }}
-        py={isScrolled ? "lg" : "xl"}
+        py={isScrolled ? { base: "sm", md: "lg" } : { base: "md", md: "xl" }}
       >
-        <Container size="xl">
+        <Container size="xl" px={{ base: "md", md: "xl" }}>
           <Group justify="space-between" align="center">
             <UnstyledButton
               onClick={() => {
@@ -98,7 +98,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               }}
             >
               <Text
-                fz="2.8rem"
+                fz={{ base: "2.2rem", sm: "2.5rem", md: "2.8rem" }}
                 fw={400}
                 c={textColor}
                 style={{
@@ -110,7 +110,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               </Text>
             </UnstyledButton>
 
-            <Group gap="xl">
+            <Group gap="xl" visibleFrom="md">
               <Anchor
                 c={textColor}
                 onClick={() => {
@@ -157,7 +157,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               </Anchor>
             </Group>
 
-            <Group gap="lg">
+            <Group gap={{ base: "sm", md: "lg" }}>
               {searchOpen ? (
                 <TextInput
                   placeholder="Ara..."
@@ -184,7 +184,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                       },
                     },
                   }}
-                  w={250}
+                  w={{ base: 180, sm: 220, md: 250 }}
                   autoFocus
                 />
               ) : (

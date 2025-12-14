@@ -63,7 +63,10 @@ const Hero = () => {
             <Group justify="center" gap="md">
               <Box
                 component="button"
-                onClick={() => navigate("/shop")}
+                onClick={() => {
+                  const categoriesSection = document.getElementById("categories");
+                  categoriesSection?.scrollIntoView({ behavior: "smooth" });
+                }}
                 style={{
                   padding: "16px 40px",
                   letterSpacing: "0.02em",

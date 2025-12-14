@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Container,
   Text,
@@ -29,6 +30,7 @@ type SortOption = "default" | "price-asc" | "price-desc" | "name-asc";
 const Store = () => {
   const { products, loading, fetchProducts } = useProducts();
   const [searchQuery, setSearchQuery] = useAtom(searchQueryAtom);
+  const [searchParams] = useSearchParams();
   const [categories, setCategories] = useState<
     Array<{ name: string; product_count: number }>
   >([]);
@@ -37,10 +39,28 @@ const Store = () => {
   const [maxPrice, setMaxPrice] = useState(5000);
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [showFilters, setShowFilters] = useState(false);
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get("category");
+
+    if (categoryFromUrl && categories.length > 0) {
+      const decodedCategory = decodeURIComponent(categoryFromUrl);
+      const matchingCategory = categories.find(
+        (c) => c.name === decodedCategory
+      );
+
+      if (matchingCategory) {
+        setSelectedCategories([decodedCategory]);
+        setSearchQuery("");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+  }, [searchParams, categories]);
   const fetchCategories = async () => {
     try {
       const response = await productsApi.getAll();
@@ -55,6 +75,19 @@ const Store = () => {
         ([name, product_count]) => ({ name, product_count })
       );
       setCategories(categoriesArray);
+
+      const categoryFromUrl = searchParams.get("category");
+      if (categoryFromUrl) {
+        const decodedCategory = decodeURIComponent(categoryFromUrl);
+        const matchingCategory = categoriesArray.find(
+          (c) => c.name === decodedCategory
+        );
+        if (matchingCategory) {
+          setSelectedCategories([decodedCategory]);
+          setSearchQuery("");
+        }
+      }
+
       if (response.data.length > 0) {
         const prices = response.data
           .map((p: Product) => parseFloat(String(p.price)))

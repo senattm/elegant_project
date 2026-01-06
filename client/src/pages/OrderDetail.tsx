@@ -96,9 +96,8 @@ const OrderDetail = () => {
             order={2}
             fz={{ base: 32, sm: 40, md: 48 }}
             mb={12}
-            tt="uppercase"
           >
-            Sipariş Detayı
+            SİPARİŞ DETAYI
           </Title>
           <Text
             fz="sm"

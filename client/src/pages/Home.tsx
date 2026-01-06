@@ -6,7 +6,6 @@ import {
   Box,
   Title,
   BackgroundImage,
-  Overlay,
   Loader,
   Center,
 } from "@mantine/core";
@@ -28,13 +27,13 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
 
   const categoryImages: Record<string, string> = {
-    Elbiseler: "elbise2.webp",
-    "Ceketler & Kabanlar": "ceket3.webp",
-    Ayakkabılar: "ayakkabi3.jpg",
-    "Çantalar & Aksesuarlar": "canta2.jpg",
-    "Bluzlar & Gömlekler": "gomlek2.webp",
-    "Kazaklar & Hırkalar": "kazak4.webp",
-    Pantolonlar: "pantolon2.webp",
+    Elbiseler: "kategori_elbise.png",
+    "Ceketler & Kabanlar": "kategori_ceket.png",
+    Ayakkabılar: "kategori_ayakkabı.png",
+    "Çantalar & Aksesuarlar": "kategori_canta.png",
+    "Bluzlar & Gömlekler": "kategori_gomlek.png",
+    "Kazaklar & Hırkalar": "kategori_kazak.jpg",
+    Pantolonlar: "kategori_pantolon.png",
   };
 
   const categoryDescriptions: Record<string, string> = {
@@ -113,19 +112,10 @@ const Home = () => {
             style={{
               fontSize: "40px",
               letterSpacing: "2px",
-              textTransform: "uppercase",
             }}
           >
-            Kategoriler
+            KATEGORİLER
           </Title>
-          <Text
-            ta="center"
-            c="#666"
-            size="sm"
-            style={{ letterSpacing: "0.5px" }}
-          >
-            Sizin için özenle seçtik
-          </Text>
         </Box>
 
         {loading ? (
@@ -156,7 +146,7 @@ const Home = () => {
                     style={{
                       cursor: "pointer",
                       position: "relative",
-                      height: "450px",
+                      aspectRatio: "1/1",
                       borderRadius: "0px",
                       overflow: "hidden",
                     }}
@@ -166,6 +156,7 @@ const Home = () => {
                       style={{
                         height: "100%",
                         transition: "transform 0.5s ease",
+                        filter: "brightness(0.4)",
                       }}
                       onMouseEnter={(e: any) => {
                         e.currentTarget.style.transform = "scale(1.05)";
@@ -173,45 +164,37 @@ const Home = () => {
                       onMouseLeave={(e: any) => {
                         e.currentTarget.style.transform = "scale(1)";
                       }}
+                    />
+                    <Box
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "24px",
+                        zIndex: 2,
+                        pointerEvents: "none",
+                      }}
                     >
-                      <Overlay
-                        gradient="linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.7) 100%)"
-                        opacity={0.7}
-                      />
-                      <Box
+                      <Title
+                        order={3}
+                        c="white"
+                        ta="center"
                         style={{
-                          position: "absolute",
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          padding: "24px",
-                          zIndex: 1,
+                          fontSize: "28px",
+                          letterSpacing: "2px",
+                          fontWeight: 400,
+                          color: "#ffffff",
+                          textShadow: "none",
                         }}
                       >
-                        <Title
-                          order={3}
-                          c="white"
-                          mb={4}
-                          style={{
-                            fontSize: "28px",
-                            letterSpacing: "2px",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {category.name}
-                        </Title>
-                        <Text
-                          c="white"
-                          size="sm"
-                          style={{
-                            letterSpacing: "0.5px",
-                            opacity: 0.9,
-                          }}
-                        >
-                          {category.description}
-                        </Text>
-                      </Box>
-                    </BackgroundImage>
+                        {category.name.toLocaleUpperCase("tr-TR")}
+                      </Title>
+                    </Box>
                   </Box>
                 </motion.div>
               </Carousel.Slide>

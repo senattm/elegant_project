@@ -192,13 +192,10 @@ const Store = () => {
         {" "}
         <Box mb={60} ta="center">
           {" "}
-          <Title
-            order={2}
-            fz={{ base: 32, sm: 40, md: 48 }}
-            mb={12}
-            tt="uppercase"
-          >
-            {searchQuery ? `"${searchQuery}" için sonuçlar` : "Mağaza"}
+          <Title order={2} fz={{ base: 32, sm: 40, md: 48 }} mb={12}>
+            {searchQuery
+              ? `"${searchQuery}" için sonuçlar`.toLocaleUpperCase("tr-TR")
+              : "MAĞAZA"}
           </Title>
           <Group gap="xs" mb="xs">
             <Text fz="sm" c="dimmed" fw={500}>

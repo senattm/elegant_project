@@ -132,189 +132,221 @@ const ProductDetail = () => {
           </Text>
         </UnstyledButton>
 
-        <Grid gutter={60}>
-          <Grid.Col span={{ base: 12, md: 7 }}>
-            <Box style={{ display: "flex", gap: 16 }}>
-              {images.length > 1 && (
-                <Stack gap="sm" style={{ width: 80 }}>
-                  {images.map((img, index) => (
-                    <UnstyledButton
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
+        <Box style={{ display: "flex", justifyContent: "center" }}>
+          <Grid
+            align="flex-start"
+            style={{ maxWidth: "1200px", width: "100%" }}
+          >
+            <Grid.Col span={{ base: 12, md: 7 }}>
+              <Box style={{ display: "flex", gap: 16, maxWidth: "100%" }}>
+                {images.length > 1 && (
+                  <Stack gap="sm" style={{ width: 80, flexShrink: 0 }}>
+                    {images.map((img, index) => (
+                      <UnstyledButton
+                        key={index}
+                        onClick={() => setSelectedImage(index)}
+                        style={{
+                          border:
+                            selectedImage === index
+                              ? "2px solid black"
+                              : "2px solid transparent",
+                          opacity: selectedImage === index ? 1 : 0.6,
+                          transition: "all 0.2s",
+                          width: "80px",
+                          height: "80px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "#f5f5f5",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <Image
+                          src={getImageUrl(img)}
+                          alt={`${product.name} ${index + 1}`}
+                          w={80}
+                          h={80}
+                          fit="contain"
+                        />
+                      </UnstyledButton>
+                    ))}
+                  </Stack>
+                )}
+
+                <Box
+                  style={{
+                    flex: 1,
+                    position: "relative",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={selectedImage}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
                       style={{
-                        border:
-                          selectedImage === index
-                            ? "2px solid black"
-                            : "2px solid transparent",
-                        opacity: selectedImage === index ? 1 : 0.6,
-                        transition: "all 0.2s",
+                        position: "relative",
+                        display: "inline-block",
                       }}
                     >
                       <Image
-                        src={getImageUrl(img)}
-                        alt={`${product.name} ${index + 1}`}
-                        h={100}
-                        fit="cover"
+                        src={getImageUrl(images[selectedImage] || "")}
+                        alt={product.name}
+                        fit="contain"
+                        style={{
+                          maxWidth: "600px",
+                          maxHeight: "600px",
+                          width: "auto",
+                          height: "auto",
+                          objectFit: "contain",
+                        }}
                       />
-                    </UnstyledButton>
-                  ))}
-                </Stack>
-              )}
 
-              <Box style={{ flex: 1, position: "relative" }}>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={selectedImage}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                      <ActionIcon
+                        variant="filled"
+                        radius="xl"
+                        size="xl"
+                        onClick={() => toggleFavorite(product.id)}
+                        style={{
+                          position: "absolute",
+                          top: "20px",
+                          right: "20px",
+                          backgroundColor: "white",
+                          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                          zIndex: 10,
+                        }}
+                      >
+                        {isProductFavorite ? (
+                          <IconHeartFilled size={24} color="red" />
+                        ) : (
+                          <IconHeart size={24} color="red" />
+                        )}
+                      </ActionIcon>
+                    </motion.div>
+                  </AnimatePresence>
+                </Box>
+              </Box>
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 5 }}>
+              <Stack gap="xl" style={{ position: "sticky", top: 160 }}>
+                <Box>
+                  <Text
+                    size="sm"
+                    c="dimmed"
+                    tt="uppercase"
+                    mb={8}
+                    style={{ letterSpacing: "0.1em" }}
                   >
-                    <Image
-                      src={getImageUrl(images[selectedImage] || "")}
-                      alt={product.name}
-                      h={{ base: 500, md: 650 }}
-                      fit="cover"
-                    />
-                  </motion.div>
-                </AnimatePresence>
+                    {product.category}
+                  </Text>
+                  <Title order={1} fz={{ base: 28, md: 36 }}>
+                    {product.name}
+                  </Title>
+                </Box>
 
-                <ActionIcon
-                  variant="filled"
-                  radius="xl"
-                  size="xl"
-                  onClick={() => toggleFavorite(product.id)}
+                <Text fz={28} fw={600}>
+                  {price.toFixed(2)} TL
+                </Text>
+
+                {product.description && (
+                  <Text c="dimmed" lh={1.8}>
+                    {product.description}
+                  </Text>
+                )}
+
+                <Box>
+                  <Text
+                    size="sm"
+                    fw={600}
+                    tt="uppercase"
+                    mb={12}
+                    style={{ letterSpacing: "0.05em" }}
+                  >
+                    Beden
+                  </Text>
+                  <Group gap="sm">
+                    {availableSizes.map((size) => (
+                      <UnstyledButton
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        style={{
+                          width: 48,
+                          height: 48,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          border:
+                            selectedSize === size
+                              ? "2px solid black"
+                              : "1px solid #ddd",
+                          backgroundColor:
+                            selectedSize === size ? "black" : "white",
+                          color: selectedSize === size ? "white" : "black",
+                          fontWeight: selectedSize === size ? 600 : 400,
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        {size}
+                      </UnstyledButton>
+                    ))}
+                  </Group>
+                </Box>
+
+                <Box>
+                  <Text
+                    size="sm"
+                    fw={600}
+                    tt="uppercase"
+                    mb={12}
+                    style={{ letterSpacing: "0.05em" }}
+                  >
+                    Adet
+                  </Text>
+                  <Group gap="sm">
+                    <ActionIcon
+                      variant="outline"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    >
+                      <IconMinus size={18} />
+                    </ActionIcon>
+                    <Text w={40} ta="center" fz={18} fw={600}>
+                      {quantity}
+                    </Text>
+                    <ActionIcon
+                      variant="outline"
+                      onClick={() => setQuantity(quantity + 1)}
+                    >
+                      <IconPlus size={18} />
+                    </ActionIcon>
+                  </Group>
+                </Box>
+
+                <Button
+                  fullWidth
+                  disabled={!selectedSize}
+                  onClick={handleAddToCart}
                   style={{
-                    position: "absolute",
-                    top: 16,
-                    right: 16,
-                    backgroundColor: "white",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                    height: 56,
                   }}
                 >
-                  {isProductFavorite ? (
-                    <IconHeartFilled size={24} color="red" />
-                  ) : (
-                    <IconHeart size={24} color="red" />
-                  )}
-                </ActionIcon>
-              </Box>
-            </Box>
-          </Grid.Col>
+                  {selectedSize ? "SEPETE EKLE" : "BEDEN SEÇİN"}
+                </Button>
 
-          <Grid.Col span={{ base: 12, md: 5 }}>
-            <Stack gap="xl" style={{ position: "sticky", top: 160 }}>
-              <Box>
-                <Text
-                  size="sm"
-                  c="dimmed"
-                  tt="uppercase"
-                  mb={8}
-                  style={{ letterSpacing: "0.1em" }}
-                >
-                  {product.category}
-                </Text>
-                <Title order={1} fz={{ base: 28, md: 36 }}>
-                  {product.name}
-                </Title>
-              </Box>
-
-              <Text fz={28} fw={600}>
-                {price.toFixed(2)} TL
-              </Text>
-
-              {product.description && (
-                <Text c="dimmed" lh={1.8}>
-                  {product.description}
-                </Text>
-              )}
-
-              <Box>
-                <Text
-                  size="sm"
-                  fw={600}
-                  tt="uppercase"
-                  mb={12}
-                  style={{ letterSpacing: "0.05em" }}
-                >
-                  Beden
-                </Text>
-                <Group gap="sm">
-                  {availableSizes.map((size) => (
-                    <UnstyledButton
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      style={{
-                        width: 48,
-                        height: 48,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        border:
-                          selectedSize === size
-                            ? "2px solid black"
-                            : "1px solid #ddd",
-                        backgroundColor:
-                          selectedSize === size ? "black" : "white",
-                        color: selectedSize === size ? "white" : "black",
-                        fontWeight: selectedSize === size ? 600 : 400,
-                        transition: "all 0.2s",
-                      }}
-                    >
-                      {size}
-                    </UnstyledButton>
-                  ))}
-                </Group>
-              </Box>
-
-              <Box>
-                <Text
-                  size="sm"
-                  fw={600}
-                  tt="uppercase"
-                  mb={12}
-                  style={{ letterSpacing: "0.05em" }}
-                >
-                  Adet
-                </Text>
-                <Group gap="sm">
-                  <ActionIcon
-                    variant="outline"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >
-                    <IconMinus size={18} />
-                  </ActionIcon>
-                  <Text w={40} ta="center" fz={18} fw={600}>
-                    {quantity}
+                {product.stock !== undefined && product.stock < 10 && (
+                  <Text size="sm" c="orange" ta="center">
+                    Son {product.stock} ürün!
                   </Text>
-                  <ActionIcon
-                    variant="outline"
-                    onClick={() => setQuantity(quantity + 1)}
-                  >
-                    <IconPlus size={18} />
-                  </ActionIcon>
-                </Group>
-              </Box>
-
-              <Button
-                fullWidth
-                disabled={!selectedSize}
-                onClick={handleAddToCart}
-                style={{
-                  height: 56,
-                }}
-              >
-                {selectedSize ? "SEPETE EKLE" : "BEDEN SEÇİN"}
-              </Button>
-
-              {product.stock !== undefined && product.stock < 10 && (
-                <Text size="sm" c="orange" ta="center">
-                  Son {product.stock} ürün!
-                </Text>
-              )}
-            </Stack>
-          </Grid.Col>
-        </Grid>
+                )}
+              </Stack>
+            </Grid.Col>
+          </Grid>
+        </Box>
       </Container>
     </Box>
   );

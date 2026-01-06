@@ -23,6 +23,7 @@ export interface CartItem {
 
 export interface OrderItem {
   id: number;
+  productId: number;
   productName: string;
   productImages: string[];
   selectedSize: string;
@@ -31,6 +32,7 @@ export interface OrderItem {
 }
 
 export interface Order {
+  id: number;
   orderNumber: string;
   status: string;
   createdAt: string;

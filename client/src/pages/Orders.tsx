@@ -104,7 +104,7 @@ const Orders = () => {
                 p="xl"
                 withBorder
                 style={{ cursor: "pointer", transition: "box-shadow 0.2s" }}
-                onClick={() => navigate(`/orders/${order.orderNumber}`)}
+                onClick={() => navigate(`/orders/${order.id}`)}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow =
                     "0 4px 20px rgba(0,0,0,0.1)";
@@ -160,6 +160,12 @@ const Orders = () => {
                           position: "relative",
                           borderRadius: "8px",
                           overflow: "hidden",
+                          width: "80px",
+                          height: "80px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "#f5f5f5",
                         }}
                       >
                         <Image
@@ -167,7 +173,7 @@ const Orders = () => {
                           alt={item.productName}
                           w={80}
                           h={80}
-                          fit="cover"
+                          fit="contain"
                           radius="md"
                         />
                         {item.quantity > 1 && (

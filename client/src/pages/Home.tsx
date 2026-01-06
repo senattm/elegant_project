@@ -219,6 +219,91 @@ const Home = () => {
           </Carousel>
         )}
       </Container>
+
+      <Box bg="#f8f9fa" py={{ base: 60, md: 100 }}>
+        <Container size="xl">
+          <Box
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "40px",
+              flexWrap: "wrap",
+            }}
+          >
+            <Box
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                borderRadius: "0px",
+                aspectRatio: "1.5/1",
+                width: "500px",
+                maxWidth: "100%",
+                flexShrink: 0,
+              }}
+            >
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              >
+                <source
+                  src="http://localhost:5000/videos/267244.mp4"
+                  type="video/mp4"
+                />
+              </video>
+            </Box>
+
+            <Box
+              px={{ base: "md", md: "lg" }}
+              style={{ textAlign: "left", maxWidth: "600px", flex: "0 1 auto" }}
+            >
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+                viewport={{ once: true }}
+              >
+                <Title
+                  order={2}
+                  mb="lg"
+                  style={{
+                    fontSize: "clamp(28px, 5vw, 42px)",
+                    letterSpacing: "2px",
+                  }}
+                >
+                  KENDİNİ KEŞFET
+                </Title>
+                <Text
+                  size="lg"
+                  mb="xl"
+                  style={{
+                    lineHeight: 1.8,
+                    letterSpacing: "0.5px",
+                    fontWeight: 300,
+                  }}
+                >
+                  Modanın geçici akımları yerine, stilin kalıcılığına
+                  odaklanıyoruz. Koleksiyonlarımız; nitelikli dokuları modern
+                  bir disiplinle bir araya getirerek kişisel tarzınıza eşlik
+                  ediyor. Stil, sadece bir tercih değil, bir duruş ifadesidir.
+                  Kendinizi yansıtan zamansız çizgileri keşfetmeniz için
+                  tasarlıyoruz.
+                </Text>
+              </motion.div>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
     </Box>
   );
 };

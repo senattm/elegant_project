@@ -10,8 +10,9 @@ import {
 } from "@mantine/core";
 import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import { motion } from "framer-motion";
-import { useFavorites, useCart } from "../store/hooks";
-import type { Product } from "../store/atoms";
+import { useFavorites, useCart } from "../../store/hooks";
+import type { Product } from "../../store/atoms";
+import { getImageUrl } from "../../utils/imageUrl";
 
 interface ProductCardProps {
   product: Product;
@@ -26,13 +27,6 @@ const CATEGORY_IDS = {
   BAGS: 8,
 };
 
-const SERVER_URL =
-  import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
-
-const getImageUrl = (url: string) => {
-  if (!url) return "";
-  return url.startsWith("http") ? url : `${SERVER_URL}${url}`;
-};
 
 const getSizesForCategory = (categoryId: number): string[] => {
   if (categoryId === CATEGORY_IDS.BAGS) {
@@ -215,3 +209,5 @@ const ProductCard = ({ product }: ProductCardProps) => {
 };
 
 export default ProductCard;
+
+

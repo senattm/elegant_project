@@ -1,23 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Container,
-  Text,
-  Box,
-  Loader,
-  Center,
-  Stack,
-  Title,
-  Paper,
-  Group,
-  Button,
-  Image,
-  Flex,
-} from "@mantine/core";
+import { Text, Box, Paper, Group, Image, Flex, Stack } from "@mantine/core";
 import { useOrders } from "../store/hooks";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../store/atoms";
 import type { Order } from "../types";
+import PageLayout from "../components/layout/PageLayout";
+import PageHeader from "../components/layout/PageHeader";
+import LoadingState from "../components/ui/LoadingState";
+import EmptyState from "../components/ui/EmptyState";
+import { getImageUrl } from "../utils/imageUrl";
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -46,184 +38,142 @@ const Orders = () => {
     fetchOrders();
   }, [isAuthenticated, navigate]);
 
-  const serverUrl =
-    import.meta.env.VITE_API_URL?.replace("/api", "") ||
-    "http://localhost:5000";
-
   if (loading) {
-    return (
-      <Center mih="100vh">
-        <Stack align="center" gap="md">
-          <Loader color="black" />
-          <Text>Siparişler yükleniyor...</Text>
-        </Stack>
-      </Center>
-    );
+    return <LoadingState message="Siparişler yükleniyor..." />;
   }
 
   return (
-    <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={80}>
-      <Container size="xl">
-        <Box mb={60} ta="center">
-          <Title
-            order={2}
-            fz={{ base: 32, sm: 40, md: 48 }}
-            mb={12}
-            tt="uppercase"
-          >
-            SİPARİŞLERİM
-          </Title>
-          <Text
-            fz="sm"
-            c="dimmed"
-            tt="uppercase"
-            style={{
-              fontWeight: 300,
-              letterSpacing: "0.1em",
-            }}
-            fw={500}
-          >
-            {orders.length} Sipariş
-          </Text>
-        </Box>
+    <PageLayout>
+      <PageHeader title="SİPARİŞLERİM" subtitle={`${orders.length} Sipariş`} />
 
-        {orders.length === 0 ? (
-          <Box ta="center" p="100px 20px">
-            <Text fz={18} c="gray.7" mb={30}>
-              Henüz siparişiniz bulunmuyor
-            </Text>
-            <Button variant="filled" onClick={() => navigate("/store")}>
-              ALIŞVERİŞE BAŞLA
-            </Button>
-          </Box>
-        ) : (
-          <Stack gap="lg">
-            {orders.map((order) => (
-              <Paper
-                key={order.orderNumber}
-                p="xl"
-                withBorder
-                style={{ cursor: "pointer", transition: "box-shadow 0.2s" }}
-                onClick={() => navigate(`/orders/${order.id}`)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow =
-                    "0 4px 20px rgba(0,0,0,0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <Group justify="space-between" mb="lg">
-                  <Box>
-                    <Text fw={600}>{order.orderNumber}</Text>
-                    <Text size="sm" c="dimmed">
-                      {new Date(order.createdAt).toLocaleDateString("tr-TR", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Text>
-                  </Box>
-                  <Box ta="right">
-                    <Text
-                      fw={600}
-                      c="orange"
-                      tt="uppercase"
-                      size="sm"
-                      style={{
-                        fontWeight: 300,
-                        letterSpacing: "0.1em",
-                      }}
-                    >
-                      Hazırlanıyor
-                    </Text>
-                    <Text fw={700} fz="lg" mt={4}>
-                      {order.finalAmount.toFixed(2)} TL
-                    </Text>
-                  </Box>
-                </Group>
+      {orders.length === 0 ? (
+        <EmptyState
+          message="Henüz siparişiniz bulunmuyor"
+          actionLabel="ALIŞVERİŞE BAŞLA"
+          onAction={() => navigate("/store")}
+        />
+      ) : (
+        <Stack gap="lg">
+          {orders.map((order) => (
+            <Paper
+              key={order.orderNumber}
+              p="xl"
+              withBorder
+              style={{ cursor: "pointer", transition: "box-shadow 0.2s" }}
+              onClick={() => navigate(`/orders/${order.id}`)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <Group justify="space-between" mb="lg">
+                <Box>
+                  <Text fw={600}>{order.orderNumber}</Text>
+                  <Text size="sm" c="dimmed">
+                    {new Date(order.createdAt).toLocaleDateString("tr-TR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                </Box>
+                <Box ta="right">
+                  <Text
+                    fw={600}
+                    c="orange"
+                    tt="uppercase"
+                    size="sm"
+                    style={{
+                      fontWeight: 300,
+                      letterSpacing: "0.1em",
+                    }}
+                  >
+                    Hazırlanıyor
+                  </Text>
+                  <Text fw={700} fz="lg" mt={4}>
+                    {order.finalAmount.toFixed(2)} TL
+                  </Text>
+                </Box>
+              </Group>
 
-                <Flex gap="sm" mb="md" wrap="wrap">
-                  {order.items.slice(0, 4).map((item, index) => {
-                    const imageUrl = item.productImages?.[0]
-                      ? item.productImages[0].startsWith("http")
-                        ? item.productImages[0]
-                        : `${serverUrl}${item.productImages[0]}`
-                      : "https://via.placeholder.com/80x80";
+              <Flex gap="sm" mb="md" wrap="wrap">
+                {order.items.slice(0, 4).map((item, index) => {
+                  const imageUrl = getImageUrl(item.productImages?.[0]);
 
-                    return (
-                      <Box
-                        key={item.id || index}
-                        style={{
-                          position: "relative",
-                          borderRadius: "8px",
-                          overflow: "hidden",
-                          width: "80px",
-                          height: "80px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: "#f5f5f5",
-                        }}
-                      >
-                        <Image
-                          src={imageUrl}
-                          alt={item.productName}
-                          w={80}
-                          h={80}
-                          fit="contain"
-                          radius="md"
-                        />
-                        {item.quantity > 1 && (
-                          <Box
-                            style={{
-                              position: "absolute",
-                              bottom: 4,
-                              right: 4,
-                              backgroundColor: "rgba(0,0,0,0.7)",
-                              color: "white",
-                              borderRadius: "4px",
-                              padding: "2px 6px",
-                              fontSize: "11px",
-                              fontWeight: 600,
-                            }}
-                          >
-                            x{item.quantity}
-                          </Box>
-                        )}
-                      </Box>
-                    );
-                  })}
-                  {order.items.length > 4 && (
+                  return (
                     <Box
-                      w={80}
-                      h={80}
+                      key={item.id || index}
                       style={{
-                        backgroundColor: "#f1f3f4",
+                        position: "relative",
                         borderRadius: "8px",
+                        overflow: "hidden",
+                        width: "80px",
+                        height: "80px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        backgroundColor: "#f5f5f5",
                       }}
                     >
-                      <Text size="sm" c="dimmed" fw={600}>
-                        +{order.items.length - 4}
-                      </Text>
+                      <Image
+                        src={imageUrl}
+                        alt={item.productName}
+                        w={80}
+                        h={80}
+                        fit="contain"
+                        radius="md"
+                      />
+                      {item.quantity > 1 && (
+                        <Box
+                          style={{
+                            position: "absolute",
+                            bottom: 4,
+                            right: 4,
+                            backgroundColor: "rgba(0,0,0,0.7)",
+                            color: "white",
+                            borderRadius: "4px",
+                            padding: "2px 6px",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          x{item.quantity}
+                        </Box>
+                      )}
                     </Box>
-                  )}
-                </Flex>
+                  );
+                })}
+                {order.items.length > 4 && (
+                  <Box
+                    w={80}
+                    h={80}
+                    style={{
+                      backgroundColor: "#f1f3f4",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text size="sm" c="dimmed" fw={600}>
+                      +{order.items.length - 4}
+                    </Text>
+                  </Box>
+                )}
+              </Flex>
 
-                <Text size="sm" c="dimmed">
-                  {order.items.length} ürün
-                </Text>
-              </Paper>
-            ))}
-          </Stack>
-        )}
-      </Container>
-    </Box>
+              <Text size="sm" c="dimmed">
+                {order.items.length} ürün
+              </Text>
+            </Paper>
+          ))}
+        </Stack>
+      )}
+    </PageLayout>
   );
 };
 

@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Container,
   Text,
   Box,
-  Loader,
-  Center,
   Stack,
-  Title,
   Paper,
   Group,
   Image,
   Flex,
-  UnstyledButton,
 } from "@mantine/core";
-import { IconArrowLeft } from "@tabler/icons-react";
 import { useOrders } from "../store/hooks";
 import type { Order } from "../types";
+import PageLayout from "../components/layout/PageLayout";
+import PageHeader from "../components/layout/PageHeader";
+import BackButton from "../components/ui/BackButton";
+import LoadingState from "../components/ui/LoadingState";
+import EmptyState from "../components/ui/EmptyState";
+import { getImageUrl } from "../utils/imageUrl";
 
 const OrderDetail = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -47,73 +47,35 @@ const OrderDetail = () => {
   }, [orderId, getOrderById]);
 
   if (loading) {
-    return (
-      <Center mih="100vh">
-        <Stack align="center" gap="md">
-          <Loader color="black" />
-          <Text>Sipariş yükleniyor...</Text>
-        </Stack>
-      </Center>
-    );
+    return <LoadingState message="Sipariş yükleniyor..." />;
   }
 
   if (error) {
     return (
-      <Center mih="100vh">
-        <Text c="red">Hata: {error}</Text>
-      </Center>
+      <PageLayout>
+        <EmptyState message={`Hata: ${error}`} />
+      </PageLayout>
     );
   }
 
   if (!order) {
     return (
-      <Center mih="100vh">
-        <Text c="dimmed">Sipariş bulunamadı.</Text>
-      </Center>
+      <PageLayout>
+        <EmptyState message="Sipariş bulunamadı." />
+      </PageLayout>
     );
   }
 
-  const serverUrl =
-    import.meta.env.VITE_API_URL?.replace("/api", "") ||
-    "http://localhost:5000";
-
   return (
-    <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={80}>
-      <Container size="xl">
-        <UnstyledButton
-          onClick={() => navigate("/orders")}
-          mb={30}
-          style={{ display: "flex", alignItems: "center", gap: 8 }}
-        >
-          <IconArrowLeft size={20} />
-          <Text size="sm" tt="uppercase" style={{ letterSpacing: "0.05em" }}>
-            Geri
-          </Text>
-        </UnstyledButton>
+    <PageLayout>
+      <BackButton onClick={() => navigate("/orders")} />
+      <PageHeader
+        title="SİPARİŞ DETAYI"
+        subtitle={`Sipariş #${order.orderNumber}`}
+        mb={60}
+      />
 
-        <Box mb={60} ta="center">
-          <Title
-            order={2}
-            fz={{ base: 32, sm: 40, md: 48 }}
-            mb={12}
-          >
-            SİPARİŞ DETAYI
-          </Title>
-          <Text
-            fz="sm"
-            c="dimmed"
-            tt="uppercase"
-            style={{
-              fontWeight: 300,
-              letterSpacing: "0.1em",
-            }}
-            fw={500}
-          >
-            {order.orderNumber}
-          </Text>
-        </Box>
-
-        <Paper p="xl" mb="xl" withBorder>
+      <Paper p="xl" mb="xl" withBorder>
           <Stack gap="lg">
             <Group justify="space-between">
               <Text
@@ -258,13 +220,7 @@ const OrderDetail = () => {
                   }}
                 >
                   <Image
-                    src={
-                      item.productImages?.[0]
-                        ? item.productImages[0].startsWith("http")
-                          ? item.productImages[0]
-                          : `${serverUrl}${item.productImages[0]}`
-                        : "https://via.placeholder.com/100x100"
-                    }
+                    src={getImageUrl(item.productImages?.[0])}
                     alt={item.productName}
                     w={80}
                     h={80}
@@ -287,8 +243,7 @@ const OrderDetail = () => {
             </Paper>
           ))}
         </Stack>
-      </Container>
-    </Box>
+    </PageLayout>
   );
 };
 

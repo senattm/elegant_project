@@ -64,7 +64,8 @@ const Hero = () => {
               <Box
                 component="button"
                 onClick={() => {
-                  const categoriesSection = document.getElementById("categories");
+                  const categoriesSection =
+                    document.getElementById("categories");
                   categoriesSection?.scrollIntoView({ behavior: "smooth" });
                 }}
                 style={{
@@ -152,3 +153,5 @@ const Hero = () => {
 };
 
 export default Hero;
+
+

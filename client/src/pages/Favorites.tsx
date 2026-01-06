@@ -1,9 +1,12 @@
-import { Container, Text, SimpleGrid, Box, Title } from "@mantine/core";
+import { SimpleGrid } from "@mantine/core";
 import { IconHeart } from "@tabler/icons-react";
+import PageLayout from "../components/layout/PageLayout";
+import PageHeader from "../components/layout/PageHeader";
+import EmptyState from "../components/ui/EmptyState";
 import { useFavorites } from "../store/hooks/useFavorites";
 import { useProducts } from "../store/hooks/useProducts";
 import { useEffect } from "react";
-import ProductCard from "../components/ProductCard";
+import ProductCard from "../components/features/ProductCard";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../store/atoms";
@@ -28,50 +31,33 @@ const Favorites = () => {
     favorites.includes(product.id)
   );
 
-  const emptyIconStyle = {
-    color: "#e9ecef",
-    marginBottom: "20px",
-  };
-
   return (
-    <Box mih="100vh" pt={{ base: 250, sm: 180, md: 140 }} pb={60}>
-      <Container size="xl">
-        <Box mb={50} ta="center">
-          <Title order={2} fz={{ base: 28, sm: 36, md: 42 }} tt="uppercase">
-            FAVORİLERİM
-          </Title>
-          <Text
-            size="sm"
-            c="dimmed"
-            tt="uppercase"
-            style={{ letterSpacing: "0.08em" }}
-          >
-            {favoriteProducts.length} Ürün
-          </Text>
-        </Box>
+    <PageLayout pb={60}>
+      <PageHeader
+        title="FAVORİLERİM"
+        subtitle={`${favoriteProducts.length} Ürün`}
+        mb={50}
+      />
 
-        {favoriteProducts.length === 0 ? (
-          <Box ta="center" py={100}>
-            <IconHeart size={64} style={emptyIconStyle} />
-            <Text c="#495057" mb={10}>
-              Henüz favori ürününüz yok
-            </Text>
-            <Text size="sm" c="#adb5bd">
-              Beğendiğiniz ürünleri favorilerinize ekleyebilirsiniz
-            </Text>
-          </Box>
-        ) : (
-          <SimpleGrid
-            cols={{ base: 1, xs: 2, sm: 2, md: 3, lg: 4 }}
-            spacing="lg"
-          >
-            {favoriteProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </SimpleGrid>
-        )}
-      </Container>
-    </Box>
+      {favoriteProducts.length === 0 ? (
+        <EmptyState
+          message="Henüz favori ürününüz yok"
+          description="Beğendiğiniz ürünleri favorilerinize ekleyebilirsiniz"
+          icon={
+            <IconHeart
+              size={64}
+              style={{ color: "#e9ecef", marginBottom: "20px" }}
+            />
+          }
+        />
+      ) : (
+        <SimpleGrid cols={{ base: 1, xs: 2, sm: 2, md: 3, lg: 4 }} spacing="lg">
+          {favoriteProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </SimpleGrid>
+      )}
+    </PageLayout>
   );
 };
 

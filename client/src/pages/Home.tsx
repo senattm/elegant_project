@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
 import { motion } from "framer-motion";
-import Hero from "../components/Hero";
+import Hero from "../components/features/Hero";
 import { productsApi } from "../api/client";
 
 const Home = () => {

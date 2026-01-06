@@ -1,14 +1,17 @@
 import {
-  Container,
   Text,
   Box,
   Group,
   ActionIcon,
   Button,
   Flex,
-  Title,
 } from "@mantine/core";
-import { IconTrash, IconMinus, IconPlus } from "@tabler/icons-react";
+import PageLayout from "../components/layout/PageLayout";
+import PageHeader from "../components/layout/PageHeader";
+import EmptyState from "../components/ui/EmptyState";
+import QuantitySelector from "../components/ui/QuantitySelector";
+import { getImageUrl } from "../utils/imageUrl";
+import { IconTrash } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../store/hooks";
 import { useAtom } from "jotai";
@@ -53,40 +56,20 @@ const Cart = () => {
   };
 
   return (
-    <Box mih="100vh" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
-      <Container size="xl">
-        <Box mb={50} ta="center">
-          <Title
-            order={2}
-            fz={{ base: 28, sm: 36, md: 42 }}
-            mb={12}
-            tt="uppercase"
-          >
-            SEPETİM
-          </Title>
-          <Text
-            size="sm"
-            c="dimmed"
-            tt="uppercase"
-            style={{
-              fontWeight: 300,
-              letterSpacing: "0.1em",
-            }}
-          >
-            {cart.length} Ürün
-          </Text>
-        </Box>
+    <PageLayout pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
+      <PageHeader
+        title="SEPETİM"
+        subtitle={`${cart.length} Ürün`}
+        mb={50}
+      />
 
-        {cart.length === 0 ? (
-          <Box ta="center" p="100px 20px">
-            <Text fz={18} c="gray.7" mb={30}>
-              Sepetiniz boş
-            </Text>
-            <Button variant="filled" size="md" onClick={() => navigate("/")}>
-              ALIŞVERİŞE BAŞLA
-            </Button>
-          </Box>
-        ) : (
+      {cart.length === 0 ? (
+        <EmptyState
+          message="Sepetiniz boş"
+          actionLabel="ALIŞVERİŞE BAŞLA"
+          onAction={() => navigate("/")}
+        />
+      ) : (
           <>
             <Box mb={40}>
               {cart.map((item) => {
@@ -95,14 +78,7 @@ const Cart = () => {
                     ? parseFloat(item.product.price)
                     : item.product.price;
 
-                const serverUrl =
-                  import.meta.env.VITE_API_URL?.replace("/api", "") ||
-                  "http://localhost:5000";
-                const imageUrl = item.product.images?.[0]
-                  ? item.product.images[0].startsWith("http")
-                    ? item.product.images[0]
-                    : `${serverUrl}${item.product.images[0]}`
-                  : "https://via.placeholder.com/150";
+                const imageUrl = getImageUrl(item.product.images?.[0]);
 
                 return (
                   <Flex
@@ -130,35 +106,17 @@ const Cart = () => {
                       </Text>
                     </Box>
 
-                    <Group gap="sm">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() =>
-                          updateQuantity(
-                            item.product.id,
-                            item.quantity - 1,
-                            item.selectedSize
-                          )
-                        }
-                      >
-                        <IconMinus size={18} />
-                      </ActionIcon>
-                      <Text w={40} ta="center" fz={16} fw={600}>
-                        {item.quantity}
-                      </Text>
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() =>
-                          updateQuantity(
-                            item.product.id,
-                            item.quantity + 1,
-                            item.selectedSize
-                          )
-                        }
-                      >
-                        <IconPlus size={18} />
-                      </ActionIcon>
-                    </Group>
+                    <QuantitySelector
+                      value={item.quantity}
+                      onChange={(newQuantity) =>
+                        updateQuantity(
+                          item.product.id,
+                          newQuantity,
+                          item.selectedSize
+                        )
+                      }
+                      min={1}
+                    />
 
                     <Text fz={18} fw={600} w={120} ta="right">
                       {(price * item.quantity).toFixed(2)} TL
@@ -193,12 +151,11 @@ const Cart = () => {
                 <Button variant="filled" onClick={handleCheckout}>
                   ÖDEMEYE GEÇ
                 </Button>
-              </Group>
-            </Flex>
-          </>
-        )}
-      </Container>
-    </Box>
+            </Group>
+          </Flex>
+        </>
+      )}
+    </PageLayout>
   );
 };
 

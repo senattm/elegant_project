@@ -8,6 +8,7 @@ import {
   Group,
   Image,
   Flex,
+  Title,
 } from "@mantine/core";
 import { useOrders } from "../store/hooks";
 import type { Order } from "../types";

@@ -1,4 +1,4 @@
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import { userAtom, tokenAtom, isAuthenticatedAtom } from "../atoms";
 import { useNotification } from "./useNotification";
 

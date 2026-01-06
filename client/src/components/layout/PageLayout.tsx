@@ -1,5 +1,5 @@
 import { Box, Container } from "@mantine/core";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface PageLayoutProps {
   children: ReactNode;

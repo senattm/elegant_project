@@ -1,5 +1,5 @@
-import { Box, Title, Text, Group } from "@mantine/core";
-import { ReactNode } from "react";
+import { Box, Title, Text } from "@mantine/core";
+import type { ReactNode } from "react";
 
 interface PageHeaderProps {
   title: string;

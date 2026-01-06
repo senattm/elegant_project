@@ -21,11 +21,11 @@ import {
   IconPackage,
   IconLogout,
 } from "@tabler/icons-react";
-import { useAuth } from "../store/hooks";
-import { useFavorites } from "../store/hooks/useFavorites";
-import { useCart } from "../store/hooks/useCart";
+import { useAuth } from "../../store/hooks";
+import { useFavorites } from "../../store/hooks/useFavorites";
+import { useCart } from "../../store/hooks/useCart";
 import { useAtom } from "jotai";
-import { searchQueryAtom } from "../store/atoms";
+import { searchQueryAtom } from "../../store/atoms";
 
 interface NavbarProps {
   alwaysWhite?: boolean;
@@ -157,7 +157,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               </Anchor>
             </Group>
 
-            <Group gap={{ base: "sm", md: "lg" }}>
+            <Group gap="sm">
               {searchOpen ? (
                 <TextInput
                   placeholder="Ara..."

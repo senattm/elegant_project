@@ -187,14 +187,14 @@ const Store = () => {
     priceRange[1] !== initialPriceRange[1];
   const subtitle = (
     <Group gap="xs" justify="center">
-      <Text fz="sm" c="dimmed" fw={500}>
+          <Text fz="sm" c="dimmed" fw={500}>
         {filteredAndSortedProducts.length} ÜRÜN
-        {hasActiveFilters && (
-          <Text component="span" c="dark" ml={8}>
+            {hasActiveFilters && (
+              <Text component="span" c="dark" ml={8}>
             • Filtrelenmiş
           </Text>
         )}
-      </Text>
+              </Text>
       {searchQuery && (
         <Button
           variant="subtle"
@@ -219,203 +219,203 @@ const Store = () => {
         subtitle={subtitle}
         mb={60}
       />
-      <Paper
-        p={{ base: "md", sm: "lg" }}
-        mb="xl"
-        withBorder
-        style={{ borderColor: "#e9ecef", backgroundColor: "#fafafa" }}
-      >
-        {" "}
-        <Flex
-          direction={{ base: "column", sm: "row" }}
-          justify="space-between"
-          align={{ base: "stretch", sm: "center" }}
-          gap="md"
-          wrap="wrap"
+        <Paper
+          p={{ base: "md", sm: "lg" }}
+          mb="xl"
+          withBorder
+          style={{ borderColor: "#e9ecef", backgroundColor: "#fafafa" }}
         >
           {" "}
-          <Group gap="sm" wrap="wrap">
-            {" "}
-            <Button
-              variant={showFilters ? "filled" : "light"}
-              leftSection={<IconFilter size={18} />}
-              rightSection={
-                <IconChevronDown
-                  size={16}
-                  style={{
-                    transform: showFilters ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s ease",
-                  }}
-                />
-              }
-              onClick={() => setShowFilters(!showFilters)}
-              style={{ fontWeight: 500, letterSpacing: "0.05em" }}
-            >
-              {" "}
-              Filtreler{" "}
-            </Button>{" "}
-            {hasActiveFilters && (
-              <Button
-                variant="subtle"
-                color="gray"
-                leftSection={<IconX size={16} />}
-                onClick={clearFilters}
-                size="sm"
-                style={{ fontWeight: 500 }}
-              >
-                {" "}
-                Temizle{" "}
-              </Button>
-            )}{" "}
-          </Group>{" "}
-          <Select
-            label="Sırala"
-            placeholder="Sıralama seçin"
-            value={sortBy}
-            onChange={(value) => setSortBy((value as SortOption) || "default")}
-            data={[
-              { value: "default", label: "Varsayılan" },
-              { value: "price-asc", label: "Fiyat: Düşükten Yükseğe" },
-              { value: "price-desc", label: "Fiyat: Yüksekten Düşüğe" },
-              { value: "name-asc", label: "İsme Göre (A-Z)" },
-            ]}
-            style={{ minWidth: 220 }}
-            styles={{
-              label: {
-                fontWeight: 600,
-                fontSize: "12px",
-                letterSpacing: "0.05em",
-                marginBottom: 8,
-              },
-            }}
-          />{" "}
-        </Flex>{" "}
-        {showFilters && (
-          <Box
-            mt="xl"
-            pt="xl"
-            style={{
-              borderTop: "1px solid #e9ecef",
-              animation: "fadeIn 0.3s ease",
-            }}
+          <Flex
+            direction={{ base: "column", sm: "row" }}
+            justify="space-between"
+            align={{ base: "stretch", sm: "center" }}
+            gap="md"
+            wrap="wrap"
           >
             {" "}
-            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
+            <Group gap="sm" wrap="wrap">
               {" "}
-              <Stack gap="md">
+              <Button
+                variant={showFilters ? "filled" : "light"}
+                leftSection={<IconFilter size={18} />}
+                rightSection={
+                  <IconChevronDown
+                    size={16}
+                    style={{
+                    transform: showFilters ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.2s ease",
+                    }}
+                  />
+                }
+                onClick={() => setShowFilters(!showFilters)}
+                style={{ fontWeight: 500, letterSpacing: "0.05em" }}
+              >
                 {" "}
-                <Text fw={600} size="sm" c="dark">
+                Filtreler{" "}
+              </Button>{" "}
+              {hasActiveFilters && (
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  leftSection={<IconX size={16} />}
+                  onClick={clearFilters}
+                  size="sm"
+                  style={{ fontWeight: 500 }}
+                >
                   {" "}
-                  Kategoriler{" "}
-                </Text>{" "}
-                <ScrollArea h={220}>
+                  Temizle{" "}
+                </Button>
+              )}{" "}
+            </Group>{" "}
+            <Select
+              label="Sırala"
+              placeholder="Sıralama seçin"
+              value={sortBy}
+            onChange={(value) => setSortBy((value as SortOption) || "default")}
+              data={[
+                { value: "default", label: "Varsayılan" },
+                { value: "price-asc", label: "Fiyat: Düşükten Yükseğe" },
+                { value: "price-desc", label: "Fiyat: Yüksekten Düşüğe" },
+                { value: "name-asc", label: "İsme Göre (A-Z)" },
+              ]}
+              style={{ minWidth: 220 }}
+              styles={{
+                label: {
+                  fontWeight: 600,
+                  fontSize: "12px",
+                  letterSpacing: "0.05em",
+                  marginBottom: 8,
+                },
+              }}
+            />{" "}
+          </Flex>{" "}
+          {showFilters && (
+            <Box
+              mt="xl"
+              pt="xl"
+              style={{
+                borderTop: "1px solid #e9ecef",
+                animation: "fadeIn 0.3s ease",
+              }}
+            >
+              {" "}
+              <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
+                {" "}
+                <Stack gap="md">
                   {" "}
-                  <Chip.Group
-                    multiple
-                    value={selectedCategories}
-                    onChange={setSelectedCategories}
-                  >
+                  <Text fw={600} size="sm" c="dark">
                     {" "}
-                    <Stack gap="xs">
+                    Kategoriler{" "}
+                  </Text>{" "}
+                  <ScrollArea h={220}>
+                    {" "}
+                    <Chip.Group
+                      multiple
+                      value={selectedCategories}
+                      onChange={setSelectedCategories}
+                    >
                       {" "}
-                      {categories.map((category) => (
-                        <Group
-                          key={category.name}
-                          justify="space-between"
-                          p="xs"
-                          style={{
-                            borderRadius: "6px",
-                            transition: "background-color 0.2s",
-                            cursor: "pointer",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#f8f9fa";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "transparent";
-                          }}
-                        >
-                          {" "}
-                          <Chip
-                            value={category.name}
-                            size="sm"
-                            styles={{
-                              label: { fontWeight: 500, padding: "6px 12px" },
+                      <Stack gap="xs">
+                        {" "}
+                        {categories.map((category) => (
+                          <Group
+                            key={category.name}
+                            justify="space-between"
+                            p="xs"
+                            style={{
+                              borderRadius: "6px",
+                              transition: "background-color 0.2s",
+                              cursor: "pointer",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f8f9fa";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                "transparent";
                             }}
                           >
                             {" "}
-                            {category.name}{" "}
-                          </Chip>{" "}
-                          <Badge
-                            size="sm"
-                            variant="light"
-                            color="gray"
-                            style={{ fontWeight: 600 }}
-                          >
-                            {" "}
-                            {category.product_count}{" "}
-                          </Badge>{" "}
-                        </Group>
-                      ))}{" "}
-                    </Stack>{" "}
-                  </Chip.Group>{" "}
-                </ScrollArea>{" "}
-              </Stack>{" "}
-              <Stack gap="md">
-                {" "}
-                <Text fw={600} size="sm" c="dark">
+                            <Chip
+                              value={category.name}
+                              size="sm"
+                              styles={{
+                                label: { fontWeight: 500, padding: "6px 12px" },
+                              }}
+                            >
+                              {" "}
+                              {category.name}{" "}
+                            </Chip>{" "}
+                            <Badge
+                              size="sm"
+                              variant="light"
+                              color="gray"
+                              style={{ fontWeight: 600 }}
+                            >
+                              {" "}
+                              {category.product_count}{" "}
+                            </Badge>{" "}
+                          </Group>
+                        ))}{" "}
+                      </Stack>{" "}
+                    </Chip.Group>{" "}
+                  </ScrollArea>{" "}
+                </Stack>{" "}
+                <Stack gap="md">
                   {" "}
-                  Fiyat Aralığı{" "}
-                </Text>{" "}
-                <Group gap="md" grow>
-                  {" "}
-                  <NumberInput
-                    label="Minimum"
-                    value={priceRange[0]}
-                    onChange={(value) =>
-                      setPriceRange([Number(value) || 0, priceRange[1]])
-                    }
-                    min={0}
-                    max={maxPrice}
-                    step={50}
-                    suffix=" TL"
-                    styles={{
-                      label: {
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        marginBottom: 6,
-                      },
-                      input: { fontWeight: 500 },
-                    }}
-                  />{" "}
-                  <NumberInput
-                    label="Maksimum"
-                    value={priceRange[1]}
-                    onChange={(value) =>
+                  <Text fw={600} size="sm" c="dark">
+                    {" "}
+                    Fiyat Aralığı{" "}
+                  </Text>{" "}
+                  <Group gap="md" grow>
+                    {" "}
+                    <NumberInput
+                      label="Minimum"
+                      value={priceRange[0]}
+                      onChange={(value) =>
+                        setPriceRange([Number(value) || 0, priceRange[1]])
+                      }
+                      min={0}
+                      max={maxPrice}
+                      step={50}
+                      suffix=" TL"
+                      styles={{
+                        label: {
+                          fontWeight: 500,
+                          fontSize: "12px",
+                          marginBottom: 6,
+                        },
+                        input: { fontWeight: 500 },
+                      }}
+                    />{" "}
+                    <NumberInput
+                      label="Maksimum"
+                      value={priceRange[1]}
+                      onChange={(value) =>
                       setPriceRange([priceRange[0], Number(value) || maxPrice])
-                    }
-                    min={0}
-                    max={maxPrice}
-                    step={50}
-                    suffix=" TL"
-                    styles={{
-                      label: {
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        marginBottom: 6,
-                      },
-                      input: { fontWeight: 500 },
-                    }}
-                  />{" "}
-                </Group>{" "}
-              </Stack>{" "}
-            </SimpleGrid>{" "}
-          </Box>
-        )}{" "}
+                      }
+                      min={0}
+                      max={maxPrice}
+                      step={50}
+                      suffix=" TL"
+                      styles={{
+                        label: {
+                          fontWeight: 500,
+                          fontSize: "12px",
+                          marginBottom: 6,
+                        },
+                        input: { fontWeight: 500 },
+                      }}
+                    />{" "}
+                  </Group>{" "}
+                </Stack>{" "}
+              </SimpleGrid>{" "}
+            </Box>
+          )}{" "}
       </Paper>
       {loading && <LoadingState message="Ürünler yükleniyor..." />}
-      {!loading && filteredAndSortedProducts.length === 0 && (
+        {!loading && filteredAndSortedProducts.length === 0 && (
         <EmptyState
           message="Filtrelere uygun ürün bulunamadı"
           actionLabel={hasActiveFilters ? "Filtreleri Temizle" : undefined}
@@ -423,15 +423,15 @@ const Store = () => {
           py={80}
         />
       )}
-      {!loading && filteredAndSortedProducts.length > 0 && (
-        <SimpleGrid
-          cols={{ base: 1, xs: 2, sm: 2, md: 3, lg: 4 }}
-          spacing={{ base: 24, sm: 28, md: 36 }}
-        >
-          {filteredAndSortedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+        {!loading && filteredAndSortedProducts.length > 0 && (
+          <SimpleGrid
+            cols={{ base: 1, xs: 2, sm: 2, md: 3, lg: 4 }}
+            spacing={{ base: 24, sm: 28, md: 36 }}
+          >
+            {filteredAndSortedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
           ))}
-        </SimpleGrid>
+          </SimpleGrid>
       )}
     </PageLayout>
   );

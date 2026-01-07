@@ -39,7 +39,7 @@ const Favorites = () => {
         mb={50}
       />
 
-      {favoriteProducts.length === 0 ? (
+        {favoriteProducts.length === 0 ? (
         <EmptyState
           message="Henüz favori ürününüz yok"
           description="Beğendiğiniz ürünleri favorilerinize ekleyebilirsiniz"
@@ -50,13 +50,13 @@ const Favorites = () => {
             />
           }
         />
-      ) : (
+        ) : (
         <SimpleGrid cols={{ base: 1, xs: 2, sm: 2, md: 3, lg: 4 }} spacing="lg">
-          {favoriteProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </SimpleGrid>
-      )}
+            {favoriteProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </SimpleGrid>
+        )}
     </PageLayout>
   );
 };

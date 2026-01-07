@@ -25,7 +25,6 @@ function App() {
   const { fetchCart } = useCart();
   const { isAuthenticated } = useAuth();
 
-  // Uygulama yüklendiğinde veya sayfa yenilendiğinde sepeti yükle
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();

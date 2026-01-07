@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { Box, ActionIcon, Group, Image, rem, Center, Text as MantineText } from "@mantine/core";
+import {
+  Box,
+  ActionIcon,
+  Group,
+  Image,
+  rem,
+  Center,
+  Text as MantineText,
+} from "@mantine/core";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getImageUrl } from "../../utils/imageUrl";
@@ -64,9 +72,9 @@ const ImageSlider = ({
 
   if (!images?.length) {
     return (
-      <Center 
-        bg="gray.1" 
-        w="100%" 
+      <Center
+        bg="gray.1"
+        w="100%"
         style={{ aspectRatio: size === "small" ? "3/4" : "16/9" }}
       >
         <MantineText c="dimmed">No Image</MantineText>
@@ -87,7 +95,6 @@ const ImageSlider = ({
     opacity: showButtonsOnHover ? (isHovered ? 1 : 0) : 1,
     transition: "all 0.2s ease",
     cursor: "pointer",
-    // Tıklanmış/Odaklanmış kalmayı engelleyen kritik kurallar
     outline: "none",
     "&:focus, &:focus-visible, &:active": {
       outline: "none",
@@ -104,7 +111,10 @@ const ImageSlider = ({
     <Box
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onTouchStart={(e) => { setTouchEnd(null); setTouchStart(e.targetTouches[0].clientX); }}
+      onTouchStart={(e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+      }}
       onTouchMove={(e) => setTouchEnd(e.targetTouches[0].clientX)}
       onTouchEnd={() => {
         if (!touchStart || !touchEnd) return;
@@ -125,7 +135,10 @@ const ImageSlider = ({
           <ActionIcon
             radius="xl"
             size={buttonSize}
-            onClick={(e) => { e.stopPropagation(); handlePreviousImage(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePreviousImage();
+            }}
             style={{
               ...actionButtonStyles,
               position: "absolute",
@@ -140,7 +153,10 @@ const ImageSlider = ({
           <ActionIcon
             radius="xl"
             size={buttonSize}
-            onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextImage();
+            }}
             style={{
               ...actionButtonStyles,
               position: "absolute",
@@ -203,10 +219,16 @@ const ImageSlider = ({
               key={index}
               onClick={() => setSelectedImage(index)}
               style={{
-                width: selectedImage === index ? (size === "small" ? rem(16) : rem(24)) : rem(6),
+                width:
+                  selectedImage === index
+                    ? size === "small"
+                      ? rem(16)
+                      : rem(24)
+                    : rem(6),
                 height: rem(6),
                 borderRadius: rem(3),
-                backgroundColor: selectedImage === index ? "black" : "rgba(255,255,255,0.5)",
+                backgroundColor:
+                  selectedImage === index ? "black" : "rgba(255,255,255,0.5)",
                 cursor: "pointer",
                 transition: "all 0.3s",
               }}

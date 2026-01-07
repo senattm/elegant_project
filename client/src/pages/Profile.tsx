@@ -69,9 +69,6 @@ const Profile = () => {
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [paymentMethodModalOpened, setPaymentMethodModalOpened] =
     useState(false);
-  const [editingPaymentMethod, setEditingPaymentMethod] = useState<any | null>(
-    null
-  );
   const [paymentMethodForm, setPaymentMethodForm] = useState({
     cardNumber: "",
     cardHolderName: "",
@@ -309,14 +306,12 @@ const Profile = () => {
 
   const openPaymentMethodModal = (paymentMethod?: any) => {
     if (paymentMethod) {
-      setEditingPaymentMethod(paymentMethod);
       setPaymentMethodForm({
         cardNumber: `**** **** **** ${paymentMethod.card_last4}`,
         cardHolderName: paymentMethod.card_holder,
         expiryDate: "",
       });
     } else {
-      setEditingPaymentMethod(null);
       setPaymentMethodForm({
         cardNumber: "",
         cardHolderName: "",

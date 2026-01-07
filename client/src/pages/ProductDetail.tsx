@@ -117,9 +117,7 @@ const ProductDetail = () => {
                     <UnstyledButton
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      onMouseEnter={(e) => {
-                        // Hover'da otomatik geçiş yapma, sadece tıklamada geçiş yap
-                      }}
+                      onMouseEnter={() => {}}
                       style={{
                         border:
                           selectedImage === index

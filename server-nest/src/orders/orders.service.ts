@@ -89,7 +89,6 @@ export class OrdersService {
       const hasUsedDiscount = userResult.rows[0].first_order_discount_used;
       const orderCount = parseInt(userResult.rows[0].order_count, 10);
 
-      // İlk sipariş indirimi: flag kullanılmamış VE sipariş sayısı 0
       const isFirstOrder = !hasUsedDiscount && orderCount === 0;
       const discountAmount = isFirstOrder ? totalAmount * 0.1 : 0;
       const finalAmount = totalAmount - discountAmount;
@@ -253,7 +252,6 @@ export class OrdersService {
     const hasUsedDiscount = result.rows[0].first_order_discount_used;
     const orderCount = parseInt(result.rows[0].order_count, 10);
 
-    // İlk sipariş: hem flag kullanılmamış hem de sipariş sayısı 0
     const isFirstOrder = !hasUsedDiscount && orderCount === 0;
 
     return {

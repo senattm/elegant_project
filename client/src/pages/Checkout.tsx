@@ -13,6 +13,7 @@ import {
   Flex,
   Select,
   Title,
+  Checkbox,
 } from "@mantine/core";
 import {
   IconCreditCard,
@@ -30,7 +31,7 @@ import { useCart, useOrders } from "../store/hooks";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom, tokenAtom } from "../store/atoms";
 import { useEffect, useState } from "react";
-import { addressesApi } from "../api/client";
+import { addressesApi, paymentMethodsApi } from "../api/client";
 import type { Address } from "../types";
 
 interface PaymentData {
@@ -38,6 +39,14 @@ interface PaymentData {
   cardHolderName: string;
   expiryDate: string;
   cvv: string;
+}
+
+interface PaymentMethod {
+  id: number;
+  card_holder: string;
+  card_last4: string;
+  provider: string;
+  created_at: string;
 }
 
 interface AddressData {
@@ -70,6 +79,15 @@ const Checkout = () => {
   );
   const [useNewAddress, setUseNewAddress] = useState(false);
 
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState<
+    PaymentMethod[]
+  >([]);
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<
+    string | null
+  >(null);
+  const [useNewPaymentMethod, setUseNewPaymentMethod] = useState(false);
+  const [savePaymentMethod, setSavePaymentMethod] = useState(false);
+
   const [addressData, setAddressData] = useState<AddressData>({
     title: "",
     fullName: "",
@@ -88,8 +106,17 @@ const Checkout = () => {
       return;
     }
 
+    setPaymentData({
+      cardNumber: "",
+      cardHolderName: "",
+      expiryDate: "",
+      cvv: "",
+    });
+    setSavePaymentMethod(false);
+
     fetchCart();
     loadSavedAddresses();
+    loadSavedPaymentMethods();
   }, [isAuthenticated]);
 
   const loadSavedAddresses = async () => {
@@ -102,6 +129,32 @@ const Checkout = () => {
       }
     } catch (error) {
       console.error("Adresler yüklenemedi:", error);
+    }
+  };
+
+  const loadSavedPaymentMethods = async () => {
+    if (!token) return;
+    try {
+      const response = await paymentMethodsApi.getAll(token);
+      setSavedPaymentMethods(response.data);
+      if (
+        response.data.length > 0 &&
+        !selectedPaymentMethodId &&
+        !useNewPaymentMethod
+      ) {
+        setSelectedPaymentMethodId(response.data[0].id.toString());
+        const selectedMethod = response.data[0];
+        setPaymentData((prev) => ({
+          ...prev,
+          cardNumber: `000000000000${selectedMethod.card_last4}`,
+          cardHolderName: selectedMethod.card_holder,
+          expiryDate: "12/25",
+          cvv: "",
+        }));
+        setSavePaymentMethod(false);
+      }
+    } catch (error) {
+      console.error("Kartlar yüklenemedi:", error);
     }
   };
 
@@ -201,16 +254,21 @@ const Checkout = () => {
       }
     }
 
-    if (paymentData.cardNumber.length !== 16) {
-      newErrors.cardNumber = "Kart numarası 16 haneli olmalıdır";
-    }
+    if (useNewPaymentMethod || !selectedPaymentMethodId) {
+      if (paymentData.cardNumber.length !== 16) {
+        newErrors.cardNumber = "Kart numarası 16 haneli olmalıdır";
+      }
 
-    if (!paymentData.cardHolderName || paymentData.cardHolderName.length < 3) {
-      newErrors.cardHolderName = "Kart sahibi adı en az 3 karakter olmalıdır";
-    }
+      if (
+        !paymentData.cardHolderName ||
+        paymentData.cardHolderName.length < 3
+      ) {
+        newErrors.cardHolderName = "Kart sahibi adı en az 3 karakter olmalıdır";
+      }
 
-    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentData.expiryDate)) {
-      newErrors.expiryDate = "Geçerli bir tarih girin (AA/YY)";
+      if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentData.expiryDate)) {
+        newErrors.expiryDate = "Geçerli bir tarih girin (AA/YY)";
+      }
     }
 
     if (paymentData.cvv.length < 3 || paymentData.cvv.length > 4) {
@@ -239,7 +297,38 @@ const Checkout = () => {
         addressId = parseInt(selectedAddressId);
       }
 
-      await createOrder(cart, paymentData, addressId);
+      let finalPaymentData = paymentData;
+
+      if (useNewPaymentMethod || !selectedPaymentMethodId) {
+        if (savePaymentMethod) {
+          if (!token) {
+            console.error("Token bulunamadı");
+            return;
+          }
+          await paymentMethodsApi.create(
+            {
+              cardNumber: paymentData.cardNumber,
+              cardHolderName: paymentData.cardHolderName,
+              expiryDate: paymentData.expiryDate,
+            },
+            token
+          );
+        }
+      } else {
+        const selectedMethod = savedPaymentMethods.find(
+          (m) => m.id.toString() === selectedPaymentMethodId
+        );
+        if (selectedMethod) {
+          finalPaymentData = {
+            cardNumber: `000000000000${selectedMethod.card_last4}`,
+            cardHolderName: selectedMethod.card_holder,
+            expiryDate: paymentData.expiryDate,
+            cvv: paymentData.cvv,
+          };
+        }
+      }
+
+      await createOrder(cart, finalPaymentData, addressId);
       await clearCart();
       navigate("/orders");
     } catch (error) {
@@ -412,68 +501,150 @@ const Checkout = () => {
                   Kart Bilgileri
                 </Text>
                 <Stack gap="md">
-                  <TextInput
-                    label="Kart Numarası"
-                    placeholder="1234 5678 9012 3456"
-                    leftSection={<IconCreditCard size={18} />}
-                    value={paymentData.cardNumber}
-                    onChange={(e) =>
-                      setPaymentData({
-                        ...paymentData,
-                        cardNumber: formatCardNumber(e.target.value),
-                      })
-                    }
-                    error={errors.cardNumber}
-                    required
-                  />
+                  {savedPaymentMethods.length > 0 && !useNewPaymentMethod ? (
+                    <>
+                      <Select
+                        label="Kayıtlı Kartlarım"
+                        placeholder="Kart seçin"
+                        data={savedPaymentMethods.map((method) => ({
+                          value: method.id.toString(),
+                          label: `**** **** **** ${method.card_last4} - ${method.card_holder}`,
+                        }))}
+                        value={selectedPaymentMethodId}
+                        onChange={(value) => {
+                          setSelectedPaymentMethodId(value);
+                          if (value) {
+                            const selectedMethod = savedPaymentMethods.find(
+                              (m) => m.id.toString() === value
+                            );
+                            if (selectedMethod) {
+                              setPaymentData({
+                                cardNumber: `000000000000${selectedMethod.card_last4}`,
+                                cardHolderName: selectedMethod.card_holder,
+                                expiryDate: "12/25",
+                                cvv: "",
+                              });
+                            }
+                          }
+                        }}
+                      />
+                      <TextInput
+                        label="CVV"
+                        placeholder="123"
+                        type="password"
+                        leftSection={<IconLock size={18} />}
+                        value={paymentData.cvv}
+                        onChange={(e) =>
+                          setPaymentData({
+                            ...paymentData,
+                            cvv: formatCVV(e.target.value),
+                          })
+                        }
+                        error={errors.cvv}
+                        required
+                      />
+                      <Button
+                        variant="subtle"
+                        size="sm"
+                        onClick={() => {
+                          setUseNewPaymentMethod(true);
+                          setPaymentData({
+                            cardNumber: "",
+                            cardHolderName: "",
+                            expiryDate: "",
+                            cvv: "",
+                          });
+                          setSavePaymentMethod(false);
+                        }}
+                      >
+                        Yeni Kart Ekle
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {savedPaymentMethods.length > 0 && (
+                        <Button
+                          variant="subtle"
+                          size="sm"
+                          onClick={() => setUseNewPaymentMethod(false)}
+                          mb="md"
+                        >
+                          Kayıtlı Kartlarıma Dön
+                        </Button>
+                      )}
+                      <TextInput
+                        label="Kart Numarası"
+                        placeholder="1234 5678 9012 3456"
+                        leftSection={<IconCreditCard size={18} />}
+                        value={paymentData.cardNumber}
+                        onChange={(e) =>
+                          setPaymentData({
+                            ...paymentData,
+                            cardNumber: formatCardNumber(e.target.value),
+                          })
+                        }
+                        error={errors.cardNumber}
+                        required
+                      />
 
-                  <TextInput
-                    label="Kart Sahibi"
-                    placeholder="AHMET YILMAZ"
-                    leftSection={<IconUser size={18} />}
-                    value={paymentData.cardHolderName}
-                    onChange={(e) =>
-                      setPaymentData({
-                        ...paymentData,
-                        cardHolderName: e.target.value.toUpperCase(),
-                      })
-                    }
-                    error={errors.cardHolderName}
-                    required
-                  />
+                      <TextInput
+                        label="Kart Sahibi"
+                        placeholder="AHMET YILMAZ"
+                        leftSection={<IconUser size={18} />}
+                        value={paymentData.cardHolderName}
+                        onChange={(e) =>
+                          setPaymentData({
+                            ...paymentData,
+                            cardHolderName: e.target.value.toUpperCase(),
+                          })
+                        }
+                        error={errors.cardHolderName}
+                        required
+                      />
 
-                  <Group grow>
-                    <TextInput
-                      label="Son Kullanma Tarihi"
-                      placeholder="MM/YY"
-                      leftSection={<IconCalendar size={18} />}
-                      value={paymentData.expiryDate}
-                      onChange={(e) =>
-                        setPaymentData({
-                          ...paymentData,
-                          expiryDate: formatExpiryDate(e.target.value),
-                        })
-                      }
-                      error={errors.expiryDate}
-                      required
-                    />
+                      <Group grow>
+                        <TextInput
+                          label="Son Kullanma Tarihi"
+                          placeholder="MM/YY"
+                          leftSection={<IconCalendar size={18} />}
+                          value={paymentData.expiryDate}
+                          onChange={(e) =>
+                            setPaymentData({
+                              ...paymentData,
+                              expiryDate: formatExpiryDate(e.target.value),
+                            })
+                          }
+                          error={errors.expiryDate}
+                          required
+                        />
 
-                    <TextInput
-                      label="CVV"
-                      placeholder="123"
-                      type="password"
-                      leftSection={<IconLock size={18} />}
-                      value={paymentData.cvv}
-                      onChange={(e) =>
-                        setPaymentData({
-                          ...paymentData,
-                          cvv: formatCVV(e.target.value),
-                        })
-                      }
-                      error={errors.cvv}
-                      required
-                    />
-                  </Group>
+                        <TextInput
+                          label="CVV"
+                          placeholder="123"
+                          type="password"
+                          leftSection={<IconLock size={18} />}
+                          value={paymentData.cvv}
+                          onChange={(e) =>
+                            setPaymentData({
+                              ...paymentData,
+                              cvv: formatCVV(e.target.value),
+                            })
+                          }
+                          error={errors.cvv}
+                          required
+                        />
+                      </Group>
+
+                      <Checkbox
+                        label="Bu kartı kaydet"
+                        checked={savePaymentMethod}
+                        onChange={(e) =>
+                          setSavePaymentMethod(e.currentTarget.checked)
+                        }
+                        mt="sm"
+                      />
+                    </>
+                  )}
                 </Stack>
               </Paper>
 

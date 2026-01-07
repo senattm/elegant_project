@@ -84,3 +84,20 @@ export const addressesApi = {
   delete: (id: number, token: string) =>
     api.delete(`/addresses/${id}`, getAuthHeader(token)),
 };
+
+export const paymentMethodsApi = {
+  getAll: (token: string) => api.get("/payment-methods", getAuthHeader(token)),
+  getById: (id: number, token: string) =>
+    api.get(`/payment-methods/${id}`, getAuthHeader(token)),
+  create: (
+    data: {
+      cardNumber: string;
+      cardHolderName: string;
+      expiryDate: string;
+      provider?: string;
+    },
+    token: string
+  ) => api.post("/payment-methods", data, getAuthHeader(token)),
+  delete: (id: number, token: string) =>
+    api.delete(`/payment-methods/${id}`, getAuthHeader(token)),
+};

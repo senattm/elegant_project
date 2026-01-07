@@ -26,10 +26,12 @@ import {
   IconPlus,
   IconEdit,
   IconTrash,
+  IconCreditCard,
+  IconCalendar,
 } from "@tabler/icons-react";
 import { useAtom } from "jotai";
 import { userAtom, tokenAtom } from "../store/atoms";
-import { authApi, addressesApi } from "../api/client";
+import { authApi, addressesApi, paymentMethodsApi } from "../api/client";
 import type { Address } from "../types";
 
 const Profile = () => {
@@ -63,6 +65,21 @@ const Profile = () => {
   const [addressLoading, setAddressLoading] = useState(false);
   const [addressSuccess, setAddressSuccess] = useState("");
   const [addressError, setAddressError] = useState("");
+
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [paymentMethodModalOpened, setPaymentMethodModalOpened] =
+    useState(false);
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<any | null>(
+    null
+  );
+  const [paymentMethodForm, setPaymentMethodForm] = useState({
+    cardNumber: "",
+    cardHolderName: "",
+    expiryDate: "",
+  });
+  const [paymentMethodLoading, setPaymentMethodLoading] = useState(false);
+  const [paymentMethodSuccess, setPaymentMethodSuccess] = useState("");
+  const [paymentMethodError, setPaymentMethodError] = useState("");
 
   const handleUpdateProfile = async () => {
     if (!name.trim()) {
@@ -149,7 +166,18 @@ const Profile = () => {
 
   useEffect(() => {
     fetchAddresses();
+    fetchPaymentMethods();
   }, [token]);
+
+  const fetchPaymentMethods = async () => {
+    if (!token) return;
+    try {
+      const response = await paymentMethodsApi.getAll(token);
+      setPaymentMethods(response.data);
+    } catch (error) {
+      console.error("Kartlar yüklenemedi:", error);
+    }
+  };
 
   const openAddressModal = (address?: Address) => {
     if (address) {
@@ -266,6 +294,105 @@ const Profile = () => {
     }
   };
 
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\D/g, "");
+    return cleaned.slice(0, 16);
+  };
+
+  const formatExpiryDate = (value: string) => {
+    const cleaned = value.replace(/\D/g, "");
+    if (cleaned.length >= 2) {
+      return cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4);
+    }
+    return cleaned;
+  };
+
+  const openPaymentMethodModal = (paymentMethod?: any) => {
+    if (paymentMethod) {
+      setEditingPaymentMethod(paymentMethod);
+      setPaymentMethodForm({
+        cardNumber: `**** **** **** ${paymentMethod.card_last4}`,
+        cardHolderName: paymentMethod.card_holder,
+        expiryDate: "",
+      });
+    } else {
+      setEditingPaymentMethod(null);
+      setPaymentMethodForm({
+        cardNumber: "",
+        cardHolderName: "",
+        expiryDate: "",
+      });
+    }
+    setPaymentMethodSuccess("");
+    setPaymentMethodError("");
+    setPaymentMethodModalOpened(true);
+  };
+
+  const handleSavePaymentMethod = async () => {
+    if (
+      !paymentMethodForm.cardNumber ||
+      paymentMethodForm.cardNumber.length !== 16
+    ) {
+      setPaymentMethodError("Kart numarası 16 haneli olmalıdır");
+      return;
+    }
+
+    if (
+      !paymentMethodForm.cardHolderName ||
+      paymentMethodForm.cardHolderName.length < 3
+    ) {
+      setPaymentMethodError("Kart sahibi adı en az 3 karakter olmalıdır");
+      return;
+    }
+
+    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentMethodForm.expiryDate)) {
+      setPaymentMethodError("Geçerli bir tarih girin (MM/YY)");
+      return;
+    }
+
+    if (!token) return;
+
+    try {
+      setPaymentMethodLoading(true);
+      setPaymentMethodError("");
+
+      await paymentMethodsApi.create(
+        {
+          cardNumber: paymentMethodForm.cardNumber,
+          cardHolderName: paymentMethodForm.cardHolderName,
+          expiryDate: paymentMethodForm.expiryDate,
+        },
+        token
+      );
+
+      setPaymentMethodSuccess("Kart eklendi");
+      await fetchPaymentMethods();
+      setPaymentMethodModalOpened(false);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        (Array.isArray(error.response?.data?.message)
+          ? error.response?.data?.message[0]
+          : "İşlem başarısız oldu");
+      setPaymentMethodError(errorMessage);
+    } finally {
+      setPaymentMethodLoading(false);
+    }
+  };
+
+  const handleDeletePaymentMethod = async (id: number) => {
+    if (!token) return;
+    if (!confirm("Bu kartı silmek istediğinizden emin misiniz?")) return;
+
+    try {
+      await paymentMethodsApi.delete(id, token);
+      await fetchPaymentMethods();
+      setPaymentMethodSuccess("Kart silindi");
+    } catch (error: any) {
+      setPaymentMethodError(error.response?.data?.message || "Kart silinemedi");
+    }
+  };
+
   return (
     <Container size="sm" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
       <Stack gap="xl">
@@ -347,6 +474,79 @@ const Profile = () => {
                   </Text>
                   <Text size="sm" c="dimmed">
                     {address.district} / {address.city}
+                  </Text>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+        </Paper>
+
+        <Paper shadow="none" p="xl" withBorder>
+          <Group justify="space-between" mb="md">
+            <Text fz={20} fw={500}>
+              Kayıtlı Kartlarım
+            </Text>
+            <Button
+              leftSection={<IconPlus size={18} />}
+              onClick={() => openPaymentMethodModal()}
+              size="sm"
+            >
+              Yeni Kart
+            </Button>
+          </Group>
+
+          {paymentMethodSuccess && (
+            <Alert
+              icon={<IconCheck size={16} />}
+              color="green"
+              title="Başarılı"
+              mb="md"
+            >
+              {paymentMethodSuccess}
+            </Alert>
+          )}
+
+          {paymentMethodError && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              color="red"
+              title="Hata"
+              mb="md"
+            >
+              {paymentMethodError}
+            </Alert>
+          )}
+
+          {paymentMethods.length === 0 ? (
+            <Text c="dimmed" ta="center" py="xl">
+              Henüz kayıtlı kart yok
+            </Text>
+          ) : (
+            <Stack gap="md">
+              {paymentMethods.map((method) => (
+                <Paper key={method.id} p="md" withBorder>
+                  <Group justify="space-between" mb="xs">
+                    <Group gap="xs">
+                      <IconCreditCard size={18} />
+                      <Badge size="sm">
+                        {method.provider || "CREDIT_CARD"}
+                      </Badge>
+                    </Group>
+                    <Group gap="xs">
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        onClick={() => handleDeletePaymentMethod(method.id)}
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Group>
+                  </Group>
+                  <Text size="sm" fw={500}>
+                    **** **** **** {method.card_last4}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {method.card_holder}
                   </Text>
                 </Paper>
               ))}
@@ -561,6 +761,81 @@ const Profile = () => {
             </Button>
             <Button onClick={handleSaveAddress} loading={addressLoading}>
               {editingAddress ? "Güncelle" : "Ekle"}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={paymentMethodModalOpened}
+        onClose={() => setPaymentMethodModalOpened(false)}
+        title="Yeni Kart Ekle"
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Kart Numarası"
+            placeholder="1234 5678 9012 3456"
+            leftSection={<IconCreditCard size={18} />}
+            value={paymentMethodForm.cardNumber}
+            onChange={(e) =>
+              setPaymentMethodForm({
+                ...paymentMethodForm,
+                cardNumber: formatCardNumber(e.target.value),
+              })
+            }
+            required
+          />
+
+          <TextInput
+            label="Kart Sahibi"
+            placeholder="AHMET YILMAZ"
+            leftSection={<IconUser size={18} />}
+            value={paymentMethodForm.cardHolderName}
+            onChange={(e) =>
+              setPaymentMethodForm({
+                ...paymentMethodForm,
+                cardHolderName: e.target.value.toUpperCase(),
+              })
+            }
+            required
+          />
+
+          <TextInput
+            label="Son Kullanma Tarihi"
+            placeholder="MM/YY"
+            leftSection={<IconCalendar size={18} />}
+            value={paymentMethodForm.expiryDate}
+            onChange={(e) =>
+              setPaymentMethodForm({
+                ...paymentMethodForm,
+                expiryDate: formatExpiryDate(e.target.value),
+              })
+            }
+            required
+          />
+
+          {paymentMethodError && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              color="red"
+              title="Hata"
+            >
+              {paymentMethodError}
+            </Alert>
+          )}
+
+          <Group justify="flex-end" mt="md">
+            <Button
+              variant="outline"
+              onClick={() => setPaymentMethodModalOpened(false)}
+            >
+              İptal
+            </Button>
+            <Button
+              onClick={handleSavePaymentMethod}
+              loading={paymentMethodLoading}
+            >
+              Ekle
             </Button>
           </Group>
         </Stack>

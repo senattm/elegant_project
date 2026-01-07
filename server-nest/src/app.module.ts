@@ -10,6 +10,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { OrdersModule } from './orders/orders.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { PaymentModule } from './payment/payment.module';
+import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PaymentModule } from './payment/payment.module';
     OrdersModule,
     AddressesModule,
     PaymentModule,
+    PaymentMethodsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

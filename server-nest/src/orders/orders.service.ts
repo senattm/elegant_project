@@ -94,12 +94,6 @@ export class OrdersService {
       const discountAmount = isFirstOrder ? totalAmount * 0.1 : 0;
       const finalAmount = totalAmount - discountAmount;
 
-      await client.query(
-        `INSERT INTO payment_methods (user_id, card_holder, card_last4, provider) 
-         VALUES ($1, $2, $3, $4)`,
-        [userId, cardHolderName, cardLast4, 'CREDIT_CARD'],
-      );
-
       const orderNumber = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
       const orderResult = await client.query(

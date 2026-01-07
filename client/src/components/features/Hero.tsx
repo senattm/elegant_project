@@ -44,15 +44,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.4 }}
-          >
-            <Text
-              size="xl"
-              c="white"
-              mb={40}
-              style={{ letterSpacing: "0.05em" }}
-            >
-              İkonik parçalar, unutulmaz anlar
-            </Text>
+          >    
           </motion.div>
 
           <motion.div

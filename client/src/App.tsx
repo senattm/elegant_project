@@ -16,6 +16,7 @@ import ProductDetail from "./pages/ProductDetail";
 import Profile from "./pages/Profile";
 import Footer from "./components/layout/Footer";
 import Navbar from "./components/layout/Navbar";
+import Chatbot from "./components/ui/Chatbot";
 import { useCart } from "./store/hooks/useCart";
 import { useAuth } from "./store/hooks";
 import "./App.css";
@@ -127,6 +128,7 @@ function App() {
           }
         />
       </Routes>
+      <Chatbot />
     </MantineProvider>
   );
 }

@@ -13,7 +13,6 @@ import {
   ActionIcon,
 } from "@mantine/core";
 import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useCart, useFavorites } from "../store/hooks";
 import type { Product } from "../types";
 import axios from "axios";
@@ -22,6 +21,7 @@ import BackButton from "../components/ui/BackButton";
 import QuantitySelector from "../components/ui/QuantitySelector";
 import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
+import ImageSlider from "../components/ui/ImageSlider";
 import { getImageUrl } from "../utils/imageUrl";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -55,9 +55,9 @@ const ProductDetail = () => {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -117,6 +117,9 @@ const ProductDetail = () => {
                     <UnstyledButton
                       key={index}
                       onClick={() => setSelectedImage(index)}
+                      onMouseEnter={(e) => {
+                        // Hover'da otomatik geçiş yapma, sadece tıklamada geçiş yap
+                      }}
                       style={{
                         border:
                           selectedImage === index
@@ -131,6 +134,7 @@ const ProductDetail = () => {
                         justifyContent: "center",
                         backgroundColor: "#f5f5f5",
                         overflow: "hidden",
+                        cursor: "pointer",
                       }}
                     >
                       <Image
@@ -139,6 +143,7 @@ const ProductDetail = () => {
                         w={80}
                         h={80}
                         fit="contain"
+                        style={{ pointerEvents: "none" }}
                       />
                     </UnstyledButton>
                   ))}
@@ -154,53 +159,38 @@ const ProductDetail = () => {
                   alignItems: "flex-start",
                 }}
               >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={selectedImage}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                <Box style={{ position: "relative", width: "100%" }}>
+                  <ImageSlider
+                    images={images}
+                    size="large"
+                    showDots={images.length > 1}
+                    selectedImage={selectedImage}
+                    onImageChange={setSelectedImage}
+                  />
+                  <ActionIcon
+                    variant="filled"
+                    radius="xl"
+                    size="xl"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(product.id);
+                    }}
                     style={{
-                      position: "relative",
-                      display: "inline-block",
+                      position: "absolute",
+                      top: "20px",
+                      right: "20px",
+                      backgroundColor: "white",
+                      boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                      zIndex: 40,
                     }}
                   >
-                    <Image
-                      src={getImageUrl(images[selectedImage] || "")}
-                      alt={product.name}
-                      fit="contain"
-                      style={{
-                        maxWidth: "600px",
-                        maxHeight: "600px",
-                        width: "auto",
-                        height: "auto",
-                        objectFit: "contain",
-                      }}
-                    />
-
-                    <ActionIcon
-                      variant="filled"
-                      radius="xl"
-                      size="xl"
-                      onClick={() => toggleFavorite(product.id)}
-                      style={{
-                        position: "absolute",
-                        top: "20px",
-                        right: "20px",
-                        backgroundColor: "white",
-                        boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                        zIndex: 10,
-                      }}
-                    >
-                      {isProductFavorite ? (
-                        <IconHeartFilled size={24} color="red" />
-                      ) : (
-                        <IconHeart size={24} color="red" />
-                      )}
-                    </ActionIcon>
-                  </motion.div>
-                </AnimatePresence>
+                    {isProductFavorite ? (
+                      <IconHeartFilled size={24} color="red" />
+                    ) : (
+                      <IconHeart size={24} color="red" />
+                    )}
+                  </ActionIcon>
+                </Box>
               </Box>
             </Box>
           </Grid.Col>

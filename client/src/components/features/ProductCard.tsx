@@ -12,7 +12,7 @@ import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import { useFavorites, useCart } from "../../store/hooks";
 import type { Product } from "../../store/atoms";
-import { getImageUrl } from "../../utils/imageUrl";
+import ImageSlider from "../ui/ImageSlider";
 
 interface ProductCardProps {
   product: Product;
@@ -75,14 +75,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
   const images = product.images || [];
 
-  const currentImage = useMemo(() => {
-    if (isHovered && images[1]) return getImageUrl(images[1]);
-    if (images[0]) return getImageUrl(images[0]);
-    return "https://via.placeholder.com/400x600?text=No+Image";
-  }, [isHovered, images]);
-
-  const handleImageClick = (e: MouseEvent<HTMLImageElement>) => {
-    e.stopPropagation();
+  const handleImageClick = () => {
     navigate(`/product/${product.id}`);
   };
 
@@ -96,7 +89,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         setHoveredSize(null);
       }}
     >
-      <Box style={{ position: "relative", aspectRatio: "3/4" }}>
+      <Box style={{ position: "relative" }}>
         <ActionIcon
           variant="filled"
           radius="xl"
@@ -109,7 +102,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             position: "absolute",
             top: 12,
             right: 12,
-            zIndex: 10,
+            zIndex: 40,
           }}
           styles={{
             root: {
@@ -126,21 +119,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
           )}
         </ActionIcon>
 
-        <motion.img
-          key={currentImage}
-          src={currentImage}
-          alt={product.name}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          onClick={handleImageClick}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-            cursor: "pointer",
-          }}
+        <ImageSlider
+          images={images}
+          onImageClick={handleImageClick}
+          size="small"
+          showDots={images.length > 1}
+          showButtonsOnHover={true}
         />
 
         <motion.div

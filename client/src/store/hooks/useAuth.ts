@@ -1,5 +1,11 @@
 import { useAtom } from "jotai";
-import { userAtom, tokenAtom, isAuthenticatedAtom, favoritesAtom, cartAtom } from "../atoms";
+import {
+  userAtom,
+  tokenAtom,
+  isAuthenticatedAtom,
+  favoritesAtom,
+  cartAtom,
+} from "../atoms";
 import { useNotification } from "./useNotification";
 
 const API_BASE_URL =
@@ -36,8 +42,8 @@ export const useAuth = () => {
     const data = await response.json();
 
     if (!response.ok) {
-      const message = Array.isArray(data.message) 
-        ? data.message[0] 
+      const message = Array.isArray(data.message)
+        ? data.message[0]
         : data.message || data.error || "İşlem başarısız";
       throw new Error(message);
     }

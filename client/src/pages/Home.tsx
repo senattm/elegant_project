@@ -30,7 +30,7 @@ const Home = () => {
     Elbiseler: "kategori_elbise.png",
     "Ceketler & Kabanlar": "kategori_ceket.png",
     Ayakkabılar: "kategori_ayakkabı.png",
-    "Çantalar & Aksesuarlar": "kategori_canta.png",
+    "Çantalar & Aksesuarlar": "kategori_canta.jpg",
     "Bluzlar & Gömlekler": "kategori_gomlek.png",
     "Kazaklar & Hırkalar": "kategori_kazak.jpg",
     Pantolonlar: "kategori_pantolon.png",

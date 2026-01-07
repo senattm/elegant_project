@@ -72,7 +72,12 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
     >
       <Container size="xl" px="xl">
         <Group justify="space-between" align="center">
-          <UnstyledButton onClick={() => { navigate("/"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          <UnstyledButton
+            onClick={() => {
+              navigate("/");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
             <Text
               fz={{ base: rem(28), sm: rem(34), md: rem(45) }}
               fw={400}
@@ -93,7 +98,13 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                 key={item}
                 c={textColor}
                 fw={400}
-                onClick={() => item === "İletişim" ? document.querySelector("footer")?.scrollIntoView({ behavior: "smooth" }) : navigate(item === "Mağaza" ? "/store" : "/")}
+                onClick={() =>
+                  item === "İletişim"
+                    ? document
+                        .querySelector("footer")
+                        ?.scrollIntoView({ behavior: "smooth" })
+                    : navigate(item === "Mağaza" ? "/store" : "/")
+                }
                 style={{
                   textDecoration: "none",
                   fontSize: rem(20),
@@ -122,9 +133,11 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                 variant="unstyled"
                 styles={{
                   input: {
-                    backgroundColor: isDark ? "rgba(255,255,255,0.15)" : "#f1f3f5",
+                    backgroundColor: isDark
+                      ? "rgba(255,255,255,0.15)"
+                      : "#f1f3f5",
                     color: textColor,
-                    borderRadius: 0, // Arama kutusunu da kare yaptık (isteğe bağlı)
+                    borderRadius: 0,
                     paddingLeft: rem(40),
                     paddingRight: rem(15),
                     height: rem(45),
@@ -132,48 +145,123 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                 }}
               />
             ) : (
-              <ActionIcon variant="subtle" color={textColor} size="xl" onClick={() => setSearchOpen(true)}>
+              <ActionIcon
+                variant="subtle"
+                color={textColor}
+                size="xl"
+                onClick={() => setSearchOpen(true)}
+                style={{
+                  transition: "transform 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+              >
                 <IconSearch size={28} stroke={2} />
               </ActionIcon>
             )}
 
-            <Indicator 
-              label={favorites.length} 
-              disabled={favorites.length === 0} 
-              color="#e63946" 
-              size={16} 
-              offset={2}
-              styles={{ indicator: { fontSize: rem(9), fontWeight: 600, border: "none", borderRadius: 0 } }}
+            <Box
+              style={{
+                transition: "transform 0.2s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
             >
-              <ActionIcon variant="subtle" color={textColor} size="xl" onClick={() => navigate("/favorites")}>
-                <IconHeart size={28} stroke={2} />
-              </ActionIcon>
-            </Indicator>
+              <Indicator
+                label={favorites.length}
+                disabled={favorites.length === 0}
+                color="#e63946"
+                size={16}
+                offset={2}
+                styles={{
+                  indicator: {
+                    fontSize: rem(9),
+                    fontWeight: 600,
+                    border: "none",
+                  },
+                }}
+              >
+                <ActionIcon
+                  variant="subtle"
+                  color={textColor}
+                  size="xl"
+                  onClick={() => navigate("/favorites")}
+                >
+                  <IconHeart size={28} stroke={2} />
+                </ActionIcon>
+              </Indicator>
+            </Box>
 
-            <Indicator 
-              label={cartCount} 
-              disabled={cartCount === 0} 
-              color="#e63946" 
-              size={16} 
-              offset={2}
-              styles={{ indicator: { fontSize: rem(9), fontWeight: 600, border: "none", borderRadius: 0 } }}
+            <Box
+              style={{
+                transition: "transform 0.2s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
             >
-              <ActionIcon variant="subtle" color={textColor} size="xl" onClick={() => navigate("/cart")}>
-                <IconShoppingBag size={28} stroke={2} />
-              </ActionIcon>
-            </Indicator>
+              <Indicator
+                label={cartCount}
+                disabled={cartCount === 0}
+                color="#e63946"
+                size={16}
+                offset={2}
+                styles={{
+                  indicator: {
+                    fontSize: rem(9),
+                    fontWeight: 600,
+                    border: "none",
+                  },
+                }}
+              >
+                <ActionIcon
+                  variant="subtle"
+                  color={textColor}
+                  size="xl"
+                  onClick={() => navigate("/cart")}
+                >
+                  <IconShoppingBag size={28} stroke={2} />
+                </ActionIcon>
+              </Indicator>
+            </Box>
 
-            <Menu 
-              shadow="md" 
-              width={240} 
-              radius={0} // Menü dış çerçevesini kare yapar
-              styles={{ 
+            <Menu
+              shadow="md"
+              width={240}
+              radius={0}
+              styles={{
                 dropdown: { border: "none", borderRadius: 0 },
-                item: { borderRadius: 0 } // İçindeki öğelerin hover arka planını kare yapar
+                item: { borderRadius: 0 },
               }}
             >
               <Menu.Target>
-                <ActionIcon variant="subtle" color={textColor} size="xl">
+                <ActionIcon
+                  variant="subtle"
+                  color={textColor}
+                  size="xl"
+                  style={{
+                    transition: "transform 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
                   <IconUser size={28} stroke={2} />
                 </ActionIcon>
               </Menu.Target>
@@ -182,14 +270,33 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                 {isAuthenticated ? (
                   <>
                     <Menu.Label>{user?.name || user?.email}</Menu.Label>
-                    <Menu.Item leftSection={<IconUserCircle size={22} stroke={1.5} />} onClick={() => navigate("/profile")}>Profilim</Menu.Item>
-                    <Menu.Item leftSection={<IconPackage size={22} stroke={1.5} />} onClick={() => navigate("/orders")}>Siparişlerim</Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconUserCircle size={22} stroke={1.5} />}
+                      onClick={() => navigate("/profile")}
+                    >
+                      Profilim
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconPackage size={22} stroke={1.5} />}
+                      onClick={() => navigate("/orders")}
+                    >
+                      Siparişlerim
+                    </Menu.Item>
                     <Menu.Divider />
-                    <Menu.Item color="red" leftSection={<IconLogout size={22} stroke={1.5} />} onClick={() => { logout(); navigate("/"); }}>Çıkış Yap</Menu.Item>
+                    <Menu.Item
+                      color="red"
+                      leftSection={<IconLogout size={22} stroke={1.5} />}
+                      onClick={() => {
+                        logout();
+                        navigate("/");
+                      }}
+                    >
+                      Çıkış Yap
+                    </Menu.Item>
                   </>
                 ) : (
-                  <Menu.Item 
-                    leftSection={<IconUser size={22} stroke={2} />} 
+                  <Menu.Item
+                    leftSection={<IconUser size={22} stroke={2} />}
                     onClick={() => navigate("/auth")}
                   >
                     Giriş Yap

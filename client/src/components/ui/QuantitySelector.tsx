@@ -34,13 +34,23 @@ const QuantitySelector = ({
 
   return (
     <Group gap="sm">
-      <ActionIcon variant="subtle" onClick={handleDecrease} disabled={value <= min}>
+      <ActionIcon
+        variant="subtle"
+        onClick={handleDecrease}
+        disabled={value <= min}
+        style={{ color: "black" }}
+      >
         <IconMinus size={iconSize} />
       </ActionIcon>
       <Text w={width} ta="center" fz={textSize} fw={600}>
         {value}
       </Text>
-      <ActionIcon variant="subtle" onClick={handleIncrease} disabled={max ? value >= max : false}>
+      <ActionIcon
+        variant="subtle"
+        onClick={handleIncrease}
+        disabled={max ? value >= max : false}
+        style={{ color: "black" }}
+      >
         <IconPlus size={iconSize} />
       </ActionIcon>
     </Group>
@@ -48,4 +58,3 @@ const QuantitySelector = ({
 };
 
 export default QuantitySelector;
-

@@ -37,7 +37,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const isProductFavorite = isFavorite(product.id);
 
   const formattedPrice = useMemo(() => {
-    const price = typeof product.price === "number" ? product.price : parseFloat(product.price);
+    const price =
+      typeof product.price === "number"
+        ? product.price
+        : parseFloat(product.price);
     return price.toFixed(2);
   }, [product.price]);
 
@@ -114,8 +117,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                   key={size}
                   onMouseEnter={() => setHoveredSize(size)}
                   onMouseLeave={() => setHoveredSize(null)}
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => {
                     setSelectedSize(size);
                   }}
                   style={{
@@ -152,7 +154,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </motion.div>
       </Box>
 
-      <Box pt="xs" style={{ cursor: "pointer" }} onClick={() => navigate(`/product/${product.id}`)}>
+      <Box
+        pt="xs"
+        style={{ cursor: "pointer" }}
+        onClick={() => navigate(`/product/${product.id}`)}
+      >
         <MantineText size="sm" c="gray.7" mb={4} truncate="end">
           {product.name}
         </MantineText>

@@ -103,7 +103,7 @@ const Home = () => {
         </Container>
       </Box>
 
-      <Container size="xl" py={80} id="categories">
+      <Container size="xl" pt={80} pb={20} id="categories">
         <Box mb={60}>
           <Title
             order={2}
@@ -203,7 +203,7 @@ const Home = () => {
         )}
       </Container>
 
-      <Box bg="#f8f9fa" py={{ base: 60, md: 100 }}>
+      <Box bg="#f8f9fa" pt={20} pb={{ base: 60, md: 100 }}>
         <Container size="xl">
           <Box
             style={{

@@ -226,7 +226,20 @@ const Checkout = () => {
 
     setIsCreatingOrder(true);
     try {
-      await createOrder(cart, paymentData);
+      let addressId: number | undefined;
+
+      if (useNewAddress || !selectedAddressId) {
+        if (!token) {
+          console.error("Token bulunamadı");
+          return;
+        }
+        const newAddress = await addressesApi.create(addressData, token);
+        addressId = newAddress.data.id;
+      } else {
+        addressId = parseInt(selectedAddressId);
+      }
+
+      await createOrder(cart, paymentData, addressId);
       await clearCart();
       navigate("/orders");
     } catch (error) {

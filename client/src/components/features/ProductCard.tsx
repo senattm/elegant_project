@@ -2,11 +2,12 @@ import { useState, useMemo, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
-  Text,
+  Text as MantineText,
   UnstyledButton,
   Button,
   Group,
   ActionIcon,
+  rem,
 } from "@mantine/core";
 import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import { motion } from "framer-motion";
@@ -18,27 +19,12 @@ interface ProductCardProps {
   product: Product;
 }
 
-const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"];
-const SHOE_SIZES = ["36", "37", "38", "39", "40", "41"];
-const BAG_SIZES = ["STD"];
-
-const CATEGORY_IDS = {
-  SHOES: 7,
-  BAGS: 8,
+const CATEGORY_SIZES: Record<number, string[]> = {
+  7: ["36", "37", "38", "39", "40", "41"],
+  8: ["STD"],
 };
 
-
-const getSizesForCategory = (categoryId: number): string[] => {
-  if (categoryId === CATEGORY_IDS.BAGS) {
-    return BAG_SIZES;
-  }
-
-  if (categoryId === CATEGORY_IDS.SHOES) {
-    return SHOE_SIZES;
-  }
-
-  return CLOTHING_SIZES;
-};
+const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL"];
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
@@ -51,14 +37,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const isProductFavorite = isFavorite(product.id);
 
   const formattedPrice = useMemo(() => {
-    const price =
-      typeof product.price === "number"
-        ? product.price
-        : parseFloat(product.price);
+    const price = typeof product.price === "number" ? product.price : parseFloat(product.price);
     return price.toFixed(2);
   }, [product.price]);
 
-  const availableSizes = getSizesForCategory(product.category_id);
+  const availableSizes = CATEGORY_SIZES[product.category_id] || DEFAULT_SIZES;
 
   const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -68,130 +51,117 @@ const ProductCard = ({ product }: ProductCardProps) => {
     setIsHovered(false);
   };
 
-  const handleSizeClick = (size: string, e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    setSelectedSize(size);
-  };
-
-  const images = product.images || [];
-
-  const handleImageClick = () => {
-    navigate(`/product/${product.id}`);
-  };
-
   return (
     <Box
-      style={{ cursor: "pointer", position: "relative" }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
         setSelectedSize(null);
         setHoveredSize(null);
       }}
+      style={{ position: "relative" }}
     >
-      <Box style={{ position: "relative" }}>
+      <Box style={{ position: "relative", overflow: "hidden" }}>
         <ActionIcon
-          variant="filled"
           radius="xl"
-          size="lg"
+          size={40}
           onClick={(e) => {
             e.stopPropagation();
             toggleFavorite(product.id);
           }}
           style={{
             position: "absolute",
-            top: 12,
-            right: 12,
+            top: rem(12),
+            right: rem(12),
             zIndex: 40,
-          }}
-          styles={{
-            root: {
-              backgroundColor: "white",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              transition: "transform 0.2s ease",
-            },
+            backgroundColor: "white",
+            border: "none",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
         >
           {isProductFavorite ? (
             <IconHeartFilled size={22} color="red" />
           ) : (
-            <IconHeart size={22} color="red" />
+            <IconHeart size={22} color="red" stroke={2} />
           )}
         </ActionIcon>
 
         <ImageSlider
-          images={images}
-          onImageClick={handleImageClick}
+          images={product.images || []}
+          onImageClick={() => navigate(`/product/${product.id}`)}
           size="small"
-          showDots={images.length > 1}
+          showDots={false}
           showButtonsOnHover={true}
         />
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
           style={{
             position: "absolute",
             bottom: 0,
             left: 0,
             right: 0,
-            padding: "10px 16px",
-            backgroundColor: "rgba(255,255,255,0.96)",
+            padding: rem(12),
+            backgroundColor: "rgba(255,255,255,0.98)",
+            zIndex: 35,
           }}
         >
           {!selectedSize ? (
-            <Group justify="center" gap={14}>
-              {availableSizes.map((size) => {
-                const isActive = hoveredSize === size;
-                return (
-                  <UnstyledButton
-                    key={size}
-                    onMouseEnter={() => setHoveredSize(size)}
-                    onMouseLeave={() => setHoveredSize(null)}
-                    onClick={(e) => handleSizeClick(size, e)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      padding: "6px",
-                      fontSize: 14,
-                      cursor: "pointer",
-                      color: isActive ? "#000000" : "#b0b0b0",
-                      fontWeight: isActive ? 600 : 400,
-                    }}
-                  >
-                    {size}
-                  </UnstyledButton>
-                );
-              })}
+            <Group justify="center" gap="xs">
+              {availableSizes.map((size) => (
+                <UnstyledButton
+                  key={size}
+                  onMouseEnter={() => setHoveredSize(size)}
+                  onMouseLeave={() => setHoveredSize(null)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedSize(size);
+                  }}
+                  style={{
+                    fontSize: rem(13),
+                    fontWeight: hoveredSize === size ? 700 : 400,
+                    color: hoveredSize === size ? "black" : "#adb5bd",
+                    transition: "all 0.2s ease",
+                    padding: rem(4),
+                  }}
+                >
+                  {size}
+                </UnstyledButton>
+              ))}
             </Group>
           ) : (
-            <Button fullWidth size="sm" onClick={handleAddToCart}>
+            <Button
+              fullWidth
+              size="sm"
+              bg="black"
+              radius={0}
+              onClick={handleAddToCart}
+              styles={{
+                root: {
+                  height: rem(42),
+                  fontSize: rem(12),
+                  letterSpacing: rem(1),
+                  fontWeight: 600,
+                },
+              }}
+            >
               SEPETE EKLE ({selectedSize})
             </Button>
           )}
         </motion.div>
       </Box>
 
-      <Box pt={8} onClick={() => navigate(`/product/${product.id}`)}>
-        <Text
-          size="sm"
-          c="#666"
-          style={{
-            marginBottom: "4px",
-          }}
-        >
+      <Box pt="xs" style={{ cursor: "pointer" }} onClick={() => navigate(`/product/${product.id}`)}>
+        <MantineText size="sm" c="gray.7" mb={4} truncate="end">
           {product.name}
-        </Text>
-
-        <Text size="sm" fw={600} c="black">
+        </MantineText>
+        <MantineText size="md" fw={600} c="black">
           {formattedPrice} TL
-        </Text>
+        </MantineText>
       </Box>
     </Box>
   );
 };
 
 export default ProductCard;
-
-

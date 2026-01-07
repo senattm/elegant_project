@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { userAtom, tokenAtom, isAuthenticatedAtom } from "../atoms";
+import { userAtom, tokenAtom, isAuthenticatedAtom, favoritesAtom, cartAtom } from "../atoms";
 import { useNotification } from "./useNotification";
 
 const API_BASE_URL =
@@ -19,6 +19,8 @@ export const useAuth = () => {
   const [user, setUser] = useAtom(userAtom);
   const [token, setToken] = useAtom(tokenAtom);
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
+  const [, setFavorites] = useAtom(favoritesAtom);
+  const [, setCart] = useAtom(cartAtom);
   const { addNotification } = useNotification();
 
   const authRequest = async (
@@ -76,8 +78,11 @@ export const useAuth = () => {
   const logout = () => {
     setUser(null);
     setToken(null);
+    setFavorites([]);
+    setCart([]);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    localStorage.removeItem("favorites");
     addNotification("Çıkış yapıldı", "info");
   };
 

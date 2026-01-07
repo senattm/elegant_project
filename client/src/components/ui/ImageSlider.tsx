@@ -90,8 +90,8 @@ const ImageSlider = ({
     backgroundColor: "white",
     color: "black",
     zIndex: 30,
-    border: "none", // Kenarlığı tamamen kaldırdım
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)", // Hafif ve modern bir gölge
+    border: "none",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
     opacity: showButtonsOnHover ? (isHovered ? 1 : 0) : 1,
     transition: "all 0.2s ease",
     cursor: "pointer",

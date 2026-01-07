@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Box, ActionIcon } from "@mantine/core";
+import { Box, ActionIcon, Group, Image, rem, Center, Text as MantineText } from "@mantine/core";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getImageUrl } from "../../utils/imageUrl";
@@ -15,7 +15,7 @@ interface ImageSliderProps {
 }
 
 const ImageSlider = ({
-  images,
+  images = [],
   onImageClick,
   size = "large",
   showDots = true,
@@ -28,260 +28,173 @@ const ImageSlider = ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isHovered, setIsHovered] = useState(false);
 
-  // External selectedImage varsa onu kullan, yoksa internal state'i kullan
-  const selectedImage = externalSelectedImage !== undefined ? externalSelectedImage : internalSelectedImage;
-  
+  const selectedImage = externalSelectedImage ?? internalSelectedImage;
+
   const setSelectedImage = (index: number) => {
-    if (onImageChange) {
-      onImageChange(index);
-    } else {
-      setInternalSelectedImage(index);
-    }
-  };
-
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd || images.length === 0) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
-      const newIndex = (selectedImage + 1) % images.length;
-      setSelectedImage(newIndex);
-    }
-    if (isRightSwipe) {
-      const newIndex = (selectedImage - 1 + images.length) % images.length;
-      setSelectedImage(newIndex);
-    }
+    onImageChange ? onImageChange(index) : setInternalSelectedImage(index);
   };
 
   const handlePreviousImage = () => {
     if (images.length === 0) return;
-    const newIndex = (selectedImage - 1 + images.length) % images.length;
-    setSelectedImage(newIndex);
+    setSelectedImage((selectedImage - 1 + images.length) % images.length);
   };
 
   const handleNextImage = () => {
     if (images.length === 0) return;
-    const newIndex = (selectedImage + 1) % images.length;
-    setSelectedImage(newIndex);
+    setSelectedImage((selectedImage + 1) % images.length);
   };
 
-  // Images değiştiğinde selectedImage'i sıfırla veya geçerli aralığa getir
   useEffect(() => {
-    if (images && images.length > 0) {
-      if (selectedImage >= images.length) {
-        setSelectedImage(0);
-      }
-    } else {
+    if (images.length > 0 && selectedImage >= images.length) {
       setSelectedImage(0);
     }
-  }, [images]);
+  }, [images.length]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") {
-        handlePreviousImage();
-      } else if (e.key === "ArrowRight") {
-        handleNextImage();
-      }
+      if (e.key === "ArrowLeft") handlePreviousImage();
+      if (e.key === "ArrowRight") handleNextImage();
     };
 
     if (size === "large") {
       window.addEventListener("keydown", handleKeyPress);
       return () => window.removeEventListener("keydown", handleKeyPress);
     }
-  }, [images.length, size]);
+  }, [selectedImage, size, images.length]);
 
-  // Null/undefined kontrolü ve boş array kontrolü
-  if (!images || !Array.isArray(images) || images.length === 0) {
+  if (!images?.length) {
     return (
-      <Box
-        style={{
-          width: "100%",
-          aspectRatio: size === "small" ? "3/4" : "auto",
-          backgroundColor: "#f5f5f5",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+      <Center 
+        bg="gray.1" 
+        w="100%" 
+        style={{ aspectRatio: size === "small" ? "3/4" : "16/9" }}
       >
-        <span>No Image</span>
-      </Box>
+        <MantineText c="dimmed">No Image</MantineText>
+      </Center>
     );
   }
 
-  // selectedImage'in geçerli aralıkta olduğundan emin ol
-  const validSelectedImage = Math.max(0, Math.min(selectedImage, images.length - 1));
+  const validIndex = Math.max(0, Math.min(selectedImage, images.length - 1));
+  const buttonSize = size === "small" ? 32 : 40;
+  const buttonPos = size === "small" ? 8 : 12;
 
-  const buttonSize = size === "small" ? "28px" : "36px";
-  const iconSize = size === "small" ? 14 : 18;
-  const buttonPosition = size === "small" ? "6px" : "10px";
+  const actionButtonStyles = {
+    backgroundColor: "white",
+    color: "black",
+    zIndex: 30,
+    border: "none", // Kenarlığı tamamen kaldırdım
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)", // Hafif ve modern bir gölge
+    opacity: showButtonsOnHover ? (isHovered ? 1 : 0) : 1,
+    transition: "all 0.2s ease",
+    cursor: "pointer",
+    // Tıklanmış/Odaklanmış kalmayı engelleyen kritik kurallar
+    outline: "none",
+    "&:focus, &:focus-visible, &:active": {
+      outline: "none",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+      backgroundColor: "white",
+    },
+    "&:hover": {
+      backgroundColor: "#fafafa",
+      transform: "translateY(-50%) scale(1.05)",
+    },
+  };
 
   return (
     <Box
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={(e) => { setTouchEnd(null); setTouchStart(e.targetTouches[0].clientX); }}
+      onTouchMove={(e) => setTouchEnd(e.targetTouches[0].clientX)}
+      onTouchEnd={() => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        if (distance > 50) handleNextImage();
+        if (distance < -50) handlePreviousImage();
+      }}
       style={{
         position: "relative",
         width: "100%",
         aspectRatio: size === "small" ? "3/4" : "auto",
-        minHeight: size === "large" ? "400px" : "auto",
+        minHeight: size === "large" ? rem(400) : "auto",
         overflow: "hidden",
       }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {images.length > 1 && (
         <>
           <ActionIcon
-            variant="filled"
             radius="xl"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handlePreviousImage();
-            }}
-            onMouseDown={(e) => e.preventDefault()}
+            size={buttonSize}
+            onClick={(e) => { e.stopPropagation(); handlePreviousImage(); }}
             style={{
+              ...actionButtonStyles,
               position: "absolute",
-              left: buttonPosition,
+              left: rem(buttonPos),
               top: "50%",
               transform: "translateY(-50%)",
-              backgroundColor: "white",
-              color: "black",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
-              zIndex: 30,
-              cursor: "pointer",
-              width: buttonSize,
-              height: buttonSize,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: showButtonsOnHover ? (isHovered ? 1 : 0) : 1,
-              transition: "opacity 0.2s, transform 0.1s",
               pointerEvents: showButtonsOnHover && !isHovered ? "none" : "auto",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = "1";
-              e.currentTarget.style.transform = "translateY(-50%) scale(1.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = showButtonsOnHover ? (isHovered ? 1 : 0) : "1";
-              e.currentTarget.style.transform = "translateY(-50%) scale(1)";
-            }}
           >
-            <IconChevronLeft size={iconSize} stroke={2} />
+            <IconChevronLeft size={size === "small" ? 18 : 22} stroke={1.5} />
           </ActionIcon>
           <ActionIcon
-            variant="filled"
             radius="xl"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleNextImage();
-            }}
-            onMouseDown={(e) => e.preventDefault()}
+            size={buttonSize}
+            onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
             style={{
+              ...actionButtonStyles,
               position: "absolute",
-              right: buttonPosition,
+              right: rem(buttonPos),
               top: "50%",
               transform: "translateY(-50%)",
-              backgroundColor: "white",
-              color: "black",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
-              zIndex: 30,
-              cursor: "pointer",
-              width: buttonSize,
-              height: buttonSize,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: showButtonsOnHover ? (isHovered ? 1 : 0) : 1,
-              transition: "opacity 0.2s, transform 0.1s",
               pointerEvents: showButtonsOnHover && !isHovered ? "none" : "auto",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = "1";
-              e.currentTarget.style.transform = "translateY(-50%) scale(1.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = showButtonsOnHover ? (isHovered ? 1 : 0) : "1";
-              e.currentTarget.style.transform = "translateY(-50%) scale(1)";
-            }}
           >
-            <IconChevronRight size={iconSize} stroke={2} />
+            <IconChevronRight size={size === "small" ? 18 : 22} stroke={1.5} />
           </ActionIcon>
         </>
       )}
 
       <AnimatePresence mode="wait">
-        <motion.div
-          key={validSelectedImage}
-          initial={{ opacity: 0, x: size === "small" ? 10 : 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: size === "small" ? -10 : -20 }}
-          transition={{ duration: size === "small" ? 0.2 : 0.3 }}
+        <Box
+          component={motion.div}
+          key={validIndex}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onImageClick}
           style={{
-            position: "relative",
+            width: "100%",
+            height: "100%",
+            cursor: onImageClick ? "pointer" : "default",
             display: "flex",
             justifyContent: "center",
             alignItems: size === "small" ? "center" : "flex-start",
-            width: "100%",
-            height: "100%",
-            userSelect: "none",
-            cursor: onImageClick ? "pointer" : "default",
-          }}
-          onClick={(e) => {
-            if (onImageClick) {
-              e.stopPropagation();
-              onImageClick();
-            } else {
-              e.stopPropagation();
-            }
           }}
         >
-          <img
-            src={getImageUrl(images[validSelectedImage] || "")}
+          <Image
+            src={getImageUrl(images[validIndex] || "")}
             alt="Product"
+            w={size === "small" ? "100%" : "auto"}
+            h={size === "small" ? "100%" : "auto"}
+            fit={size === "small" ? "cover" : "contain"}
             style={{
-              width: size === "small" ? "100%" : "auto",
-              height: size === "small" ? "100%" : "auto",
-              maxWidth: size === "large" ? "600px" : "100%",
-              maxHeight: size === "large" ? "600px" : "100%",
-              objectFit: size === "small" ? "cover" : "contain",
-              display: "block",
+              maxWidth: size === "large" ? rem(600) : "100%",
+              maxHeight: size === "large" ? rem(600) : "100%",
             }}
-            onError={(e) => {
-              console.error("Görsel yüklenemedi:", getImageUrl(images[validSelectedImage] || ""));
-              e.currentTarget.src = "https://via.placeholder.com/400x600?text=Görsel+Yüklenemedi";
-            }}
+            fallbackSrc="https://via.placeholder.com/400x600?text=Gorsel+Yok"
           />
-        </motion.div>
+        </Box>
       </AnimatePresence>
 
       {images.length > 1 && showDots && (
-        <Box
+        <Group
+          gap={6}
           style={{
             position: "absolute",
-            bottom: size === "small" ? "10px" : "20px",
+            bottom: size === "small" ? rem(10) : rem(20),
             left: "50%",
             transform: "translateX(-50%)",
-            display: "flex",
-            gap: "6px",
             zIndex: 10,
           }}
         >
@@ -290,20 +203,19 @@ const ImageSlider = ({
               key={index}
               onClick={() => setSelectedImage(index)}
               style={{
-                width: selectedImage === index ? (size === "small" ? "16px" : "24px") : "6px",
-                height: "6px",
-                borderRadius: "3px",
+                width: selectedImage === index ? (size === "small" ? rem(16) : rem(24)) : rem(6),
+                height: rem(6),
+                borderRadius: rem(3),
                 backgroundColor: selectedImage === index ? "black" : "rgba(255,255,255,0.5)",
                 cursor: "pointer",
                 transition: "all 0.3s",
               }}
             />
           ))}
-        </Box>
+        </Group>
       )}
     </Box>
   );
 };
 
 export default ImageSlider;
-

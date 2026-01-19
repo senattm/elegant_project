@@ -27,7 +27,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class PaymentMethodsController {
   constructor(
     private readonly paymentMethodsService: PaymentMethodsService,
-  ) {}
+  ) { }
 
   @Post()
   @ApiOperation({ summary: 'Yeni kart ekle' })

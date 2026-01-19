@@ -10,5 +10,5 @@ import { AuthModule } from '../auth/auth.module';
   providers: [PaymentMethodsService],
   exports: [PaymentMethodsService],
 })
-export class PaymentMethodsModule {}
+export class PaymentMethodsModule { }
 

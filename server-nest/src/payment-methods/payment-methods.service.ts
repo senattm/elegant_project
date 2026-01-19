@@ -22,6 +22,7 @@ export class PaymentMethodsService {
         user_id: userId,
         card_holder: dto.cardHolderName,
         card_last4: cardLast4,
+        expiry_date: dto.expiryDate,
         provider,
       },
     });
@@ -40,6 +41,7 @@ export class PaymentMethodsService {
         id: true,
         card_holder: true,
         card_last4: true,
+        expiry_date: true,
         provider: true,
         created_at: true,
       },
@@ -51,6 +53,14 @@ export class PaymentMethodsService {
       where: {
         id: paymentMethodId,
         user_id: userId,
+      },
+      select: {
+        id: true,
+        card_holder: true,
+        card_last4: true,
+        expiry_date: true,
+        provider: true,
+        created_at: true,
       },
     });
 

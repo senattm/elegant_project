@@ -45,6 +45,7 @@ interface PaymentMethod {
   id: number;
   card_holder: string;
   card_last4: string;
+  expiry_date: string;
   provider: string;
   created_at: string;
 }
@@ -136,19 +137,20 @@ const Checkout = () => {
     if (!token) return;
     try {
       const response = await paymentMethodsApi.getAll(token);
-      setSavedPaymentMethods(response.data);
+      const validPaymentMethods = response.data.filter((m: PaymentMethod) => m.expiry_date);
+      setSavedPaymentMethods(validPaymentMethods);
       if (
-        response.data.length > 0 &&
+        validPaymentMethods.length > 0 &&
         !selectedPaymentMethodId &&
         !useNewPaymentMethod
       ) {
-        setSelectedPaymentMethodId(response.data[0].id.toString());
-        const selectedMethod = response.data[0];
+        setSelectedPaymentMethodId(validPaymentMethods[0].id.toString());
+        const selectedMethod = validPaymentMethods[0];
         setPaymentData((prev) => ({
           ...prev,
           cardNumber: `000000000000${selectedMethod.card_last4}`,
           cardHolderName: selectedMethod.card_holder,
-          expiryDate: "12/25",
+          expiryDate: selectedMethod.expiry_date || "",
           cvv: "",
         }));
         setSavePaymentMethod(false);
@@ -171,8 +173,7 @@ const Checkout = () => {
 
       try {
         const response = await fetch(
-          `${
-            import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+          `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"
           }/orders/check/first-order`,
           {
             headers: {
@@ -265,10 +266,13 @@ const Checkout = () => {
       ) {
         newErrors.cardHolderName = "Kart sahibi adı en az 3 karakter olmalıdır";
       }
+    }
 
-      if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentData.expiryDate)) {
-        newErrors.expiryDate = "Geçerli bir tarih girin (AA/YY)";
-      }
+    // Expiry date validation for both new and saved cards
+    if (!useNewPaymentMethod && selectedPaymentMethodId && !paymentData.expiryDate) {
+      newErrors.expiryDate = "Kayıtlı kartın son kullanma tarihi eksik. Lütfen yeni kart ekleyin.";
+    } else if (paymentData.expiryDate && !/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentData.expiryDate)) {
+      newErrors.expiryDate = "Geçerli bir tarih girin (AA/YY)";
     }
 
     if (paymentData.cvv.length < 3 || paymentData.cvv.length > 4) {
@@ -322,7 +326,7 @@ const Checkout = () => {
           finalPaymentData = {
             cardNumber: `000000000000${selectedMethod.card_last4}`,
             cardHolderName: selectedMethod.card_holder,
-            expiryDate: paymentData.expiryDate,
+            expiryDate: selectedMethod.expiry_date || paymentData.expiryDate,
             cvv: paymentData.cvv,
           };
         }
@@ -374,9 +378,8 @@ const Checkout = () => {
                         placeholder="Adres seçin"
                         data={savedAddresses.map((addr) => ({
                           value: addr.id.toString(),
-                          label: `${addr.title || "Adres"} - ${
-                            addr.full_name
-                          } - ${addr.city}/${addr.district}`,
+                          label: `${addr.title || "Adres"} - ${addr.full_name
+                            } - ${addr.city}/${addr.district}`,
                         }))}
                         value={selectedAddressId}
                         onChange={(value) => setSelectedAddressId(value)}
@@ -521,7 +524,7 @@ const Checkout = () => {
                               setPaymentData({
                                 cardNumber: `000000000000${selectedMethod.card_last4}`,
                                 cardHolderName: selectedMethod.card_holder,
-                                expiryDate: "12/25",
+                                expiryDate: selectedMethod.expiry_date || "",
                                 cvv: "",
                               });
                             }

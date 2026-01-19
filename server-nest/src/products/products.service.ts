@@ -16,10 +16,12 @@ export class ProductsService {
         product_images: {
           select: {
             image_url: true,
+            is_main: true,
           },
-          orderBy: {
-            image_url: 'asc',
-          },
+          orderBy: [
+            { is_main: 'desc' },
+            { image_url: 'asc' },
+          ],
         },
       },
       orderBy: {
@@ -51,10 +53,12 @@ export class ProductsService {
         product_images: {
           select: {
             image_url: true,
+            is_main: true,
           },
-          orderBy: {
-            image_url: 'asc',
-          },
+          orderBy: [
+            { is_main: 'desc' },
+            { image_url: 'asc' },
+          ],
         },
       },
     });

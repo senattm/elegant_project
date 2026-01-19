@@ -1,52 +1,77 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private db: DatabaseService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findAll() {
-    const result = await this.db.query(`
-      SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.price,
-        p.stock,
-        p.category_id,
-        c.name AS category,
-        ARRAY_AGG(DISTINCT pi.image_url ORDER BY pi.image_url) AS images
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN product_images pi ON p.id = pi.product_id
-      GROUP BY p.id, p.name, p.description, p.price, p.stock, p.category_id, c.name
-      ORDER BY p.id
-    `);
+    const products = await this.prisma.products.findMany({
+      include: {
+        categories: {
+          select: {
+            name: true,
+          },
+        },
+        product_images: {
+          select: {
+            image_url: true,
+          },
+          orderBy: {
+            image_url: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        id: 'asc',
+      },
+    });
 
-    return result.rows;
+    return products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      stock: product.stock,
+      category_id: product.category_id,
+      category: product.categories?.name || null,
+      images: product.product_images.map((img) => img.image_url),
+    }));
   }
 
   async findOne(id: number) {
-    const result = await this.db.query(
-      `
-      SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.price,
-        p.stock,
-        p.category_id,
-        c.name AS category,
-        ARRAY_AGG(DISTINCT pi.image_url ORDER BY pi.image_url) AS images
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN product_images pi ON p.id = pi.product_id
-      WHERE p.id = $1
-      GROUP BY p.id, p.name, p.description, p.price, p.stock, p.category_id, c.name
-    `,
-      [id],
-    );
+    const product = await this.prisma.products.findUnique({
+      where: { id },
+      include: {
+        categories: {
+          select: {
+            name: true,
+          },
+        },
+        product_images: {
+          select: {
+            image_url: true,
+          },
+          orderBy: {
+            image_url: 'asc',
+          },
+        },
+      },
+    });
 
-    return result.rows[0];
+    if (!product) {
+      return null;
+    }
+
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      stock: product.stock,
+      category_id: product.category_id,
+      category: product.categories?.name || null,
+      images: product.product_images.map((img) => img.image_url),
+    };
   }
 }

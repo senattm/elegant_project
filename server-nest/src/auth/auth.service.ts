@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { DatabaseService } from '../database/database.service';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   RegisterDto,
   LoginDto,
@@ -27,14 +27,15 @@ export interface JwtPayload {
   iat?: number;
   exp?: number;
 }
+
 @Injectable()
 export class AuthService {
   private readonly SALT_ROUNDS = 10;
 
   constructor(
-    private readonly db: DatabaseService,
+    private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
@@ -58,12 +59,17 @@ export class AuthService {
   private async findUserByEmail(email: string): Promise<UserEntity | null> {
     const normalizedEmail = this.normalizeEmail(email);
 
-    const result = await this.db.query(
-      'SELECT id, name, email, password_hash FROM users WHERE email = $1',
-      [normalizedEmail],
-    );
+    const user = await this.prisma.users.findUnique({
+      where: { email: normalizedEmail },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password_hash: true,
+      },
+    });
 
-    return (result.rows[0] as UserEntity) || null;
+    return user as UserEntity | null;
   }
 
   async register(dto: RegisterDto) {
@@ -74,23 +80,29 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
     try {
-      const result = await this.db.query(
-        `INSERT INTO users (name, email, password_hash) 
-         VALUES ($1, $2, $3) 
-         RETURNING id, name, email, created_at`,
-        [name, email, hashedPassword],
-      );
+      const user = await this.prisma.users.create({
+        data: {
+          name,
+          email,
+          password_hash: hashedPassword,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          created_at: true,
+        },
+      });
 
-      const user = result.rows[0] as UserEntity;
       const token = this.signToken(user);
 
       return {
         message: 'Kayıt başarılı',
-        user: this.toUserResponse(user),
+        user: this.toUserResponse(user as UserEntity),
         token,
       };
     } catch (error: any) {
-      if (error.code === '23505') {
+      if (error.code === 'P2002') {
         throw new BadRequestException('Bu email zaten kayıtlı');
       }
       throw error;
@@ -123,50 +135,53 @@ export class AuthService {
   }
 
   async validateUser(id: number) {
-    const result = await this.db.query(
-      'SELECT id, name, email FROM users WHERE id = $1',
-      [id],
-    );
+    const user = await this.prisma.users.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
 
-    const row = result.rows[0];
-    if (!row) {
-      return null;
-    }
-
-    return row as UserEntity;
+    return user as UserEntity | null;
   }
 
   async updateProfile(userId: number, dto: UpdateProfileDto) {
     const name = dto.name.trim();
 
-    const result = await this.db.query(
-      'UPDATE users SET name = $1 WHERE id = $2 RETURNING id, name, email',
-      [name, userId],
-    );
+    const user = await this.prisma.users.update({
+      where: { id: userId },
+      data: { name },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
 
-    if (result.rowCount === 0) {
+    if (!user) {
       throw new NotFoundException('Kullanıcı bulunamadı');
     }
 
-    const user = result.rows[0] as UserEntity;
-
     return {
       message: 'Profil güncellendi',
-      user: this.toUserResponse(user),
+      user: this.toUserResponse(user as UserEntity),
     };
   }
 
   async changePassword(userId: number, dto: ChangePasswordDto) {
-    const result = await this.db.query(
-      'SELECT password_hash FROM users WHERE id = $1',
-      [userId],
-    );
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        password_hash: true,
+      },
+    });
 
-    if (result.rowCount === 0) {
+    if (!user) {
       throw new NotFoundException('Kullanıcı bulunamadı');
     }
 
-    const user = result.rows[0];
     const isPasswordValid = await bcrypt.compare(
       dto.currentPassword,
       user.password_hash,
@@ -178,10 +193,10 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.newPassword, this.SALT_ROUNDS);
 
-    await this.db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [
-      hashedPassword,
-      userId,
-    ]);
+    await this.prisma.users.update({
+      where: { id: userId },
+      data: { password_hash: hashedPassword },
+    });
 
     return {
       message: 'Şifre değiştirildi',

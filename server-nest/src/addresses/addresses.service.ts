@@ -3,140 +3,123 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateAddressDto, UpdateAddressDto } from './dto';
 
 @Injectable()
 export class AddressesService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(userId: number, dto: CreateAddressDto) {
-    const result = await this.db.query(
-      `INSERT INTO addresses (user_id, title, full_name, phone, address_line, city, district)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, title, full_name, phone, address_line, city, district, created_at`,
-      [
-        userId,
-        dto.title || null,
-        dto.fullName,
-        dto.phone,
-        dto.addressLine,
-        dto.city,
-        dto.district,
-      ],
-    );
+    const address = await this.prisma.addresses.create({
+      data: {
+        user_id: userId,
+        title: dto.title || null,
+        full_name: dto.fullName,
+        phone: dto.phone,
+        address_line: dto.addressLine,
+        city: dto.city,
+        district: dto.district,
+      },
+    });
 
     return {
       message: 'Adres eklendi',
-      address: result.rows[0],
+      address,
     };
   }
 
   async findAll(userId: number) {
-    const result = await this.db.query(
-      `SELECT id, title, full_name, phone, address_line, city, district, created_at
-       FROM addresses
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [userId],
-    );
-
-    return result.rows;
+    return await this.prisma.addresses.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        full_name: true,
+        phone: true,
+        address_line: true,
+        city: true,
+        district: true,
+        created_at: true,
+      },
+    });
   }
 
   async findOne(userId: number, addressId: number) {
-    const result = await this.db.query(
-      `SELECT id, title, full_name, phone, address_line, city, district, created_at
-       FROM addresses
-       WHERE id = $1 AND user_id = $2`,
-      [addressId, userId],
-    );
+    const address = await this.prisma.addresses.findFirst({
+      where: {
+        id: addressId,
+        user_id: userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        full_name: true,
+        phone: true,
+        address_line: true,
+        city: true,
+        district: true,
+        created_at: true,
+      },
+    });
 
-    if (result.rowCount === 0) {
+    if (!address) {
       throw new NotFoundException('Adres bulunamadı');
     }
 
-    return result.rows[0];
+    return address;
   }
 
   async update(userId: number, addressId: number, dto: UpdateAddressDto) {
-    const existingAddress = await this.db.query(
-      'SELECT user_id FROM addresses WHERE id = $1',
-      [addressId],
-    );
+    const existingAddress = await this.prisma.addresses.findUnique({
+      where: { id: addressId },
+      select: { user_id: true },
+    });
 
-    if (existingAddress.rowCount === 0) {
+    if (!existingAddress) {
       throw new NotFoundException('Adres bulunamadı');
     }
 
-    if (existingAddress.rows[0].user_id !== userId) {
+    if (existingAddress.user_id !== userId) {
       throw new ForbiddenException('Bu adrese erişim yetkiniz yok');
     }
 
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    if (dto.title !== undefined) {
-      updates.push(`title = $${paramIndex++}`);
-      values.push(dto.title || null);
-    }
-    if (dto.fullName !== undefined) {
-      updates.push(`full_name = $${paramIndex++}`);
-      values.push(dto.fullName);
-    }
-    if (dto.phone !== undefined) {
-      updates.push(`phone = $${paramIndex++}`);
-      values.push(dto.phone);
-    }
-    if (dto.addressLine !== undefined) {
-      updates.push(`address_line = $${paramIndex++}`);
-      values.push(dto.addressLine);
-    }
-    if (dto.city !== undefined) {
-      updates.push(`city = $${paramIndex++}`);
-      values.push(dto.city);
-    }
-    if (dto.district !== undefined) {
-      updates.push(`district = $${paramIndex++}`);
-      values.push(dto.district);
-    }
-
-    if (updates.length === 0) {
-      throw new NotFoundException('Güncellenecek alan bulunamadı');
-    }
-
-    values.push(addressId);
-
-    const result = await this.db.query(
-      `UPDATE addresses
-       SET ${updates.join(', ')}
-       WHERE id = $${paramIndex}
-       RETURNING id, title, full_name, phone, address_line, city, district, created_at`,
-      values,
-    );
+    const address = await this.prisma.addresses.update({
+      where: { id: addressId },
+      data: {
+        title: dto.title !== undefined ? dto.title : undefined,
+        full_name: dto.fullName,
+        phone: dto.phone,
+        address_line: dto.addressLine,
+        city: dto.city,
+        district: dto.district,
+      },
+    });
 
     return {
       message: 'Adres güncellendi',
-      address: result.rows[0],
+      address,
     };
   }
 
   async remove(userId: number, addressId: number) {
-    const existingAddress = await this.db.query(
-      'SELECT user_id FROM addresses WHERE id = $1',
-      [addressId],
-    );
+    const existingAddress = await this.prisma.addresses.findUnique({
+      where: { id: addressId },
+      select: { user_id: true },
+    });
 
-    if (existingAddress.rowCount === 0) {
+    if (!existingAddress) {
       throw new NotFoundException('Adres bulunamadı');
     }
 
-    if (existingAddress.rows[0].user_id !== userId) {
+    if (existingAddress.user_id !== userId) {
       throw new ForbiddenException('Bu adrese erişim yetkiniz yok');
     }
 
-    await this.db.query('DELETE FROM addresses WHERE id = $1', [addressId]);
+    await this.prisma.addresses.delete({
+      where: { id: addressId },
+    });
 
     return {
       message: 'Adres silindi',

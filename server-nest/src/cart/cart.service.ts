@@ -4,59 +4,62 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name);
 
-  constructor(private db: DatabaseService) {}
+  constructor(private prisma: PrismaService) { }
 
   private async validateStock(productId: number, requiredQuantity: number) {
-    const productCheck = await this.db.query(
-      'SELECT stock FROM products WHERE id = $1',
-      [productId],
-    );
+    const product = await this.prisma.products.findUnique({
+      where: { id: productId },
+      select: { stock: true },
+    });
 
-    if (productCheck.rows.length === 0) {
+    if (!product) {
       throw new NotFoundException('Ürün bulunamadı');
     }
 
-    const currentStock = productCheck.rows[0].stock;
-
-    if (requiredQuantity > currentStock) {
+    if (requiredQuantity > product.stock) {
       throw new BadRequestException(
-        `Stok yetersiz. Mevcut stok: ${currentStock}`,
+        `Stok yetersiz. Mevcut stok: ${product.stock}`,
       );
     }
   }
 
   async getCartItems(userId: number) {
-    const result = await this.db.query(
-      `
-      SELECT 
-        ci.id,
-        ci.quantity,
-        ci.selected_size,
-        p.id as product_id,
-        p.name,
-        p.description,
-        p.price,
-        p.stock,
-        c.name AS category,
-        ARRAY_AGG(DISTINCT pi.image_url ORDER BY pi.image_url) AS images
-      FROM cart_items ci
-      JOIN products p ON ci.product_id = p.id
-      LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN product_images pi ON p.id = pi.product_id
-      WHERE ci.user_id = $1
-      GROUP BY ci.id, ci.quantity, ci.selected_size, p.id, p.name, p.description, p.price, p.stock, c.name
-      ORDER BY ci.id DESC
-    `,
-      [userId],
-    );
+    const cartItems = await this.prisma.cart_items.findMany({
+      where: { user_id: userId },
+      include: {
+        products: {
+          include: {
+            categories: {
+              select: { name: true },
+            },
+            product_images: {
+              select: { image_url: true },
+              orderBy: { image_url: 'asc' },
+            },
+          },
+        },
+      },
+      orderBy: { id: 'desc' },
+    });
 
-    return result.rows;
+    return cartItems.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      selected_size: item.selected_size,
+      product_id: item.products?.id,
+      name: item.products?.name,
+      description: item.products?.description,
+      price: item.products?.price,
+      stock: item.products?.stock,
+      category: item.products?.categories?.name || null,
+      images: item.products?.product_images.map((img) => img.image_url) || [],
+    }));
   }
 
   async addToCart(
@@ -67,35 +70,35 @@ export class CartService {
   ) {
     const sizeValue = selectedSize || null;
 
-    const existingItem = await this.db.query(
-      `SELECT id, quantity 
-       FROM cart_items 
-       WHERE user_id = $1 
-         AND product_id = $2 
-         AND COALESCE(selected_size, '') = COALESCE($3, '')`,
-      [userId, productId, sizeValue],
-    );
+    const existingItem = await this.prisma.cart_items.findFirst({
+      where: {
+        user_id: userId,
+        product_id: productId,
+        selected_size: sizeValue,
+      },
+    });
 
-    const totalQuantity =
-      existingItem.rows.length > 0
-        ? existingItem.rows[0].quantity + quantity
-        : quantity;
+    const totalQuantity = existingItem
+      ? existingItem.quantity! + quantity
+      : quantity;
 
     await this.validateStock(productId, totalQuantity);
 
-    if (existingItem.rows.length > 0) {
-      const result = await this.db.query(
-        'UPDATE cart_items SET quantity = $1 WHERE id = $2 RETURNING *',
-        [totalQuantity, existingItem.rows[0].id],
-      );
-      return result.rows[0];
+    if (existingItem) {
+      return await this.prisma.cart_items.update({
+        where: { id: existingItem.id },
+        data: { quantity: totalQuantity },
+      });
     }
 
-    const result = await this.db.query(
-      'INSERT INTO cart_items (user_id, product_id, quantity, selected_size) VALUES ($1, $2, $3, $4) RETURNING *',
-      [userId, productId, quantity, sizeValue],
-    );
-    return result.rows[0];
+    return await this.prisma.cart_items.create({
+      data: {
+        user_id: userId,
+        product_id: productId,
+        quantity,
+        selected_size: sizeValue,
+      },
+    });
   }
 
   async updateQuantity(
@@ -116,29 +119,32 @@ export class CartService {
 
     const sizeValue = selectedSize || null;
 
-    const result = await this.db.query(
-      `UPDATE cart_items 
-       SET quantity = $1 
-       WHERE user_id = $2 
-         AND product_id = $3 
-         AND COALESCE(selected_size, '') = COALESCE($4, '')
-       RETURNING *`,
-      [quantity, userId, productId, sizeValue],
-    );
+    const cartItem = await this.prisma.cart_items.findFirst({
+      where: {
+        user_id: userId,
+        product_id: productId,
+        selected_size: sizeValue,
+      },
+    });
 
-    if (result.rows.length === 0) {
-      const allItems = await this.db.query(
-        'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
-        [userId, productId],
-      );
+    if (!cartItem) {
+      const allItems = await this.prisma.cart_items.findMany({
+        where: {
+          user_id: userId,
+          product_id: productId,
+        },
+      });
       this.logger.error(
         `Sepet öğesi bulunamadı! Aranan: size="${sizeValue}", Mevcut items:`,
-        allItems.rows,
+        allItems,
       );
       throw new NotFoundException('Sepet öğesi bulunamadı');
     }
 
-    return result.rows[0];
+    return await this.prisma.cart_items.update({
+      where: { id: cartItem.id },
+      data: { quantity },
+    });
   }
 
   async removeFromCart(
@@ -148,24 +154,29 @@ export class CartService {
   ) {
     const sizeValue = selectedSize || null;
 
-    const result = await this.db.query(
-      `DELETE FROM cart_items 
-       WHERE user_id = $1 
-         AND product_id = $2 
-         AND COALESCE(selected_size, '') = COALESCE($3, '')
-       RETURNING *`,
-      [userId, productId, sizeValue],
-    );
+    const cartItem = await this.prisma.cart_items.findFirst({
+      where: {
+        user_id: userId,
+        product_id: productId,
+        selected_size: sizeValue,
+      },
+    });
 
-    if (result.rows.length === 0) {
+    if (!cartItem) {
       throw new NotFoundException('Sepet öğesi bulunamadı');
     }
+
+    await this.prisma.cart_items.delete({
+      where: { id: cartItem.id },
+    });
 
     return { message: 'Ürün sepetten çıkarıldı' };
   }
 
   async clearCart(userId: number) {
-    await this.db.query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
+    await this.prisma.cart_items.deleteMany({
+      where: { user_id: userId },
+    });
     return { message: 'Sepet temizlendi' };
   }
 }

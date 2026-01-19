@@ -44,3 +44,7 @@ lerna-debug.log*
 # Media files
 public/videos/
 
+
+/generated/prisma
+
+

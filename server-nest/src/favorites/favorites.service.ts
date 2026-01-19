@@ -1,54 +1,62 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class FavoritesService {
-  constructor(private db: DatabaseService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getFavorites(userId: number) {
-    const result = await this.db.query(
-      `
-      SELECT 
-        f.id,
-        p.id as product_id,
-        p.name,
-        p.description,
-        p.price,
-        p.stock,
-        c.name AS category,
-        ARRAY_AGG(DISTINCT pi.image_url ORDER BY pi.image_url) AS images
-      FROM favorites f
-      JOIN products p ON f.product_id = p.id
-      LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN product_images pi ON p.id = pi.product_id
-      WHERE f.user_id = $1
-      GROUP BY f.id, p.id, p.name, p.description, p.price, p.stock, c.name
-      ORDER BY f.id DESC
-    `,
-      [userId],
-    );
+    const favorites = await this.prisma.favorites.findMany({
+      where: { user_id: userId },
+      include: {
+        products: {
+          include: {
+            categories: {
+              select: { name: true },
+            },
+            product_images: {
+              select: { image_url: true },
+              orderBy: { image_url: 'asc' },
+            },
+          },
+        },
+      },
+      orderBy: { id: 'desc' },
+    });
 
-    return result.rows;
+    return favorites.map((fav) => ({
+      id: fav.id,
+      product_id: fav.products?.id,
+      name: fav.products?.name,
+      description: fav.products?.description,
+      price: fav.products?.price,
+      stock: fav.products?.stock,
+      category: fav.products?.categories?.name || null,
+      images: fav.products?.product_images.map((img) => img.image_url) || [],
+    }));
   }
 
   async toggleFavorite(userId: number, productId: number) {
-    const existingFavorite = await this.db.query(
-      'SELECT id FROM favorites WHERE user_id = $1 AND product_id = $2',
-      [userId, productId],
-    );
+    const existingFavorite = await this.prisma.favorites.findFirst({
+      where: {
+        user_id: userId,
+        product_id: productId,
+      },
+    });
 
-    if (existingFavorite.rows.length > 0) {
-      await this.db.query(
-        'DELETE FROM favorites WHERE user_id = $1 AND product_id = $2',
-        [userId, productId],
-      );
+    if (existingFavorite) {
+      await this.prisma.favorites.delete({
+        where: { id: existingFavorite.id },
+      });
       return { message: 'Favorilerden çıkarıldı', isFavorite: false };
     }
 
-    await this.db.query(
-      'INSERT INTO favorites (user_id, product_id) VALUES ($1, $2)',
-      [userId, productId],
-    );
+    await this.prisma.favorites.create({
+      data: {
+        user_id: userId,
+        product_id: productId,
+      },
+    });
     return { message: 'Favorilere eklendi', isFavorite: true };
   }
 }

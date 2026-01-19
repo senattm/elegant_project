@@ -3,55 +3,12 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
-import { PoolClient } from 'pg';
+import { PrismaService } from '../prisma/prisma.service';
 import { OrderItemDto } from './dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private db: DatabaseService) {}
-
-  private readonly orderQuery = `
-    SELECT 
-      o.id,
-      o.order_number,
-      o.total_amount,
-      o.discount_amount,
-      o.final_amount,
-      o.status,
-      o.created_at,
-      ARRAY_AGG(
-        json_build_object(
-          'id', oi.id,
-          'productId', oi.product_id,
-          'quantity', oi.quantity,
-          'selectedSize', oi.selected_size,
-          'price', oi.price,
-          'productName', p.name,
-          'productImages', (
-            SELECT ARRAY_AGG(pi.image_url)
-            FROM product_images pi
-            WHERE pi.product_id = p.id
-          )
-        ) ORDER BY oi.id
-      ) AS items
-    FROM orders o
-    LEFT JOIN order_items oi ON o.id = oi.order_id
-    LEFT JOIN products p ON oi.product_id = p.id
-  `;
-
-  private mapOrderRow(row: any) {
-    return {
-      id: row.id,
-      orderNumber: row.order_number,
-      totalAmount: parseFloat(row.total_amount),
-      discountAmount: parseFloat(row.discount_amount),
-      finalAmount: parseFloat(row.final_amount),
-      status: row.status,
-      createdAt: row.created_at,
-      items: row.items.filter((item: any) => item.productId !== null),
-    };
-  }
+  constructor(private prisma: PrismaService) { }
 
   async createOrder(
     userId: number,
@@ -64,30 +21,28 @@ export class OrdersService {
       throw new BadRequestException('Sipariş için en az bir ürün gerekli');
     }
 
-    const client: PoolClient = await this.db.getPool().connect();
-    try {
-      await client.query('BEGIN');
-
+    return await this.prisma.$transaction(async (tx) => {
       const totalAmount = items.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0,
       );
 
-      const userResult = await client.query(
-        `SELECT 
-          u.first_order_discount_used,
-          (SELECT COUNT(*) FROM orders WHERE user_id = $1) as order_count
-        FROM users u 
-        WHERE u.id = $1`,
-        [userId],
-      );
+      const user = await tx.users.findUnique({
+        where: { id: userId },
+        select: {
+          first_order_discount_used: true,
+          orders: {
+            select: { id: true },
+          },
+        },
+      });
 
-      if (userResult.rows.length === 0) {
+      if (!user) {
         throw new NotFoundException('Kullanıcı bulunamadı');
       }
 
-      const hasUsedDiscount = userResult.rows[0].first_order_discount_used;
-      const orderCount = parseInt(userResult.rows[0].order_count, 10);
+      const hasUsedDiscount = user.first_order_discount_used;
+      const orderCount = user.orders.length;
 
       const isFirstOrder = !hasUsedDiscount && orderCount === 0;
       const discountAmount = isFirstOrder ? totalAmount * 0.1 : 0;
@@ -95,34 +50,29 @@ export class OrdersService {
 
       const orderNumber = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-      const orderResult = await client.query(
-        `INSERT INTO orders (user_id, address_id, order_number, total_amount, discount_amount, final_amount, status) 
-          VALUES ($1, $2, $3, $4, $5, $6, 'PREPARING') 
-          RETURNING id, order_number, total_amount, discount_amount, final_amount, status, created_at`,
-        [
-          userId,
-          addressId || null,
-          orderNumber,
-          totalAmount,
-          discountAmount,
-          finalAmount,
-        ],
-      );
-
-      const order = orderResult.rows[0];
+      const order = await tx.orders.create({
+        data: {
+          user_id: userId,
+          address_id: addressId ?? 1,
+          order_number: orderNumber,
+          total_amount: totalAmount,
+          discount_amount: discountAmount,
+          final_amount: finalAmount,
+          status: 'PREPARING',
+        },
+      });
 
       const productIds = items.map((item) => item.productId);
-      const productsResult = await client.query(
-        'SELECT id, stock FROM products WHERE id = ANY($1) FOR UPDATE',
-        [productIds],
-      );
+      const products = await tx.products.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, stock: true },
+      });
 
       const stockMap = new Map<number, number>(
-        productsResult.rows.map((row) => [row.id, Number(row.stock)]),
+        products.map((p) => [p.id, p.stock]),
       );
 
       const quantityByProduct = new Map<number, number>();
-
       for (const item of items) {
         const prev = quantityByProduct.get(item.productId) ?? 0;
         quantityByProduct.set(item.productId, prev + item.quantity);
@@ -147,23 +97,25 @@ export class OrdersService {
       for (const item of items) {
         const itemTotal = item.price * item.quantity;
 
-        await client.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, price, total, selected_size) 
-            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            order.id,
-            item.productId,
-            item.quantity,
-            item.price,
-            itemTotal,
-            item.selectedSize || null,
-          ],
-        );
+        await tx.order_items.create({
+          data: {
+            order_id: order.id,
+            product_id: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            total: itemTotal,
+            selected_size: item.selectedSize || null,
+          },
+        });
 
-        await client.query(
-          'UPDATE products SET stock = stock - $1 WHERE id = $2',
-          [item.quantity, item.productId],
-        );
+        await tx.products.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
 
         orderItemsToReturn.push({
           productId: item.productId,
@@ -174,83 +126,134 @@ export class OrdersService {
       }
 
       if (isFirstOrder) {
-        await client.query(
-          'UPDATE users SET first_order_discount_used = true WHERE id = $1',
-          [userId],
-        );
+        await tx.users.update({
+          where: { id: userId },
+          data: { first_order_discount_used: true },
+        });
       }
-
-      await client.query('COMMIT');
 
       return {
         id: order.id,
         orderNumber: order.order_number,
-        totalAmount: parseFloat(order.total_amount),
-        discountAmount: parseFloat(order.discount_amount),
-        finalAmount: parseFloat(order.final_amount),
+        totalAmount: parseFloat(order.total_amount.toString()),
+        discountAmount: parseFloat(order.discount_amount?.toString() || '0'),
+        finalAmount: parseFloat(order.final_amount.toString()),
         status: order.status,
         createdAt: order.created_at,
         items: orderItemsToReturn,
       };
-    } catch (error) {
-      await client.query('ROLLBACK');
-
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Sipariş oluşturulamadı');
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async getUserOrders(userId: number) {
-    const result = await this.db.query(
-      `${this.orderQuery}
-       WHERE o.user_id = $1
-       GROUP BY o.id, o.order_number, o.total_amount, o.discount_amount, o.final_amount, o.status, o.created_at
-       ORDER BY o.created_at DESC`,
-      [userId],
-    );
+    const orders = await this.prisma.orders.findMany({
+      where: { user_id: userId },
+      include: {
+        order_items: {
+          include: {
+            products: {
+              include: {
+                product_images: {
+                  select: { image_url: true },
+                },
+              },
+            },
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
 
-    return result.rows.map(this.mapOrderRow);
+    return orders.map((order) => ({
+      id: order.id,
+      orderNumber: order.order_number,
+      totalAmount: parseFloat(order.total_amount.toString()),
+      discountAmount: parseFloat(order.discount_amount?.toString() || '0'),
+      finalAmount: parseFloat(order.final_amount.toString()),
+      status: order.status,
+      createdAt: order.created_at,
+      items: order.order_items
+        .filter((item) => item.product_id !== null)
+        .map((item) => ({
+          id: item.id,
+          productId: item.product_id,
+          quantity: item.quantity,
+          selectedSize: item.selected_size,
+          price: parseFloat(item.price.toString()),
+          productName: item.products?.name,
+          productImages:
+            item.products?.product_images.map((img) => img.image_url) || [],
+        })),
+    }));
   }
 
   async getOrderById(orderId: number, userId: number) {
-    const result = await this.db.query(
-      `${this.orderQuery}
-       WHERE o.id = $1 AND o.user_id = $2
-       GROUP BY o.id, o.order_number, o.total_amount, o.discount_amount, o.final_amount, o.status, o.created_at`,
-      [orderId, userId],
-    );
+    const order = await this.prisma.orders.findFirst({
+      where: {
+        id: orderId,
+        user_id: userId,
+      },
+      include: {
+        order_items: {
+          include: {
+            products: {
+              include: {
+                product_images: {
+                  select: { image_url: true },
+                },
+              },
+            },
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+    });
 
-    if (result.rows.length === 0) {
+    if (!order) {
       return null;
     }
 
-    return this.mapOrderRow(result.rows[0]);
+    return {
+      id: order.id,
+      orderNumber: order.order_number,
+      totalAmount: parseFloat(order.total_amount.toString()),
+      discountAmount: parseFloat(order.discount_amount?.toString() || '0'),
+      finalAmount: parseFloat(order.final_amount.toString()),
+      status: order.status,
+      createdAt: order.created_at,
+      items: order.order_items
+        .filter((item) => item.product_id !== null)
+        .map((item) => ({
+          id: item.id,
+          productId: item.product_id,
+          quantity: item.quantity,
+          selectedSize: item.selected_size,
+          price: parseFloat(item.price.toString()),
+          productName: item.products?.name,
+          productImages:
+            item.products?.product_images.map((img) => img.image_url) || [],
+        })),
+    };
   }
 
   async checkFirstOrder(userId: number) {
-    const result = await this.db.query(
-      `SELECT 
-        u.first_order_discount_used,
-        (SELECT COUNT(*) FROM orders WHERE user_id = $1) as order_count
-      FROM users u 
-      WHERE u.id = $1`,
-      [userId],
-    );
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        first_order_discount_used: true,
+        orders: {
+          select: { id: true },
+        },
+      },
+    });
 
-    if (result.rows.length === 0) {
+    if (!user) {
       throw new NotFoundException('Kullanıcı bulunamadı');
     }
 
-    const hasUsedDiscount = result.rows[0].first_order_discount_used;
-    const orderCount = parseInt(result.rows[0].order_count, 10);
+    const hasUsedDiscount = user.first_order_discount_used;
+    const orderCount = user.orders.length;
 
     const isFirstOrder = !hasUsedDiscount && orderCount === 0;
 

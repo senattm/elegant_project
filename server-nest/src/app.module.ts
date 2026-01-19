@@ -11,12 +11,14 @@ import { OrdersModule } from './orders/orders.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { PaymentModule } from './payment/payment.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    PrismaModule,
     DatabaseModule,
     ProductsModule,
     AuthModule,
@@ -30,4 +32,4 @@ import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

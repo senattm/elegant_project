@@ -68,7 +68,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
         transition: "all 0.3s ease",
         boxShadow: !isDark ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
       }}
-      py={isScrolled ? rem(16) : rem(24)}
+      py={isScrolled ? rem(20) : rem(32)}
     >
       <Container size="xl" px="xl">
         <Group justify="space-between" align="center">
@@ -79,7 +79,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
             }}
           >
             <Text
-              fz={{ base: rem(28), sm: rem(34), md: rem(45) }}
+              fz={{ base: rem(32), sm: rem(40), md: rem(52) }}
               fw={400}
               c={textColor}
               style={{
@@ -101,13 +101,13 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                 onClick={() =>
                   item === "İletişim"
                     ? document
-                        .querySelector("footer")
-                        ?.scrollIntoView({ behavior: "smooth" })
+                      .querySelector("footer")
+                      ?.scrollIntoView({ behavior: "smooth" })
                     : navigate(item === "Mağaza" ? "/store" : "/")
                 }
                 style={{
                   textDecoration: "none",
-                  fontSize: rem(20),
+                  fontSize: rem(22),
                   letterSpacing: "0.05em",
                   cursor: "pointer",
                 }}
@@ -127,7 +127,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                   if (e.target.value.trim()) navigate("/store");
                 }}
                 onBlur={() => !searchQuery.trim() && setSearchOpen(false)}
-                leftSection={<IconSearch size={22} stroke={2} />}
+                leftSection={<IconSearch size={24} stroke={2} />}
                 autoFocus
                 w={{ base: 180, md: 260 }}
                 variant="unstyled"
@@ -140,7 +140,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                     borderRadius: 0,
                     paddingLeft: rem(40),
                     paddingRight: rem(15),
-                    height: rem(45),
+                    height: rem(50),
                   },
                 }}
               />
@@ -160,7 +160,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                   e.currentTarget.style.transform = "scale(1)";
                 }}
               >
-                <IconSearch size={28} stroke={2} />
+                <IconSearch size={32} stroke={2} />
               </ActionIcon>
             )}
 
@@ -196,7 +196,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                   size="xl"
                   onClick={() => navigate("/favorites")}
                 >
-                  <IconHeart size={28} stroke={2} />
+                  <IconHeart size={32} stroke={2} />
                 </ActionIcon>
               </Indicator>
             </Box>
@@ -233,7 +233,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                   size="xl"
                   onClick={() => navigate("/cart")}
                 >
-                  <IconShoppingBag size={28} stroke={2} />
+                  <IconShoppingBag size={32} stroke={2} />
                 </ActionIcon>
               </Indicator>
             </Box>
@@ -262,7 +262,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                     e.currentTarget.style.transform = "scale(1)";
                   }}
                 >
-                  <IconUser size={28} stroke={2} />
+                  <IconUser size={32} stroke={2} />
                 </ActionIcon>
               </Menu.Target>
 

@@ -95,7 +95,7 @@ const Profile = () => {
       profileState.setLoading(true);
       profileState.reset();
 
-      const response = await authApi.updateProfile({ name }, token);
+      const response = await authApi.updateProfile({ name });
       setUser(response.data.user);
       profileState.setSuccess("Profil başarıyla güncellendi");
     } catch (error: any) {
@@ -127,8 +127,7 @@ const Profile = () => {
       passwordState.reset();
 
       await authApi.changePassword(
-        { currentPassword, newPassword },
-        token
+        { currentPassword, newPassword }
       );
 
       setCurrentPassword("");
@@ -146,7 +145,7 @@ const Profile = () => {
     if (!token) return;
 
     try {
-      const response = await addressesApi.getAll(token);
+      const response = await addressesApi.getAll();
       setAddresses(response.data);
     } catch (error) {
       console.error("Adresler yüklenemedi:", error);
@@ -157,7 +156,7 @@ const Profile = () => {
     if (!token) return;
 
     try {
-      const response = await paymentMethodsApi.getAll(token);
+      const response = await paymentMethodsApi.getAll();
       setPaymentMethods(response.data);
     } catch (error) {
       console.error("Ödeme yöntemleri yüklenemedi:", error);
@@ -207,9 +206,9 @@ const Profile = () => {
       addressState.setLoading(true);
 
       if (editingAddress) {
-        await addressesApi.update(editingAddress.id, addressForm, token);
+        await addressesApi.update(editingAddress.id, addressForm);
       } else {
-        await addressesApi.create(addressForm, token);
+        await addressesApi.create(addressForm);
       }
 
       await fetchAddresses();
@@ -228,7 +227,7 @@ const Profile = () => {
     if (!token || !confirm("Bu adresi silmek istediğinize emin misiniz?")) return;
 
     try {
-      await addressesApi.delete(id, token);
+      await addressesApi.delete(id);
       await fetchAddresses();
       addressState.setSuccess("Adres silindi");
     } catch (error: any) {
@@ -262,7 +261,7 @@ const Profile = () => {
     try {
       paymentMethodState.setLoading(true);
 
-      await paymentMethodsApi.create(paymentMethodForm, token);
+      await paymentMethodsApi.create(paymentMethodForm);
       await fetchPaymentMethods();
       setPaymentMethodModalOpened(false);
       paymentMethodState.setSuccess("Kart eklendi");
@@ -277,7 +276,7 @@ const Profile = () => {
     if (!token || !confirm("Bu kartı silmek istediğinize emin misiniz?")) return;
 
     try {
-      await paymentMethodsApi.delete(id, token);
+      await paymentMethodsApi.delete(id);
       await fetchPaymentMethods();
       paymentMethodState.setSuccess("Kart silindi");
     } catch (error: any) {

@@ -15,7 +15,7 @@ export const useFavorites = () => {
     }
 
     try {
-      const response = await favoritesApi.getAll(token);
+      const response = await favoritesApi.getAll();
       const favoriteIds = response.data.map((item: any) => item.product_id);
       setFavorites(favoriteIds);
     } catch (error: any) {
@@ -33,7 +33,7 @@ export const useFavorites = () => {
     }
 
     try {
-      const response = await favoritesApi.toggle(productId, token);
+      const response = await favoritesApi.toggle(productId);
 
       if (response.data.isFavorite) {
         addNotification("Favorilere eklendi!", "success");
@@ -59,7 +59,7 @@ export const useFavorites = () => {
     if (!token) return;
 
     try {
-      await favoritesApi.remove(productId, token);
+      await favoritesApi.remove(productId);
       addNotification("Favorilerden çıkarıldı", "info");
       await fetchFavorites();
     } catch (error: any) {
@@ -75,7 +75,7 @@ export const useFavorites = () => {
     if (!token) return;
 
     try {
-      await favoritesApi.clear(token);
+      await favoritesApi.clear();
       addNotification("Tüm favoriler temizlendi", "info");
       setFavorites([]);
     } catch (error: any) {

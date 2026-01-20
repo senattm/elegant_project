@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom, tokenAtom } from "../store/atoms";
 import { useCart, useOrders } from "../store/hooks";
-import { addressesApi, paymentMethodsApi } from "../api/client";
+import { addressesApi, paymentMethodsApi, ordersApi } from "../api/client";
 import { formatPhone, formatCardNumber, formatExpiryDate } from "../utils/formatters";
 import type { Address } from "../types";
 
@@ -84,7 +84,7 @@ export const useCheckout = () => {
     const loadSavedAddresses = async () => {
         if (!token) return;
         try {
-            const response = await addressesApi.getAll(token);
+            const response = await addressesApi.getAll();
             setSavedAddresses(response.data);
             if (response.data.length > 0) {
                 setSelectedAddressId(response.data[0].id.toString());
@@ -97,7 +97,7 @@ export const useCheckout = () => {
     const loadSavedPaymentMethods = async () => {
         if (!token) return;
         try {
-            const response = await paymentMethodsApi.getAll(token);
+            const response = await paymentMethodsApi.getAll();
             setSavedPaymentMethods(response.data);
             if (response.data.length > 0) {
                 setSelectedPaymentMethodId(response.data[0].id.toString());
@@ -117,11 +117,8 @@ export const useCheckout = () => {
     const checkFirstOrder = async () => {
         if (!token) return;
         try {
-            const response = await fetch("http://localhost:5000/api/orders/my-orders", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const orders = await response.json();
-            setIsFirstOrder(orders.length === 0);
+            const response = await ordersApi.checkFirstOrder();
+            setIsFirstOrder(response.data.isFirstOrder);
         } catch (error) {
             console.error("Sipariş kontrolü yapılamadı:", error);
         }
@@ -173,7 +170,7 @@ export const useCheckout = () => {
         try {
             let addressId = selectedAddressId;
             if (useNewAddress || !selectedAddressId) {
-                const addressResponse = await addressesApi.create(addressData, token!);
+                const addressResponse = await addressesApi.create(addressData);
                 addressId = addressResponse.data.id.toString();
             }
 
@@ -183,8 +180,7 @@ export const useCheckout = () => {
                         cardNumber: paymentData.cardNumber,
                         cardHolderName: paymentData.cardHolderName,
                         expiryDate: paymentData.expiryDate,
-                    },
-                    token!
+                    }
                 );
             }
 

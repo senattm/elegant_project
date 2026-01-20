@@ -9,42 +9,48 @@ export const api = axios.create({
   },
 });
 
-const getAuthHeader = (token: string) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
+api.interceptors.request.use(
+  (config) => {
+    const tokenString = localStorage.getItem("token");
+    if (tokenString) {
+      try {
+        const token = JSON.parse(tokenString);
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error("Error parsing token:", error);
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export const cartApi = {
-  get: (token: string) => api.get("/cart", getAuthHeader(token)),
-  add: (
-    data: { productId: number; quantity: number; selectedSize?: string },
-    token: string
-  ) => api.post("/cart", data, getAuthHeader(token)),
-  remove: (
-    productId: number,
-    selectedSize: string | undefined,
-    token: string
-  ) => {
+  get: () => api.get("/cart"),
+  add: (data: { productId: number; quantity: number; selectedSize?: string }) =>
+    api.post("/cart", data),
+  remove: (productId: number, selectedSize: string | undefined) => {
     const config = {
-      ...getAuthHeader(token),
       params: selectedSize ? { selectedSize } : undefined,
     };
     return api.delete(`/cart/${productId}`, config);
   },
   update: (
     productId: number,
-    data: { quantity: number; selectedSize?: string },
-    token: string
-  ) => api.put(`/cart/${productId}`, data, getAuthHeader(token)),
-  clear: (token: string) => api.delete("/cart", getAuthHeader(token)),
+    data: { quantity: number; selectedSize?: string }
+  ) => api.put(`/cart/${productId}`, data),
+  clear: () => api.delete("/cart"),
 };
 
 export const favoritesApi = {
-  getAll: (token: string) => api.get("/favorites", getAuthHeader(token)),
-  toggle: (productId: number, token: string) =>
-    api.post("/favorites/toggle", { productId }, getAuthHeader(token)),
-  remove: (productId: number, token: string) =>
-    api.delete(`/favorites/${productId}`, getAuthHeader(token)),
-  clear: (token: string) => api.delete("/favorites", getAuthHeader(token)),
+  getAll: () => api.get("/favorites"),
+  toggle: (productId: number) => api.post("/favorites/toggle", { productId }),
+  remove: (productId: number) => api.delete(`/favorites/${productId}`),
+  clear: () => api.delete("/favorites"),
 };
 
 export const productsApi = {
@@ -69,40 +75,30 @@ export const ordersApi = {
       expiryDate: string;
       cvv: string;
     },
-    token: string,
     addressId?: number
-  ) => api.post("/orders", { items, payment, addressId }, getAuthHeader(token)),
-  getAll: (token: string) => api.get("/orders", getAuthHeader(token)),
-  getById: (orderId: number, token: string) =>
-    api.get(`/orders/${orderId}`, getAuthHeader(token)),
-  checkFirstOrder: (token: string) =>
-    api.get("/orders/check/first-order", getAuthHeader(token)),
+  ) => api.post("/orders", { items, payment, addressId }),
+  getAll: () => api.get("/orders"),
+  getById: (orderId: number) => api.get(`/orders/${orderId}`),
+  checkFirstOrder: () => api.get("/orders/check/first-order"),
 };
 
 export const authApi = {
-  updateProfile: (data: { name: string }, token: string) =>
-    api.patch("/auth/profile", data, getAuthHeader(token)),
-  changePassword: (
-    data: { currentPassword: string; newPassword: string },
-    token: string
-  ) => api.post("/auth/change-password", data, getAuthHeader(token)),
+  updateProfile: (data: { name: string }) => api.patch("/auth/profile", data),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.post("/auth/change-password", data),
 };
 
 export const addressesApi = {
-  getAll: (token: string) => api.get("/addresses", getAuthHeader(token)),
-  getById: (id: number, token: string) =>
-    api.get(`/addresses/${id}`, getAuthHeader(token)),
-  create: (
-    data: {
-      title?: string;
-      fullName: string;
-      phone: string;
-      addressLine: string;
-      city: string;
-      district: string;
-    },
-    token: string
-  ) => api.post("/addresses", data, getAuthHeader(token)),
+  getAll: () => api.get("/addresses"),
+  getById: (id: number) => api.get(`/addresses/${id}`),
+  create: (data: {
+    title?: string;
+    fullName: string;
+    phone: string;
+    addressLine: string;
+    city: string;
+    district: string;
+  }) => api.post("/addresses", data),
   update: (
     id: number,
     data: {
@@ -112,26 +108,19 @@ export const addressesApi = {
       addressLine?: string;
       city?: string;
       district?: string;
-    },
-    token: string
-  ) => api.patch(`/addresses/${id}`, data, getAuthHeader(token)),
-  delete: (id: number, token: string) =>
-    api.delete(`/addresses/${id}`, getAuthHeader(token)),
+    }
+  ) => api.patch(`/addresses/${id}`, data),
+  delete: (id: number) => api.delete(`/addresses/${id}`),
 };
 
 export const paymentMethodsApi = {
-  getAll: (token: string) => api.get("/payment-methods", getAuthHeader(token)),
-  getById: (id: number, token: string) =>
-    api.get(`/payment-methods/${id}`, getAuthHeader(token)),
-  create: (
-    data: {
-      cardNumber: string;
-      cardHolderName: string;
-      expiryDate: string;
-      provider?: string;
-    },
-    token: string
-  ) => api.post("/payment-methods", data, getAuthHeader(token)),
-  delete: (id: number, token: string) =>
-    api.delete(`/payment-methods/${id}`, getAuthHeader(token)),
+  getAll: () => api.get("/payment-methods"),
+  getById: (id: number) => api.get(`/payment-methods/${id}`),
+  create: (data: {
+    cardNumber: string;
+    cardHolderName: string;
+    expiryDate: string;
+    provider?: string;
+  }) => api.post("/payment-methods", data),
+  delete: (id: number) => api.delete(`/payment-methods/${id}`),
 };

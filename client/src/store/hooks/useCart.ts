@@ -17,7 +17,7 @@ export const useCart = () => {
     }
 
     try {
-      const response = await cartApi.get(token);
+      const response = await cartApi.get();
       const cartItems = response.data.map((item: any) => ({
         product: {
           id: item.product_id,
@@ -51,7 +51,7 @@ export const useCart = () => {
     }
 
     try {
-      await cartApi.add({ productId: product.id, quantity, selectedSize: size }, token);
+      await cartApi.add({ productId: product.id, quantity, selectedSize: size });
       addNotification("Ürün sepete eklendi!", "success");
       await fetchCart();
     } catch (error: any) {
@@ -67,7 +67,7 @@ export const useCart = () => {
     if (!token) return;
 
     try {
-      await cartApi.remove(productId, selectedSize, token);
+      await cartApi.remove(productId, selectedSize);
       addNotification("Ürün sepetten çıkarıldı", "info");
       await fetchCart();
     } catch (error: any) {
@@ -87,7 +87,7 @@ export const useCart = () => {
     if (!token) return;
 
     try {
-      await cartApi.update(productId, { quantity, selectedSize }, token);
+      await cartApi.update(productId, { quantity, selectedSize });
       await fetchCart();
     } catch (error: any) {
       console.error("Miktar güncellenemedi:", error);
@@ -112,7 +112,7 @@ export const useCart = () => {
     if (!token) return;
 
     try {
-      await cartApi.clear(token);
+      await cartApi.clear();
       setCart([]);
     } catch (error: any) {
       console.error("Sepet temizlenemedi:", error);

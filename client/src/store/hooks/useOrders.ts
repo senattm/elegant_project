@@ -48,7 +48,6 @@ export const useOrders = () => {
       const response = await ordersApi.create(
         orderItems,
         payment,
-        token,
         addressId
       );
       addNotification("Siparişiniz oluşturuldu!", "success");
@@ -69,7 +68,7 @@ export const useOrders = () => {
     }
 
     try {
-      const response = await ordersApi.getAll(token);
+      const response = await ordersApi.getAll();
       return response.data;
     } catch (error: any) {
       console.error("Siparişler yüklenemedi:", error);
@@ -83,7 +82,7 @@ export const useOrders = () => {
     }
 
     try {
-      const response = await ordersApi.getById(orderId, token);
+      const response = await ordersApi.getById(orderId);
       return response.data;
     } catch (error: any) {
       console.error("Sipariş yüklenemedi:", error);

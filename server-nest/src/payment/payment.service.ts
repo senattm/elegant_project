@@ -11,6 +11,11 @@ export class PaymentService {
   async processPayment(payment: PaymentDto): Promise<PaymentResult> {
     this.validateExpiryDate(payment.expiryDate);
 
+    console.log('Payment Processing:', {
+      cardLast4: payment.cardNumber.slice(-4),
+      cardHolder: payment.cardHolderName,
+    });
+
     return {
       success: true,
       message: 'Ödeme başarıyla tamamlandı',

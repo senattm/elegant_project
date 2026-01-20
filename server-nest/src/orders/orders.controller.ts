@@ -28,24 +28,17 @@ export class OrdersController {
   constructor(
     private ordersService: OrdersService,
     private paymentService: PaymentService,
-  ) {}
+  ) { }
 
   @Post()
   @ApiOperation({ summary: 'Yeni sipariş oluştur' })
   @ApiResponse({ status: 201, description: 'Sipariş başarıyla oluşturuldu' })
   @ApiResponse({ status: 400, description: 'Geçersiz veri veya ödeme hatası' })
   async createOrder(@Request() req, @Body() dto: CreateOrderDto) {
-    const paymentResult = await this.paymentService.processPayment(dto.payment);
-
-    if (!paymentResult.success) {
-      throw new BadRequestException('Ödeme işlemi başarısız oldu');
-    }
-
     return this.ordersService.createOrder(
       req.user.id,
       dto.items,
-      dto.payment.cardHolderName,
-      dto.payment.cardNumber.slice(-4),
+      dto.payment,
       dto.addressId,
     );
   }

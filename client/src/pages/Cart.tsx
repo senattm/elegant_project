@@ -140,6 +140,15 @@ const Cart = () => {
               <Text fz={32} fw={600}>
                 {total.toFixed(2)} TL
               </Text>
+              {total >= 7500 ? (
+                <Text size="sm" c="green" fw={500} mt={8}>
+                  Ücretsiz Kargo!
+                </Text>
+              ) : (
+                <Text size="sm" c="dimmed" mt={8}>
+                  {(7500 - total).toFixed(2)} TL daha alışveriş yapın, kargo ücretsiz olsun!
+                </Text>
+              )}
             </Box>
 
             <Group gap="md">

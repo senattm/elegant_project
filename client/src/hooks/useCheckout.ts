@@ -188,7 +188,7 @@ export const useCheckout = () => {
                 );
             }
 
-            await createOrder(
+            const orderResponse = await createOrder(
                 cart,
                 {
                     cardNumber: paymentData.cardNumber,
@@ -200,7 +200,11 @@ export const useCheckout = () => {
             );
 
             clearCart();
-            navigate("/orders");
+            if (orderResponse?.id) {
+                navigate(`/orders/${orderResponse.id}`);
+            } else {
+                navigate("/orders");
+            }
         } catch (error: any) {
             console.error("Sipariş oluşturulamadı:", error);
             setErrors({ submit: error.response?.data?.message || "Sipariş oluşturulamadı" });

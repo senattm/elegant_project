@@ -101,9 +101,14 @@ const OrderSummary = ({
                         </Text>
                     </Group>
 
-                    {total >= 7500 && shippingCost === 0 && (
-                        <Text size="xs" c="green" ta="center">
-                            750 TL ve üzeri alışverişlerde kargo ücretsiz!
+
+                    {total >= 7500 ? (
+                        <Text size="xs" c="green" ta="center" fw={500}>
+                            7500 TL ve üzeri alışverişlerde kargo ücretsiz!
+                        </Text>
+                    ) : (
+                        <Text size="xs" c="dimmed" ta="center">
+                            {(7500 - total).toFixed(2)} TL daha alışveriş yapın, kargo ücretsiz olsun!
                         </Text>
                     )}
                 </Stack>

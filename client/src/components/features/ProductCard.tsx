@@ -19,12 +19,23 @@ interface ProductCardProps {
   product: Product;
 }
 
-const CATEGORY_SIZES: Record<number, string[]> = {
-  7: ["36", "37", "38", "39", "40", "41"],
-  8: ["STD"],
+const SHOE_SIZES = ["36", "37", "38", "39", "40", "41"];
+const BAG_SIZES = ["STD"];
+const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL"];
+
+const CATEGORY_IDS = {
+  SHOES: 3,
+  BAGS: 4,
 };
 
-const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL"];
+const getProductSizes = (categoryId: number, parentId?: number | null) => {
+  const ids = [categoryId];
+  if (parentId) ids.push(parentId);
+
+  if (ids.includes(CATEGORY_IDS.BAGS)) return BAG_SIZES;
+  if (ids.includes(CATEGORY_IDS.SHOES)) return SHOE_SIZES;
+  return DEFAULT_SIZES;
+};
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
@@ -44,7 +55,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     return price.toFixed(2);
   }, [product.price]);
 
-  const availableSizes = CATEGORY_SIZES[product.category_id] || DEFAULT_SIZES;
+  const availableSizes = getProductSizes(product.category_id, product.parent_category_id);
 
   const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();

@@ -136,7 +136,7 @@ const PaymentSection = ({
                         <Checkbox
                             label="Bu kartı kaydet"
                             checked={savePaymentMethod}
-                            onChange={(e) => onToggleSavePaymentMethod()}
+                            onChange={() => onToggleSavePaymentMethod()}
                         />
                     </>
                 )}

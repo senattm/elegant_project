@@ -35,24 +35,17 @@ const CATEGORY_IDS = {
   BAGS: 4,
 };
 
-const getSizesForCategory = (categoryId: number, categoryName?: string): string[] => {
-  const name = categoryName ? categoryName.toLowerCase() : "";
+const getSizesForCategory = (categoryId: number, parentCategoryId?: number | null): string[] => {
+  const ids = [Number(categoryId)];
+  if (parentCategoryId) ids.push(Number(parentCategoryId));
 
-  if (
-    categoryId === CATEGORY_IDS.BAGS ||
-    name.includes("çanta") ||
-    name.includes("canta") ||
-    name.includes("bag")
-  ) {
+  console.log("Size Check:", { categoryId, parentCategoryId, checking: ids });
+
+  if (ids.includes(CATEGORY_IDS.BAGS)) {
     return BAG_SIZES;
   }
 
-  if (
-    categoryId === CATEGORY_IDS.SHOES ||
-    name.includes("ayakkabı") ||
-    name.includes("ayakkabi") ||
-    name.includes("shoe")
-  ) {
+  if (ids.includes(CATEGORY_IDS.SHOES)) {
     return SHOE_SIZES;
   }
 
@@ -115,7 +108,7 @@ const ProductDetail = () => {
       : parseFloat(product.price);
   const availableSizes = getSizesForCategory(
     product.category_id,
-    product.category
+    product.parent_category_id
   );
 
   return (

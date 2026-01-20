@@ -2,19 +2,13 @@ import { useAtom } from "jotai";
 import { cartAtom, cartCountAtom, tokenAtom } from "../atoms";
 import { useNotification } from "./useNotification";
 import type { Product } from "../../types";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { cartApi } from "../../api/client";
 
 export const useCart = () => {
   const [cart, setCart] = useAtom(cartAtom);
   const [cartCount] = useAtom(cartCountAtom);
   const [token] = useAtom(tokenAtom);
   const { addNotification } = useNotification();
-
-  const getAuthHeader = () => ({
-    headers: { Authorization: `Bearer ${token}` },
-  });
 
   const fetchCart = async () => {
     if (!token) {
@@ -23,7 +17,7 @@ export const useCart = () => {
     }
 
     try {
-      const response = await axios.get(`${API_URL}/cart`, getAuthHeader());
+      const response = await cartApi.get(token);
       const cartItems = response.data.map((item: any) => ({
         product: {
           id: item.product_id,
@@ -57,11 +51,7 @@ export const useCart = () => {
     }
 
     try {
-      await axios.post(
-        `${API_URL}/cart`,
-        { productId: product.id, quantity, selectedSize: size },
-        getAuthHeader()
-      );
+      await cartApi.add({ productId: product.id, quantity, selectedSize: size }, token);
       addNotification("Ürün sepete eklendi!", "success");
       await fetchCart();
     } catch (error: any) {
@@ -77,11 +67,7 @@ export const useCart = () => {
     if (!token) return;
 
     try {
-      const url = selectedSize
-        ? `${API_URL}/cart/${productId}?selectedSize=${selectedSize}`
-        : `${API_URL}/cart/${productId}`;
-
-      await axios.delete(url, getAuthHeader());
+      await cartApi.remove(productId, selectedSize, token);
       addNotification("Ürün sepetten çıkarıldı", "info");
       await fetchCart();
     } catch (error: any) {
@@ -101,11 +87,7 @@ export const useCart = () => {
     if (!token) return;
 
     try {
-      await axios.put(
-        `${API_URL}/cart/${productId}`,
-        { quantity, selectedSize },
-        getAuthHeader()
-      );
+      await cartApi.update(productId, { quantity, selectedSize }, token);
       await fetchCart();
     } catch (error: any) {
       console.error("Miktar güncellenemedi:", error);
@@ -130,7 +112,7 @@ export const useCart = () => {
     if (!token) return;
 
     try {
-      await axios.delete(`${API_URL}/cart`, getAuthHeader());
+      await cartApi.clear(token);
       setCart([]);
     } catch (error: any) {
       console.error("Sepet temizlenemedi:", error);

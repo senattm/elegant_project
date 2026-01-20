@@ -1,18 +1,12 @@
 import { useAtom } from "jotai";
 import { favoritesAtom, tokenAtom } from "../atoms";
 import { useNotification } from "./useNotification";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { favoritesApi } from "../../api/client";
 
 export const useFavorites = () => {
   const [favorites, setFavorites] = useAtom(favoritesAtom);
   const [token] = useAtom(tokenAtom);
   const { addNotification } = useNotification();
-
-  const getAuthHeader = () => ({
-    headers: { Authorization: `Bearer ${token}` },
-  });
 
   const fetchFavorites = async () => {
     if (!token) {
@@ -21,7 +15,7 @@ export const useFavorites = () => {
     }
 
     try {
-      const response = await axios.get(`${API_URL}/favorites`, getAuthHeader());
+      const response = await favoritesApi.getAll(token);
       const favoriteIds = response.data.map((item: any) => item.product_id);
       setFavorites(favoriteIds);
     } catch (error: any) {
@@ -39,11 +33,7 @@ export const useFavorites = () => {
     }
 
     try {
-      const response = await axios.post(
-        `${API_URL}/favorites/toggle`,
-        { productId },
-        getAuthHeader()
-      );
+      const response = await favoritesApi.toggle(productId, token);
 
       if (response.data.isFavorite) {
         addNotification("Favorilere eklendi!", "success");
@@ -69,7 +59,7 @@ export const useFavorites = () => {
     if (!token) return;
 
     try {
-      await axios.delete(`${API_URL}/favorites/${productId}`, getAuthHeader());
+      await favoritesApi.remove(productId, token);
       addNotification("Favorilerden çıkarıldı", "info");
       await fetchFavorites();
     } catch (error: any) {
@@ -85,7 +75,7 @@ export const useFavorites = () => {
     if (!token) return;
 
     try {
-      await axios.delete(`${API_URL}/favorites`, getAuthHeader());
+      await favoritesApi.clear(token);
       addNotification("Tüm favoriler temizlendi", "info");
       setFavorites([]);
     } catch (error: any) {

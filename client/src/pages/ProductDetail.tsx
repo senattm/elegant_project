@@ -15,7 +15,7 @@ import {
 import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import { useCart, useFavorites } from "../store/hooks";
 import type { Product } from "../types";
-import axios from "axios";
+
 import PageLayout from "../components/layout/PageLayout";
 import BackButton from "../components/ui/BackButton";
 import QuantitySelector from "../components/ui/QuantitySelector";
@@ -23,34 +23,10 @@ import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
 import ImageSlider from "../components/ui/ImageSlider";
 import { getImageUrl } from "../utils/imageUrl";
+import { getProductSizes } from "../utils/productUtils";
+import { productsApi } from "../api/client";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"];
-const SHOE_SIZES = ["36", "37", "38", "39", "40", "41"];
-const BAG_SIZES = ["STD"];
-
-const CATEGORY_IDS = {
-  SHOES: 3,
-  BAGS: 4,
-};
-
-const getSizesForCategory = (categoryId: number, parentCategoryId?: number | null): string[] => {
-  const ids = [Number(categoryId)];
-  if (parentCategoryId) ids.push(Number(parentCategoryId));
-
-  console.log("Size Check:", { categoryId, parentCategoryId, checking: ids });
-
-  if (ids.includes(CATEGORY_IDS.BAGS)) {
-    return BAG_SIZES;
-  }
-
-  if (ids.includes(CATEGORY_IDS.SHOES)) {
-    return SHOE_SIZES;
-  }
-
-  return CLOTHING_SIZES;
-};
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -67,7 +43,7 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`${API_URL}/products/${id}`);
+        const response = await productsApi.getById(Number(id));
         setProduct(response.data);
       } catch (error) {
         console.error("Ürün yüklenemedi:", error);
@@ -106,7 +82,7 @@ const ProductDetail = () => {
     typeof product.price === "number"
       ? product.price
       : parseFloat(product.price);
-  const availableSizes = getSizesForCategory(
+  const availableSizes = getProductSizes(
     product.category_id,
     product.parent_category_id
   );

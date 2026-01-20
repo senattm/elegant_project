@@ -14,28 +14,13 @@ import { motion } from "framer-motion";
 import { useFavorites, useCart } from "../../store/hooks";
 import type { Product } from "../../store/atoms";
 import ImageSlider from "../ui/ImageSlider";
+import { getProductSizes } from "../../utils/productUtils";
 
 interface ProductCardProps {
   product: Product;
 }
 
-const SHOE_SIZES = ["36", "37", "38", "39", "40", "41"];
-const BAG_SIZES = ["STD"];
-const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL"];
 
-const CATEGORY_IDS = {
-  SHOES: 3,
-  BAGS: 4,
-};
-
-const getProductSizes = (categoryId: number, parentId?: number | null) => {
-  const ids = [categoryId];
-  if (parentId) ids.push(parentId);
-
-  if (ids.includes(CATEGORY_IDS.BAGS)) return BAG_SIZES;
-  if (ids.includes(CATEGORY_IDS.SHOES)) return SHOE_SIZES;
-  return DEFAULT_SIZES;
-};
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();

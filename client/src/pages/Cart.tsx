@@ -56,7 +56,9 @@ const Cart = () => {
       <PageHeader
         title="SEPETİM"
         subtitle={`${cart.length} Ürün`}
-        mb={50}
+        mb={30}
+        align="left"
+        size="sm"
       />
 
       {cart.length === 0 ? (

@@ -37,7 +37,9 @@ const Favorites = () => {
       <PageHeader
         title="FAVORİLERİM"
         subtitle={`${favoriteProducts.length} Ürün`}
-        mb={50}
+        mb={30}
+        align="left"
+        size="sm"
       />
 
       {favoriteProducts.length === 0 ? (

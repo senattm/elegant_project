@@ -1,44 +1,47 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  Text,
-  Box,
-  SimpleGrid,
-  Group,
-  Button,
-  Select,
-  NumberInput,
-  Chip,
-  Stack,
-  Paper,
-  Badge,
-  ScrollArea,
-  Flex,
-} from "@mantine/core";
-import { IconFilter, IconX, IconChevronDown } from "@tabler/icons-react";
+import { Box, SimpleGrid, Pagination, Center } from "@mantine/core";
 import ProductCard from "../components/features/ProductCard";
+import FilterPanel from "../components/store/FilterPanel";
 import { useProducts } from "../store/hooks";
 import { productsApi } from "../api/client";
 import type { Product } from "../types";
 import { useAtom } from "jotai";
 import { searchQueryAtom } from "../store/atoms";
 import PageLayout from "../components/layout/PageLayout";
-import PageHeader from "../components/layout/PageHeader";
 import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
-type SortOption = "default" | "price-asc" | "price-desc" | "name-asc";
+import { useStoreFilters } from "../hooks/useStoreFilters";
+import { calculatePriceRange } from "../utils/priceUtils";
+
+interface Category {
+  name: string;
+  product_count: number;
+}
+
+const PRODUCTS_PER_PAGE = 25;
+
 const Store = () => {
   const { products, loading, fetchProducts } = useProducts();
   const [searchQuery, setSearchQuery] = useAtom(searchQueryAtom);
   const [searchParams] = useSearchParams();
-  const [categories, setCategories] = useState<
-    Array<{ name: string; product_count: number }>
-  >([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [maxPrice, setMaxPrice] = useState(5000);
-  const [sortBy, setSortBy] = useState<SortOption>("default");
-  const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const {
+    selectedCategories,
+    setSelectedCategories,
+    priceRange,
+    setPriceRange,
+    sortBy,
+    setSortBy,
+    filteredAndSortedProducts,
+  } = useStoreFilters({ products, searchQuery });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategories, priceRange, sortBy, searchQuery]);
 
   useEffect(() => {
     fetchProducts();
@@ -50,9 +53,7 @@ const Store = () => {
 
     if (categoryFromUrl && categories.length > 0) {
       const decodedCategory = decodeURIComponent(categoryFromUrl);
-      const matchingCategory = categories.find(
-        (c) => c.name === decodedCategory
-      );
+      const matchingCategory = categories.find((c) => c.name === decodedCategory);
 
       if (matchingCategory) {
         setSelectedCategories([decodedCategory]);
@@ -61,380 +62,139 @@ const Store = () => {
       }
     }
   }, [searchParams, categories]);
+
   const fetchCategories = async () => {
     try {
       const response = await productsApi.getAll();
       const categoriesMap = new Map<string, number>();
+
       response.data.forEach((product: Product) => {
         if (product.category) {
           const count = categoriesMap.get(product.category) || 0;
           categoriesMap.set(product.category, count + 1);
         }
       });
+
       const categoriesArray = Array.from(categoriesMap.entries()).map(
         ([name, product_count]) => ({ name, product_count })
       );
       setCategories(categoriesArray);
 
+      if (response.data.length > 0) {
+        const [min, max] = calculatePriceRange(response.data);
+        setMaxPrice(max);
+        setPriceRange([min, max]);
+      }
+
       const categoryFromUrl = searchParams.get("category");
       if (categoryFromUrl) {
         const decodedCategory = decodeURIComponent(categoryFromUrl);
-        const matchingCategory = categoriesArray.find(
-          (c) => c.name === decodedCategory
-        );
+        const matchingCategory = categoriesArray.find((c) => c.name === decodedCategory);
         if (matchingCategory) {
           setSelectedCategories([decodedCategory]);
           setSearchQuery("");
-        }
-      }
-
-      if (response.data.length > 0) {
-        const prices = response.data
-          .map((p: Product) => parseFloat(String(p.price)))
-          .filter((p: number) => !isNaN(p));
-        if (prices.length > 0) {
-          const minPrice = Math.floor(Math.min(...prices));
-          const calculatedMaxPrice = Math.ceil(Math.max(...prices));
-          setMaxPrice(calculatedMaxPrice);
-          setPriceRange([minPrice, calculatedMaxPrice]);
         }
       }
     } catch (error) {
       console.error("Failed to fetch categories:", error);
     }
   };
-  const filteredAndSortedProducts = useMemo(() => {
-    let filtered = [...products];
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (product) =>
-          product.name.toLowerCase().includes(query) ||
-          (product.category &&
-            product.category.toLowerCase().includes(query)) ||
-          (product.description &&
-            product.description.toLowerCase().includes(query))
-      );
-    }
-
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter(
-        (product) =>
-          product.category && selectedCategories.includes(product.category)
-      );
-    }
-    filtered = filtered.filter((product) => {
-      const price = parseFloat(String(product.price));
-      return price >= priceRange[0] && price <= priceRange[1];
-    });
-    switch (sortBy) {
-      case "price-asc":
-        filtered.sort((a, b) => {
-          const priceA = parseFloat(String(a.price));
-          const priceB = parseFloat(String(b.price));
-          return priceA - priceB;
-        });
-        break;
-      case "price-desc":
-        filtered.sort((a, b) => {
-          const priceA = parseFloat(String(a.price));
-          const priceB = parseFloat(String(b.price));
-          return priceB - priceA;
-        });
-        break;
-      case "name-asc":
-        filtered.sort((a, b) => a.name.localeCompare(b.name, "tr"));
-        break;
-      default:
-        break;
-    }
-    return filtered;
-  }, [products, selectedCategories, priceRange, sortBy, searchQuery]);
   const clearFilters = () => {
     setSelectedCategories([]);
-    if (products.length > 0) {
-      const prices = products
-        .map((p) => parseFloat(String(p.price)))
-        .filter((p) => !isNaN(p));
-      if (prices.length > 0) {
-        const minPrice = Math.floor(Math.min(...prices));
-        const calculatedMaxPrice = Math.ceil(Math.max(...prices));
-        setPriceRange([minPrice, calculatedMaxPrice]);
-      }
-    } else {
-      setPriceRange([0, maxPrice]);
-    }
+    const [min, max] = calculatePriceRange(products);
+    setPriceRange([min, max]);
     setSortBy("default");
   };
+
   const initialPriceRange = useMemo(() => {
-    if (products.length > 0) {
-      const prices = products
-        .map((p) => parseFloat(String(p.price)))
-        .filter((p) => !isNaN(p));
-      if (prices.length > 0) {
-        const minPrice = Math.floor(Math.min(...prices));
-        const calculatedMaxPrice = Math.ceil(Math.max(...prices));
-        return [minPrice, calculatedMaxPrice] as [number, number];
-      }
-    }
-    return [0, maxPrice] as [number, number];
-  }, [products, maxPrice]);
+    return calculatePriceRange(products);
+  }, [products]);
+
   const hasActiveFilters =
     selectedCategories.length > 0 ||
     sortBy !== "default" ||
     priceRange[0] !== initialPriceRange[0] ||
     priceRange[1] !== initialPriceRange[1];
-  const subtitle = (
-    <Group gap="xs" justify="center">
-      <Text fz="sm" c="dimmed" fw={500}>
-        {filteredAndSortedProducts.length} ÜRÜN
-        {hasActiveFilters && (
-          <Text component="span" c="dark" ml={8}>
-            • Filtrelenmiş
-          </Text>
-        )}
-      </Text>
-      {searchQuery && (
-        <Button
-          variant="subtle"
-          size="compact-xs"
-          onClick={() => setSearchQuery("")}
-          leftSection={<IconX size={14} />}
-        >
-          Aramayı Temizle
-        </Button>
-      )}
-    </Group>
-  );
+
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / PRODUCTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  const paginatedProducts = filteredAndSortedProducts.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  if (loading) {
+    return <LoadingState message="Ürünler yükleniyor..." />;
+  }
 
   return (
     <PageLayout>
-      <PageHeader
-        title={
-          searchQuery
-            ? `"${searchQuery}" için sonuçlar`.toLocaleUpperCase("tr-TR")
-            : "MAĞAZA"
-        }
-        subtitle={subtitle}
-        mb={60}
+      <FilterPanel
+        categories={categories}
+        selectedCategories={selectedCategories}
+        setSelectedCategories={setSelectedCategories}
+        priceRange={priceRange}
+        setPriceRange={setPriceRange}
+        maxPrice={maxPrice}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearFilters}
+        productCount={filteredAndSortedProducts.length}
+        searchQuery={searchQuery}
+        onClearSearch={() => setSearchQuery("")}
       />
-      <Paper
-        p={{ base: "md", sm: "lg" }}
-        mb="xl"
-        withBorder
-        bg="#fafafa"
-        style={{ borderColor: "#e9ecef" }}
-      >
-        {" "}
-        <Flex
-          direction={{ base: "column", sm: "row" }}
-          justify="space-between"
-          align={{ base: "stretch", sm: "center" }}
-          gap="md"
-          wrap="wrap"
-        >
-          {" "}
-          <Group gap="sm" wrap="wrap">
-            {" "}
-            <Button
-              variant={showFilters ? "filled" : "light"}
-              leftSection={<IconFilter size={18} />}
-              rightSection={
-                <IconChevronDown
-                  size={16}
-                  style={{
-                    transform: showFilters ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s ease",
-                  }}
-                />
-              }
-              onClick={() => setShowFilters(!showFilters)}
-              fw={500}
-              style={{ letterSpacing: "0.05em" }}
+
+      {filteredAndSortedProducts.length === 0 ? (
+        <EmptyState message="Ürün bulunamadı" />
+      ) : (
+        <>
+          <Box mb={40}>
+            <SimpleGrid
+              cols={{ base: 2, xs: 2, sm: 3, md: 4, lg: 5 }}
+              spacing={{ base: "md", sm: "lg" }}
             >
-              {" "}
-              Filtreler{" "}
-            </Button>{" "}
-            {hasActiveFilters && (
-              <Button
-                variant="subtle"
-                color="gray"
-                leftSection={<IconX size={16} />}
-                onClick={clearFilters}
-                size="sm"
-                fw={500}
-              >
-                {" "}
-                Temizle{" "}
-              </Button>
-            )}{" "}
-          </Group>{" "}
-          <Select
-            label="Sırala"
-            placeholder="Sıralama seçin"
-            value={sortBy}
-            onChange={(value) => setSortBy((value as SortOption) || "default")}
-            data={[
-              { value: "default", label: "Varsayılan" },
-              { value: "price-asc", label: "Fiyat: Düşükten Yükseğe" },
-              { value: "price-desc", label: "Fiyat: Yüksekten Düşüğe" },
-              { value: "name-asc", label: "İsme Göre (A-Z)" },
-            ]}
-            style={{ minWidth: 220 }}
-            styles={{
-              label: {
-                fontWeight: 600,
-                fontSize: "12px",
-                letterSpacing: "0.05em",
-                marginBottom: 8,
-              },
-            }}
-          />{" "}
-        </Flex>{" "}
-        {showFilters && (
-          <Box
-            mt="xl"
-            pt="xl"
-            className="fade-in"
-            style={{
-              borderTop: "1px solid #e9ecef",
-            }}
-          >
-            {" "}
-            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
-              {" "}
-              <Stack gap="md">
-                {" "}
-                <Text fw={600} size="sm" c="dark">
-                  {" "}
-                  Kategoriler{" "}
-                </Text>{" "}
-                <ScrollArea h={220}>
-                  {" "}
-                  <Chip.Group
-                    multiple
-                    value={selectedCategories}
-                    onChange={setSelectedCategories}
-                  >
-                    {" "}
-                    <Stack gap="xs">
-                      {" "}
-                      {categories.map((category) => (
-                        <Group
-                          key={category.name}
-                          justify="space-between"
-                          p="xs"
-                          className="cursor-pointer transition-colors"
-                          style={{
-                            borderRadius: "6px",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#f8f9fa";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "transparent";
-                          }}
-                        >
-                          {" "}
-                          <Chip
-                            value={category.name}
-                            size="sm"
-                            styles={{
-                              label: { fontWeight: 500, padding: "6px 12px" },
-                            }}
-                          >
-                            {" "}
-                            {category.name}{" "}
-                          </Chip>{" "}
-                          <Badge
-                            size="sm"
-                            variant="light"
-                            color="gray"
-                            fw={600}
-                          >
-                            {" "}
-                            {category.product_count}{" "}
-                          </Badge>{" "}
-                        </Group>
-                      ))}{" "}
-                    </Stack>{" "}
-                  </Chip.Group>{" "}
-                </ScrollArea>{" "}
-              </Stack>{" "}
-              <Stack gap="md">
-                {" "}
-                <Text fw={600} size="sm" c="dark">
-                  {" "}
-                  Fiyat Aralığı{" "}
-                </Text>{" "}
-                <Group gap="md" grow>
-                  {" "}
-                  <NumberInput
-                    label="Minimum"
-                    value={priceRange[0]}
-                    onChange={(value) =>
-                      setPriceRange([Number(value) || 0, priceRange[1]])
-                    }
-                    min={0}
-                    max={maxPrice}
-                    step={50}
-                    suffix=" TL"
-                    styles={{
-                      label: {
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        marginBottom: 6,
-                      },
-                      input: { fontWeight: 500 },
-                    }}
-                  />{" "}
-                  <NumberInput
-                    label="Maksimum"
-                    value={priceRange[1]}
-                    onChange={(value) =>
-                      setPriceRange([priceRange[0], Number(value) || maxPrice])
-                    }
-                    min={0}
-                    max={maxPrice}
-                    step={50}
-                    suffix=" TL"
-                    styles={{
-                      label: {
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        marginBottom: 6,
-                      },
-                      input: { fontWeight: 500 },
-                    }}
-                  />{" "}
-                </Group>{" "}
-              </Stack>{" "}
-            </SimpleGrid>{" "}
+              {paginatedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </SimpleGrid>
           </Box>
-        )}{" "}
-      </Paper>
-      {loading && <LoadingState message="Ürünler yükleniyor..." />}
-      {!loading && filteredAndSortedProducts.length === 0 && (
-        <EmptyState
-          message="Filtrelere uygun ürün bulunamadı"
-          actionLabel={hasActiveFilters ? "Filtreleri Temizle" : undefined}
-          onAction={hasActiveFilters ? clearFilters : undefined}
-          py={80}
-        />
-      )}
-      {!loading && filteredAndSortedProducts.length > 0 && (
-        <SimpleGrid
-          cols={{ base: 1, xs: 2, sm: 2, md: 3, lg: 4 }}
-          spacing={{ base: 24, sm: 28, md: 36 }}
-        >
-          {filteredAndSortedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </SimpleGrid>
+
+          {totalPages > 1 && (
+            <Center mb={80}>
+              <Pagination
+                total={totalPages}
+                value={currentPage}
+                onChange={handlePageChange}
+                size="lg"
+                radius={0}
+                withEdges
+                color="dark"
+                styles={{
+                  control: {
+                    border: "none",
+                    fontWeight: 500,
+                    letterSpacing: "0.05em",
+                    "&[data-active]": {
+                      backgroundColor: "black",
+                      color: "white",
+                    },
+                    "&:not([data-active]):hover": {
+                      backgroundColor: "#f1f3f5",
+                    },
+                  },
+                }}
+              />
+            </Center>
+          )}
+        </>
       )}
     </PageLayout>
   );
 };
+
 export default Store;

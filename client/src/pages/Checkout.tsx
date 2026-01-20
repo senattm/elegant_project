@@ -364,7 +364,7 @@ const Checkout = () => {
           gap="xl"
           align="flex-start"
         >
-          <Box style={{ flex: 1 }}>
+          <Box flex={1}>
             <Stack gap="xl">
               <Paper shadow="none" p="xl" withBorder>
                 <Text fz={20} fw={500} mb="md">
@@ -668,10 +668,8 @@ const Checkout = () => {
 
           <Box
             w={{ base: "100%", md: 400 }}
-            style={{
-              position: "sticky",
-              top: 140,
-            }}
+            pos="sticky"
+            top={140}
           >
             <Paper shadow="none" p="xl" withBorder>
               <Text fz={20} fw={500} mb="md">
@@ -701,7 +699,7 @@ const Checkout = () => {
                         h={80}
                         fit="cover"
                       />
-                      <Box style={{ flex: 1 }}>
+                      <Box flex={1}>
                         <Text fz={14} fw={500} lineClamp={1}>
                           {item.product.name}
                         </Text>

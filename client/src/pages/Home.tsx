@@ -62,9 +62,8 @@ const Home = () => {
         const categoriesArray = Array.from(categoriesMap.entries())
           .map(([name, product_count]) => ({
             name,
-            image: `http://localhost:5000/images/${
-              categoryImages[name] || "deneme.jpg"
-            }`,
+            image: `http://localhost:5000/images/${categoryImages[name] || "deneme.jpg"
+              }`,
             description: categoryDescriptions[name] || "Kaliteli ürünler",
             product_count,
           }))
@@ -91,9 +90,9 @@ const Home = () => {
             <Text
               component="span"
               fw={600}
+              pb={2}
               style={{
                 borderBottom: "1px solid rgba(255,255,255,0.5)",
-                paddingBottom: 2,
               }}
             >
               %10
@@ -109,10 +108,8 @@ const Home = () => {
             order={2}
             ta="center"
             mb={8}
-            style={{
-              fontSize: "40px",
-              letterSpacing: "2px",
-            }}
+            fz={40}
+            style={{ letterSpacing: "2px" }}
           >
             KATEGORİLER
           </Title>
@@ -143,11 +140,10 @@ const Home = () => {
                       );
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
+                    pos="relative"
                     style={{
                       cursor: "pointer",
-                      position: "relative",
                       aspectRatio: "1/1",
-                      borderRadius: "0px",
                       overflow: "hidden",
                     }}
                   >
@@ -166,16 +162,16 @@ const Home = () => {
                       }}
                     />
                     <Box
+                      pos="absolute"
+                      top={0}
+                      left={0}
+                      right={0}
+                      bottom={0}
+                      p={24}
                       style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        padding: "24px",
                         zIndex: 2,
                         pointerEvents: "none",
                       }}
@@ -184,11 +180,10 @@ const Home = () => {
                         order={3}
                         c="white"
                         ta="center"
+                        fz={28}
+                        fw={400}
                         style={{
-                          fontSize: "28px",
                           letterSpacing: "2px",
-                          fontWeight: 400,
-                          color: "#ffffff",
                           textShadow: "none",
                         }}
                       >
@@ -215,13 +210,12 @@ const Home = () => {
             }}
           >
             <Box
+              pos="relative"
+              w={500}
+              maw="100%"
               style={{
-                position: "relative",
                 overflow: "hidden",
-                borderRadius: "0px",
                 aspectRatio: "1.5/1",
-                width: "500px",
-                maxWidth: "100%",
                 flexShrink: 0,
               }}
             >
@@ -248,7 +242,8 @@ const Home = () => {
 
             <Box
               px={{ base: "md", md: "lg" }}
-              style={{ textAlign: "left", maxWidth: "600px", flex: "0 1 auto" }}
+              maw={600}
+              style={{ textAlign: "left", flex: "0 1 auto" }}
             >
               <motion.div
                 initial={{ opacity: 0, x: 30 }}
@@ -269,11 +264,9 @@ const Home = () => {
                 <Text
                   size="lg"
                   mb="xl"
-                  style={{
-                    lineHeight: 1.8,
-                    letterSpacing: "0.5px",
-                    fontWeight: 300,
-                  }}
+                  fw={300}
+                  lh={1.8}
+                  style={{ letterSpacing: "0.5px" }}
                 >
                   Modanın geçici akımları yerine, stilin kalıcılığına
                   odaklanıyoruz. Koleksiyonlarımız; nitelikli dokuları modern

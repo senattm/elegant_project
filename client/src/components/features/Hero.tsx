@@ -30,9 +30,9 @@ const Hero = () => {
               order={1}
               c="white"
               mb="xl"
+              fw={400}
               style={{
                 fontSize: "clamp(3rem, 7vw, 6rem)",
-                fontWeight: 400,
                 letterSpacing: "0.3em",
               }}
             >
@@ -44,7 +44,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.4 }}
-          >    
+          >
           </motion.div>
 
           <motion.div

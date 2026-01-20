@@ -11,7 +11,7 @@ export default function Layout({ alwaysWhite = false }: LayoutProps) {
     return (
         <Box style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
             <Navbar alwaysWhite={alwaysWhite} />
-            <Box style={{ flex: 1, width: "100%" }}>
+            <Box flex={1} w="100%">
                 <Outlet />
             </Box>
             <Footer />

@@ -38,7 +38,7 @@ const QuantitySelector = ({
         variant="subtle"
         onClick={handleDecrease}
         disabled={value <= min}
-        style={{ color: "black" }}
+        c="black"
       >
         <IconMinus size={iconSize} />
       </ActionIcon>
@@ -49,7 +49,7 @@ const QuantitySelector = ({
         variant="subtle"
         onClick={handleIncrease}
         disabled={max ? value >= max : false}
-        style={{ color: "black" }}
+        c="black"
       >
         <IconPlus size={iconSize} />
       </ActionIcon>

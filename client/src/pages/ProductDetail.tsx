@@ -31,16 +31,28 @@ const SHOE_SIZES = ["36", "37", "38", "39", "40", "41"];
 const BAG_SIZES = ["STD"];
 
 const CATEGORY_IDS = {
-  SHOES: 7,
-  BAGS: 8,
+  SHOES: 3,
+  BAGS: 4,
 };
 
-const getSizesForCategory = (categoryId: number): string[] => {
-  if (categoryId === CATEGORY_IDS.BAGS) {
+const getSizesForCategory = (categoryId: number, categoryName?: string): string[] => {
+  const name = categoryName ? categoryName.toLowerCase() : "";
+
+  if (
+    categoryId === CATEGORY_IDS.BAGS ||
+    name.includes("çanta") ||
+    name.includes("canta") ||
+    name.includes("bag")
+  ) {
     return BAG_SIZES;
   }
 
-  if (categoryId === CATEGORY_IDS.SHOES) {
+  if (
+    categoryId === CATEGORY_IDS.SHOES ||
+    name.includes("ayakkabı") ||
+    name.includes("ayakkabi") ||
+    name.includes("shoe")
+  ) {
     return SHOE_SIZES;
   }
 
@@ -101,7 +113,10 @@ const ProductDetail = () => {
     typeof product.price === "number"
       ? product.price
       : parseFloat(product.price);
-  const availableSizes = getSizesForCategory(product.category_id);
+  const availableSizes = getSizesForCategory(
+    product.category_id,
+    product.category
+  );
 
   return (
     <PageLayout pt={{ base: 120, md: 140 }}>
@@ -117,7 +132,7 @@ const ProductDetail = () => {
                     <UnstyledButton
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      onMouseEnter={() => {}}
+                      onMouseEnter={() => { }}
                       style={{
                         border:
                           selectedImage === index

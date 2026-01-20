@@ -62,13 +62,13 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
       top={0}
       left={0}
       right={0}
+      bg={bgColor}
+      py={isScrolled ? rem(20) : rem(32)}
       style={{
         zIndex: 100,
-        backgroundColor: bgColor,
         transition: "all 0.3s ease",
         boxShadow: !isDark ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
       }}
-      py={isScrolled ? rem(20) : rem(32)}
     >
       <Container size="xl" px="xl">
         <Group justify="space-between" align="center">
@@ -82,10 +82,10 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               fz={{ base: rem(32), sm: rem(40), md: rem(52) }}
               fw={400}
               c={textColor}
+              lh={1}
               style={{
                 fontFamily: "Playfair Display, serif",
                 letterSpacing: "0.15em",
-                lineHeight: 1,
               }}
             >
               ELEGĀNT

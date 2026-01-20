@@ -1,0 +1,7 @@
+ID: 1, Name: Elbiseler
+ID: 2, Name: Ceketler & Kabanlar
+ID: 3, Name: Ayakkabılar
+ID: 4, Name: Çantalar & Aksesuarlar
+ID: 5, Name: Bluzlar & Gömlekler
+ID: 6, Name: Kazaklar & Hırkalar
+ID: 7, Name: Pantolonlar

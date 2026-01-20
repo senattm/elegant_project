@@ -62,9 +62,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
         setSelectedSize(null);
         setHoveredSize(null);
       }}
-      style={{ position: "relative" }}
+      pos="relative"
     >
-      <Box style={{ position: "relative", overflow: "hidden" }}>
+      <Box pos="relative" style={{ overflow: "hidden" }}>
         <ActionIcon
           radius="xl"
           size={40}
@@ -72,12 +72,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
             e.stopPropagation();
             toggleFavorite(product.id);
           }}
+          pos="absolute"
+          top={rem(12)}
+          right={rem(12)}
+          bg="white"
           style={{
-            position: "absolute",
-            top: rem(12),
-            right: rem(12),
             zIndex: 40,
-            backgroundColor: "white",
             border: "none",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}

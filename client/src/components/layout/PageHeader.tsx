@@ -21,8 +21,8 @@ const PageHeader = ({ title, subtitle, mb = 60 }: PageHeaderProps) => {
         <Text
           fz="sm"
           c="dimmed"
+          fw={300}
           style={{
-            fontWeight: 300,
             letterSpacing: "0.1em",
           }}
         >

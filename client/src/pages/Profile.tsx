@@ -3,56 +3,51 @@ import { addressSchema, paymentSchema } from "../schemas/checkout";
 import { updateProfileSchema, changePasswordSchema } from "../schemas/profile";
 import {
   Container,
-  Paper,
   TextInput,
   Button,
   Stack,
   PasswordInput,
   Text,
   Group,
-  Alert,
-  Modal,
-  Textarea,
+  Paper,
   ActionIcon,
   Badge,
 } from "@mantine/core";
 import {
-  IconCheck,
-  IconAlertCircle,
   IconUser,
   IconMail,
   IconLock,
-  IconMapPin,
   IconHome,
-  IconPhone,
   IconPlus,
   IconEdit,
   IconTrash,
   IconCreditCard,
-  IconCalendar,
 } from "@tabler/icons-react";
 import { useAtom } from "jotai";
 import { userAtom, tokenAtom } from "../store/atoms";
 import { authApi, addressesApi, paymentMethodsApi } from "../api/client";
 import type { Address } from "../types";
+import { useFormState } from "../hooks/useFormState";
+import FormAlert from "../components/ui/FormAlert";
+import ProfileSection from "../components/ui/ProfileSection";
+import AddressModal from "../components/ui/AddressModal";
+import PaymentMethodModal from "../components/ui/PaymentMethodModal";
 
 const Profile = () => {
   const [user, setUser] = useAtom(userAtom);
   const [token] = useAtom(tokenAtom);
 
+  // Profile form state
   const [name, setName] = useState(user?.name || "");
+  const profileState = useFormState();
+
+  // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const passwordState = useFormState();
 
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
-
-  const [profileSuccess, setProfileSuccess] = useState("");
-  const [profileError, setProfileError] = useState("");
-  const [passwordSuccess, setPasswordSuccess] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-
+  // Address state
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [addressModalOpened, setAddressModalOpened] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -64,53 +59,49 @@ const Profile = () => {
     city: "",
     district: "",
   });
-  const [addressLoading, setAddressLoading] = useState(false);
-  const [addressSuccess, setAddressSuccess] = useState("");
-  const [addressError, setAddressError] = useState("");
+  const addressState = useFormState();
 
+  // Payment method state
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
-  const [paymentMethodModalOpened, setPaymentMethodModalOpened] =
-    useState(false);
+  const [paymentMethodModalOpened, setPaymentMethodModalOpened] = useState(false);
   const [paymentMethodForm, setPaymentMethodForm] = useState({
     cardNumber: "",
     cardHolderName: "",
     expiryDate: "",
   });
-  const [paymentMethodLoading, setPaymentMethodLoading] = useState(false);
-  const [paymentMethodSuccess, setPaymentMethodSuccess] = useState("");
-  const [paymentMethodError, setPaymentMethodError] = useState("");
+  const paymentMethodState = useFormState();
+
+  useEffect(() => {
+    if (token) {
+      fetchAddresses();
+      fetchPaymentMethods();
+    }
+  }, [token]);
 
   const handleUpdateProfile = async () => {
     const result = updateProfileSchema.safeParse({ name });
 
     if (!result.success) {
-      setProfileError(result.error.issues[0].message);
+      profileState.setError(result.error.issues[0].message);
       return;
     }
 
     if (!token) {
-      setProfileError("Oturum geçersiz");
+      profileState.setError("Oturum geçersiz");
       return;
     }
 
     try {
-      setProfileLoading(true);
-      setProfileError("");
-      setProfileSuccess("");
+      profileState.setLoading(true);
+      profileState.reset();
 
-      const response = await authApi.updateProfile(
-        { name: name.trim() },
-        token
-      );
-
-      if (response.data.user) {
-        setUser(response.data.user);
-        setProfileSuccess("Profil başarıyla güncellendi");
-      }
+      const response = await authApi.updateProfile({ name }, token);
+      setUser(response.data.user);
+      profileState.setSuccess("Profil başarıyla güncellendi");
     } catch (error: any) {
-      setProfileError(error.response?.data?.message || "Profil güncellenemedi");
-    } finally {
-      setProfileLoading(false);
+      profileState.setError(
+        error.response?.data?.message || "Profil güncellenemedi"
+      );
     }
   };
 
@@ -118,41 +109,42 @@ const Profile = () => {
     const result = changePasswordSchema.safeParse({
       currentPassword,
       newPassword,
-      confirmPassword
+      confirmPassword,
     });
 
     if (!result.success) {
-      setPasswordError(result.error.issues[0].message);
+      passwordState.setError(result.error.issues[0].message);
       return;
     }
 
     if (!token) {
-      setPasswordError("Oturum geçersiz");
+      passwordState.setError("Oturum geçersiz");
       return;
     }
 
     try {
-      setPasswordLoading(true);
-      setPasswordError("");
-      setPasswordSuccess("");
+      passwordState.setLoading(true);
+      passwordState.reset();
 
-      await authApi.changePassword({ currentPassword, newPassword }, token);
+      await authApi.changePassword(
+        { currentPassword, newPassword },
+        token
+      );
 
-      setPasswordSuccess("Şifre başarıyla değiştirildi");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      passwordState.setSuccess("Şifre başarıyla değiştirildi");
     } catch (error: any) {
-      setPasswordError(
+      passwordState.setError(
         error.response?.data?.message || "Şifre değiştirilemedi"
       );
-    } finally {
-      setPasswordLoading(false);
     }
   };
 
   const fetchAddresses = async () => {
     if (!token) return;
+
     try {
       const response = await addressesApi.getAll(token);
       setAddresses(response.data);
@@ -161,18 +153,14 @@ const Profile = () => {
     }
   };
 
-  useEffect(() => {
-    fetchAddresses();
-    fetchPaymentMethods();
-  }, [token]);
-
   const fetchPaymentMethods = async () => {
     if (!token) return;
+
     try {
       const response = await paymentMethodsApi.getAll(token);
       setPaymentMethods(response.data);
     } catch (error) {
-      console.error("Kartlar yüklenemedi:", error);
+      console.error("Ödeme yöntemleri yüklenemedi:", error);
     }
   };
 
@@ -198,152 +186,109 @@ const Profile = () => {
         district: "",
       });
     }
-    setAddressSuccess("");
-    setAddressError("");
+    addressState.reset();
     setAddressModalOpened(true);
-  };
-
-  const formatPhone = (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
-    return cleaned.slice(0, 11);
   };
 
   const handleSaveAddress = async () => {
     const result = addressSchema.safeParse(addressForm);
 
     if (!result.success) {
-      setAddressError(result.error.issues[0].message);
+      addressState.setError(result.error.issues[0].message);
       return;
     }
 
-    if (!token) return;
+    if (!token) {
+      addressState.setError("Oturum geçersiz");
+      return;
+    }
 
     try {
-      setAddressLoading(true);
-      setAddressError("");
+      addressState.setLoading(true);
 
       if (editingAddress) {
         await addressesApi.update(editingAddress.id, addressForm, token);
-        setAddressSuccess("Adres güncellendi");
       } else {
         await addressesApi.create(addressForm, token);
-        setAddressSuccess("Adres eklendi");
       }
 
       await fetchAddresses();
       setAddressModalOpened(false);
+      addressState.setSuccess(
+        editingAddress ? "Adres güncellendi" : "Adres eklendi"
+      );
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        (Array.isArray(error.response?.data?.message)
-          ? error.response?.data?.message[0]
-          : "İşlem başarısız oldu");
-      setAddressError(errorMessage);
-    } finally {
-      setAddressLoading(false);
+      addressState.setError(
+        error.response?.data?.message || "Adres kaydedilemedi"
+      );
     }
   };
 
   const handleDeleteAddress = async (id: number) => {
-    if (!token) return;
-    if (!confirm("Bu adresi silmek istediğinizden emin misiniz?")) return;
+    if (!token || !confirm("Bu adresi silmek istediğinize emin misiniz?")) return;
 
     try {
       await addressesApi.delete(id, token);
       await fetchAddresses();
-      setAddressSuccess("Adres silindi");
+      addressState.setSuccess("Adres silindi");
     } catch (error: any) {
-      setAddressError(error.response?.data?.message || "Adres silinemedi");
+      addressState.setError(error.response?.data?.message || "Adres silinemedi");
     }
   };
 
-  const formatCardNumber = (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
-    return cleaned.slice(0, 16);
-  };
-
-  const formatExpiryDate = (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
-    if (cleaned.length >= 2) {
-      return cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4);
-    }
-    return cleaned;
-  };
-
-  const openPaymentMethodModal = (paymentMethod?: any) => {
-    if (paymentMethod) {
-      setPaymentMethodForm({
-        cardNumber: `**** **** **** ${paymentMethod.card_last4}`,
-        cardHolderName: paymentMethod.card_holder,
-        expiryDate: "",
-      });
-    } else {
-      setPaymentMethodForm({
-        cardNumber: "",
-        cardHolderName: "",
-        expiryDate: "",
-      });
-    }
-    setPaymentMethodSuccess("");
-    setPaymentMethodError("");
+  const openPaymentMethodModal = () => {
+    setPaymentMethodForm({
+      cardNumber: "",
+      cardHolderName: "",
+      expiryDate: "",
+    });
+    paymentMethodState.reset();
     setPaymentMethodModalOpened(true);
   };
 
   const handleSavePaymentMethod = async () => {
-    const schema = paymentSchema.omit({ cvv: true });
-    const result = schema.safeParse(paymentMethodForm);
+    const result = paymentSchema.omit({ cvv: true }).safeParse(paymentMethodForm);
 
     if (!result.success) {
-      setPaymentMethodError(result.error.issues[0].message);
+      paymentMethodState.setError(result.error.issues[0].message);
       return;
     }
 
-    if (!token) return;
+    if (!token) {
+      paymentMethodState.setError("Oturum geçersiz");
+      return;
+    }
 
     try {
-      setPaymentMethodLoading(true);
-      setPaymentMethodError("");
+      paymentMethodState.setLoading(true);
 
-      await paymentMethodsApi.create(
-        {
-          cardNumber: paymentMethodForm.cardNumber,
-          cardHolderName: paymentMethodForm.cardHolderName,
-          expiryDate: paymentMethodForm.expiryDate,
-        },
-        token
-      );
-
-      setPaymentMethodSuccess("Kart eklendi");
+      await paymentMethodsApi.create(paymentMethodForm, token);
       await fetchPaymentMethods();
       setPaymentMethodModalOpened(false);
+      paymentMethodState.setSuccess("Kart eklendi");
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        (Array.isArray(error.response?.data?.message)
-          ? error.response?.data?.message[0]
-          : "İşlem başarısız oldu");
-      setPaymentMethodError(errorMessage);
-    } finally {
-      setPaymentMethodLoading(false);
+      paymentMethodState.setError(
+        error.response?.data?.message || "Kart eklenemedi"
+      );
     }
   };
 
   const handleDeletePaymentMethod = async (id: number) => {
-    if (!token) return;
-    if (!confirm("Bu kartı silmek istediğinizden emin misiniz?")) return;
+    if (!token || !confirm("Bu kartı silmek istediğinize emin misiniz?")) return;
 
     try {
       await paymentMethodsApi.delete(id, token);
       await fetchPaymentMethods();
-      setPaymentMethodSuccess("Kart silindi");
+      paymentMethodState.setSuccess("Kart silindi");
     } catch (error: any) {
-      setPaymentMethodError(error.response?.data?.message || "Kart silinemedi");
+      paymentMethodState.setError(error.response?.data?.message || "Kart silinemedi");
     }
   };
 
   return (
     <Container size="sm" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
       <Stack gap="xl">
+        {/* Addresses Section */}
         <Paper shadow="none" p="xl" withBorder>
           <Group justify="space-between" mb="md">
             <Text fz={20} fw={500}>
@@ -358,27 +303,8 @@ const Profile = () => {
             </Button>
           </Group>
 
-          {addressSuccess && (
-            <Alert
-              icon={<IconCheck size={16} />}
-              color="green"
-              title="Başarılı"
-              mb="md"
-            >
-              {addressSuccess}
-            </Alert>
-          )}
-
-          {addressError && (
-            <Alert
-              icon={<IconAlertCircle size={16} />}
-              color="red"
-              title="Hata"
-              mb="md"
-            >
-              {addressError}
-            </Alert>
-          )}
+          <FormAlert type="success" message={addressState.success} />
+          <FormAlert type="error" message={addressState.error} />
 
           {addresses.length === 0 ? (
             <Text c="dimmed" ta="center" py="xl">
@@ -391,9 +317,7 @@ const Profile = () => {
                   <Group justify="space-between" mb="xs">
                     <Group gap="xs">
                       <IconHome size={18} />
-                      {address.title && (
-                        <Badge size="sm">{address.title}</Badge>
-                      )}
+                      {address.title && <Badge size="sm">{address.title}</Badge>}
                     </Group>
                     <Group gap="xs">
                       <ActionIcon
@@ -429,6 +353,7 @@ const Profile = () => {
           )}
         </Paper>
 
+        {/* Payment Methods Section */}
         <Paper shadow="none" p="xl" withBorder>
           <Group justify="space-between" mb="md">
             <Text fz={20} fw={500}>
@@ -436,34 +361,15 @@ const Profile = () => {
             </Text>
             <Button
               leftSection={<IconPlus size={18} />}
-              onClick={() => openPaymentMethodModal()}
+              onClick={openPaymentMethodModal}
               size="sm"
             >
               Yeni Kart
             </Button>
           </Group>
 
-          {paymentMethodSuccess && (
-            <Alert
-              icon={<IconCheck size={16} />}
-              color="green"
-              title="Başarılı"
-              mb="md"
-            >
-              {paymentMethodSuccess}
-            </Alert>
-          )}
-
-          {paymentMethodError && (
-            <Alert
-              icon={<IconAlertCircle size={16} />}
-              color="red"
-              title="Hata"
-              mb="md"
-            >
-              {paymentMethodError}
-            </Alert>
-          )}
+          <FormAlert type="success" message={paymentMethodState.success} />
+          <FormAlert type="error" message={paymentMethodState.error} />
 
           {paymentMethods.length === 0 ? (
             <Text c="dimmed" ta="center" py="xl">
@@ -471,323 +377,122 @@ const Profile = () => {
             </Text>
           ) : (
             <Stack gap="md">
-              {paymentMethods.map((method) => (
-                <Paper key={method.id} p="md" withBorder>
-                  <Group justify="space-between" mb="xs">
-                    <Group gap="xs">
-                      <IconCreditCard size={18} />
-                      <Badge size="sm">
-                        {method.provider || "CREDIT_CARD"}
-                      </Badge>
+              {paymentMethods.map((pm) => (
+                <Paper key={pm.id} p="md" withBorder>
+                  <Group justify="space-between">
+                    <Group gap="md">
+                      <IconCreditCard size={24} />
+                      <div>
+                        <Text size="sm" fw={500}>
+                          {pm.card_holder_name}
+                        </Text>
+                        <Text size="sm" c="dimmed">
+                          **** **** **** {pm.last_four_digits}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {pm.expiry_date}
+                        </Text>
+                      </div>
                     </Group>
-                    <Group gap="xs">
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => handleDeletePaymentMethod(method.id)}
-                      >
-                        <IconTrash size={18} />
-                      </ActionIcon>
-                    </Group>
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      onClick={() => handleDeletePaymentMethod(pm.id)}
+                    >
+                      <IconTrash size={18} />
+                    </ActionIcon>
                   </Group>
-                  <Text size="sm" fw={500}>
-                    **** **** **** {method.card_last4}
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    {method.card_holder}
-                  </Text>
                 </Paper>
               ))}
             </Stack>
           )}
         </Paper>
 
-        <Paper shadow="none" p="xl" withBorder>
-          <Text fz={20} fw={500} mb="md">
-            Profil Bilgileri
-          </Text>
-
-          <Stack gap="md">
-            <TextInput
-              label="Email"
-              value={user?.email || ""}
-              disabled
-              leftSection={<IconMail size={18} />}
-              styles={{
-                input: {
-                  backgroundColor: "#f8f9fa",
-                },
-              }}
-            />
-
-            <TextInput
-              label="İsim"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="İsminiz"
-              leftSection={<IconUser size={18} />}
-            />
-
-            {profileSuccess && (
-              <Alert
-                icon={<IconCheck size={16} />}
-                color="green"
-                title="Başarılı"
-              >
-                {profileSuccess}
-              </Alert>
-            )}
-
-            {profileError && (
-              <Alert
-                icon={<IconAlertCircle size={16} />}
-                color="red"
-                title="Hata"
-              >
-                {profileError}
-              </Alert>
-            )}
-
-            <Group justify="flex-end" mt="md">
-              <Button onClick={handleUpdateProfile} loading={profileLoading}>
-                Profili Güncelle
-              </Button>
-            </Group>
-          </Stack>
-        </Paper>
-
-        <Paper shadow="none" p="xl" withBorder>
-          <Text fz={20} fw={500} mb="md">
-            Şifre Değiştir
-          </Text>
-
-          <Stack gap="md">
-            <PasswordInput
-              label="Mevcut Şifre"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Mevcut şifreniz"
-              leftSection={<IconLock size={18} />}
-            />
-
-            <PasswordInput
-              label="Yeni Şifre"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Yeni şifreniz (en az 6 karakter)"
-              leftSection={<IconLock size={18} />}
-            />
-
-            <PasswordInput
-              label="Yeni Şifre (Tekrar)"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Yeni şifrenizi tekrar girin"
-              leftSection={<IconLock size={18} />}
-            />
-
-            {passwordSuccess && (
-              <Alert
-                icon={<IconCheck size={16} />}
-                color="green"
-                title="Başarılı"
-              >
-                {passwordSuccess}
-              </Alert>
-            )}
-
-            {passwordError && (
-              <Alert
-                icon={<IconAlertCircle size={16} />}
-                color="red"
-                title="Hata"
-              >
-                {passwordError}
-              </Alert>
-            )}
-
-            <Group justify="flex-end" mt="md">
-              <Button onClick={handleChangePassword} loading={passwordLoading}>
-                Şifreyi Değiştir
-              </Button>
-            </Group>
-          </Stack>
-        </Paper>
-      </Stack>
-
-      <Modal
-        opened={addressModalOpened}
-        onClose={() => setAddressModalOpened(false)}
-        title={editingAddress ? "Adresi Düzenle" : "Yeni Adres Ekle"}
-      >
-        <Stack gap="md">
-          <TextInput
-            label="Adres Başlığı (Opsiyonel)"
-            placeholder="Ev, İş, vb."
-            leftSection={<IconHome size={18} />}
-            value={addressForm.title}
-            onChange={(e) =>
-              setAddressForm({ ...addressForm, title: e.target.value })
-            }
-          />
-
+        {/* Profile Info Section */}
+        <ProfileSection title="Profil Bilgileri">
           <TextInput
             label="Ad Soyad"
-            placeholder="Ahmet Yılmaz"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Adınız ve soyadınız"
             leftSection={<IconUser size={18} />}
-            value={addressForm.fullName}
-            onChange={(e) =>
-              setAddressForm({ ...addressForm, fullName: e.target.value })
-            }
-            required
           />
 
           <TextInput
-            label="Telefon"
-            placeholder="05XX XXX XX XX"
-            leftSection={<IconPhone size={18} />}
-            value={addressForm.phone}
-            onChange={(e) =>
-              setAddressForm({
-                ...addressForm,
-                phone: formatPhone(e.target.value),
-              })
-            }
-            required
+            label="E-posta"
+            value={user?.email || ""}
+            disabled
+            leftSection={<IconMail size={18} />}
           />
 
-          <Textarea
-            label="Adres"
-            placeholder="Mahalle, Sokak, No, vb."
-            leftSection={<IconMapPin size={18} />}
-            value={addressForm.addressLine}
-            onChange={(e) =>
-              setAddressForm({ ...addressForm, addressLine: e.target.value })
-            }
-            minRows={3}
-            required
-          />
-
-          <Group grow>
-            <TextInput
-              label="Şehir"
-              placeholder="İstanbul"
-              value={addressForm.city}
-              onChange={(e) =>
-                setAddressForm({ ...addressForm, city: e.target.value })
-              }
-              required
-            />
-
-            <TextInput
-              label="İlçe"
-              placeholder="Kadıköy"
-              value={addressForm.district}
-              onChange={(e) =>
-                setAddressForm({ ...addressForm, district: e.target.value })
-              }
-              required
-            />
-          </Group>
-
-          {addressError && (
-            <Alert
-              icon={<IconAlertCircle size={16} />}
-              color="red"
-              title="Hata"
-            >
-              {addressError}
-            </Alert>
-          )}
+          <FormAlert type="success" message={profileState.success} />
+          <FormAlert type="error" message={profileState.error} />
 
           <Group justify="flex-end" mt="md">
-            <Button
-              variant="outline"
-              onClick={() => setAddressModalOpened(false)}
-            >
-              İptal
-            </Button>
-            <Button onClick={handleSaveAddress} loading={addressLoading}>
-              {editingAddress ? "Güncelle" : "Ekle"}
+            <Button onClick={handleUpdateProfile} loading={profileState.loading}>
+              Profili Güncelle
             </Button>
           </Group>
-        </Stack>
-      </Modal>
+        </ProfileSection>
 
-      <Modal
+        {/* Password Change Section */}
+        <ProfileSection title="Şifre Değiştir">
+          <PasswordInput
+            label="Mevcut Şifre"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Mevcut şifreniz"
+            leftSection={<IconLock size={18} />}
+          />
+
+          <PasswordInput
+            label="Yeni Şifre"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Yeni şifreniz (en az 6 karakter)"
+            leftSection={<IconLock size={18} />}
+          />
+
+          <PasswordInput
+            label="Yeni Şifre (Tekrar)"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Yeni şifrenizi tekrar girin"
+            leftSection={<IconLock size={18} />}
+          />
+
+          <FormAlert type="success" message={passwordState.success} />
+          <FormAlert type="error" message={passwordState.error} />
+
+          <Group justify="flex-end" mt="md">
+            <Button onClick={handleChangePassword} loading={passwordState.loading}>
+              Şifreyi Değiştir
+            </Button>
+          </Group>
+        </ProfileSection>
+      </Stack>
+
+      {/* Modals */}
+      <AddressModal
+        opened={addressModalOpened}
+        onClose={() => setAddressModalOpened(false)}
+        form={addressForm}
+        setForm={setAddressForm}
+        onSave={handleSaveAddress}
+        loading={addressState.loading}
+        error={addressState.error}
+        editingAddress={editingAddress}
+      />
+
+      <PaymentMethodModal
         opened={paymentMethodModalOpened}
         onClose={() => setPaymentMethodModalOpened(false)}
-        title="Yeni Kart Ekle"
-      >
-        <Stack gap="md">
-          <TextInput
-            label="Kart Numarası"
-            placeholder="1234 5678 9012 3456"
-            leftSection={<IconCreditCard size={18} />}
-            value={paymentMethodForm.cardNumber}
-            onChange={(e) =>
-              setPaymentMethodForm({
-                ...paymentMethodForm,
-                cardNumber: formatCardNumber(e.target.value),
-              })
-            }
-            required
-          />
-
-          <TextInput
-            label="Kart Sahibi"
-            placeholder="AHMET YILMAZ"
-            leftSection={<IconUser size={18} />}
-            value={paymentMethodForm.cardHolderName}
-            onChange={(e) =>
-              setPaymentMethodForm({
-                ...paymentMethodForm,
-                cardHolderName: e.target.value.toUpperCase(),
-              })
-            }
-            required
-          />
-
-          <TextInput
-            label="Son Kullanma Tarihi"
-            placeholder="MM/YY"
-            leftSection={<IconCalendar size={18} />}
-            value={paymentMethodForm.expiryDate}
-            onChange={(e) =>
-              setPaymentMethodForm({
-                ...paymentMethodForm,
-                expiryDate: formatExpiryDate(e.target.value),
-              })
-            }
-            required
-          />
-
-          {paymentMethodError && (
-            <Alert
-              icon={<IconAlertCircle size={16} />}
-              color="red"
-              title="Hata"
-            >
-              {paymentMethodError}
-            </Alert>
-          )}
-
-          <Group justify="flex-end" mt="md">
-            <Button
-              variant="outline"
-              onClick={() => setPaymentMethodModalOpened(false)}
-            >
-              İptal
-            </Button>
-            <Button
-              onClick={handleSavePaymentMethod}
-              loading={paymentMethodLoading}
-            >
-              Ekle
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        form={paymentMethodForm}
+        setForm={setPaymentMethodForm}
+        onSave={handleSavePaymentMethod}
+        loading={paymentMethodState.loading}
+        error={paymentMethodState.error}
+      />
     </Container>
   );
 };

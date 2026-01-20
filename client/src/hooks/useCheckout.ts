@@ -5,6 +5,7 @@ import { useAtom } from "jotai";
 import { isAuthenticatedAtom, tokenAtom } from "../store/atoms";
 import { useCart, useOrders } from "../store/hooks";
 import { addressesApi, paymentMethodsApi } from "../api/client";
+import { formatPhone, formatCardNumber, formatExpiryDate } from "../utils/formatters";
 import type { Address } from "../types";
 
 interface PaymentData {
@@ -126,13 +127,7 @@ export const useCheckout = () => {
         }
     };
 
-    const formatCardNumber = (value: string) => value.replace(/\D/g, "").slice(0, 16);
-    const formatExpiryDate = (value: string) => {
-        const cleaned = value.replace(/\D/g, "");
-        return cleaned.length >= 2 ? cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4) : cleaned;
-    };
     const formatCVV = (value: string) => value.replace(/\D/g, "").slice(0, 4);
-    const formatPhone = (value: string) => value.replace(/\D/g, "").slice(0, 11);
 
     const validate = (): boolean => {
         let isValid = true;

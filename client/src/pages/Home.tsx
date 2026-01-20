@@ -149,16 +149,10 @@ const Home = () => {
                   >
                     <BackgroundImage
                       src={category.image}
+                      className="hover-scale"
                       style={{
                         height: "100%",
-                        transition: "transform 0.5s ease",
                         filter: "brightness(0.4)",
-                      }}
-                      onMouseEnter={(e: any) => {
-                        e.currentTarget.style.transform = "scale(1.05)";
-                      }}
-                      onMouseLeave={(e: any) => {
-                        e.currentTarget.style.transform = "scale(1)";
                       }}
                     />
                     <Box

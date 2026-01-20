@@ -33,47 +33,8 @@ const Auth = () => {
   const { addNotification } = useNotification();
   const navigate = useNavigate();
 
-  const inputStyles = {
-    label: {
-      fontSize: "13px",
-      fontWeight: 500,
-      marginBottom: 8,
-      color: "#333",
-      letterSpacing: "0.05em",
-    },
-    input: {
-      borderColor: "#ddd",
-      "&:focus": {
-        borderColor: "black",
-      },
-    },
-  };
-
-  const logoStyle = {
-    fontSize: "2rem",
-    color: "white",
-    letterSpacing: "0.2em",
-    fontWeight: 400,
-    textShadow: "0 2px 10px rgba(0,0,0,0.3)",
-  };
-
-  const titleStyle = {
-    fontSize: "2.2rem",
-    fontWeight: 400,
-    letterSpacing: "0.05em",
-  };
-
-  const linkStyle = {
-    color: "black",
-    fontWeight: 600,
-    cursor: "pointer",
-    textDecoration: "underline",
-  };
-
   const imageBoxStyle = {
     backgroundImage: "url(http://localhost:5000/images/deneme.jpg)",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,9 +86,9 @@ const Auth = () => {
 
   return (
     <Flex mih="100vh" pos="relative">
-      <Box w="55%" style={imageBoxStyle} pos="relative">
+      <Box w="55%" className="bg-auth-image" style={imageBoxStyle} pos="relative">
         <Box pos="absolute" top={40} left={40}>
-          <Text style={logoStyle}>ELEGĀNT</Text>
+          <Text className="text-logo">ELEGĀNT</Text>
         </Box>
 
         <Button
@@ -152,7 +113,7 @@ const Auth = () => {
 
       <Flex w="45%" align="center" justify="center" bg="white" p={40}>
         <Box w="100%" maw={420}>
-          <Title order={1} mb="xs" style={titleStyle}>
+          <Title order={1} mb="xs" className="text-title-large">
             {isLogin ? "Hoş Geldiniz" : "Hesap Oluştur"}
           </Title>
 
@@ -175,7 +136,7 @@ const Auth = () => {
                   }
                   required
                   size="md"
-                  styles={inputStyles}
+                  className="elegant-input"
                 />
               )}
 
@@ -190,7 +151,7 @@ const Auth = () => {
                 }
                 required
                 size="md"
-                styles={inputStyles}
+                className="elegant-input"
               />
 
               <PasswordInput
@@ -203,7 +164,7 @@ const Auth = () => {
                 }
                 required
                 size="md"
-                styles={inputStyles}
+                className="elegant-input"
               />
 
               {!isLogin && (
@@ -220,7 +181,7 @@ const Auth = () => {
                   }
                   required
                   size="md"
-                  styles={inputStyles}
+                  className="elegant-input"
                 />
               )}
 
@@ -236,7 +197,7 @@ const Auth = () => {
             {isLogin ? "Hesabınız yok mu?" : "Zaten hesabınız var mı?"}{" "}
             <Text
               component="span"
-              style={linkStyle}
+              className="text-link"
               onClick={() => setIsLogin(!isLogin)}
             >
               {isLogin ? "Kayıt Ol" : "Giriş Yap"}

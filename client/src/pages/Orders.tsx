@@ -59,14 +59,8 @@ const Orders = () => {
               key={order.orderNumber}
               p="xl"
               withBorder
-              style={{ cursor: "pointer", transition: "box-shadow 0.2s" }}
+              className="cursor-pointer hover-shadow"
               onClick={() => navigate(`/orders/${order.id}`)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "none";
-              }}
             >
               <Group justify="space-between" mb="lg">
                 <Box>
@@ -107,16 +101,13 @@ const Orders = () => {
                   return (
                     <Box
                       key={item.id || index}
+                      pos="relative"
+                      w={80}
+                      h={80}
+                      bg="#f5f5f5"
+                      className="flex-center overflow-hidden"
                       style={{
-                        position: "relative",
                         borderRadius: "8px",
-                        overflow: "hidden",
-                        width: "80px",
-                        height: "80px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: "#f5f5f5",
                       }}
                     >
                       <Image
@@ -129,16 +120,16 @@ const Orders = () => {
                       />
                       {item.quantity > 1 && (
                         <Box
+                          pos="absolute"
+                          bottom={4}
+                          right={4}
+                          bg="rgba(0,0,0,0.7)"
+                          c="white"
+                          fw={600}
                           style={{
-                            position: "absolute",
-                            bottom: 4,
-                            right: 4,
-                            backgroundColor: "rgba(0,0,0,0.7)",
-                            color: "white",
                             borderRadius: "4px",
                             padding: "2px 6px",
                             fontSize: "11px",
-                            fontWeight: 600,
                           }}
                         >
                           x{item.quantity}
@@ -151,12 +142,10 @@ const Orders = () => {
                   <Box
                     w={80}
                     h={80}
+                    bg="#f1f3f4"
+                    className="flex-center"
                     style={{
-                      backgroundColor: "#f1f3f4",
                       borderRadius: "8px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
                     }}
                   >
                     <Text size="sm" c="dimmed" fw={600}>

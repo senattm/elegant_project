@@ -60,15 +60,13 @@ const Hero = () => {
                     document.getElementById("categories");
                   categoriesSection?.scrollIntoView({ behavior: "smooth" });
                 }}
+                className="cursor-pointer transition-all-slow border-radius-0"
                 style={{
                   padding: "16px 40px",
                   letterSpacing: "0.02em",
                   backgroundColor: "#000",
                   color: "#fff",
                   border: "none",
-                  borderRadius: 0,
-                  cursor: "pointer",
-                  transition: "all 0.3s",
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.backgroundColor = "#333")
@@ -83,6 +81,7 @@ const Hero = () => {
               <Box
                 component="button"
                 onClick={() => navigate("/store")}
+                className="cursor-pointer transition-all-slow border-radius-0"
                 style={{
                   padding: "14px 38px",
                   fontWeight: 500,
@@ -90,9 +89,6 @@ const Hero = () => {
                   backgroundColor: "transparent",
                   color: "#fff",
                   border: "2px solid white",
-                  borderRadius: 0,
-                  cursor: "pointer",
-                  transition: "all 0.3s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = "#fff";

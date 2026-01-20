@@ -77,173 +77,160 @@ const OrderDetail = () => {
       />
 
       <Paper p="xl" mb="xl" withBorder>
-          <Stack gap="lg">
-            <Group justify="space-between">
-              <Text
-                fw={600}
-                size="sm"
-                tt="uppercase"
-                style={{
-                  fontWeight: 300,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Sipariş Numarası
-              </Text>
-              <Text fw={600}>{order.orderNumber}</Text>
-            </Group>
-
-            <Group justify="space-between">
-              <Text
-                fw={600}
-                size="sm"
-                tt="uppercase"
-                style={{
-                  fontWeight: 300,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Durum
-              </Text>
-              <Text fw={600} c="orange">
-                Hazırlanıyor
-              </Text>
-            </Group>
-
-            <Group justify="space-between">
-              <Text
-                fw={600}
-                size="sm"
-                tt="uppercase"
-                style={{
-                  fontWeight: 300,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Tarih
-              </Text>
-              <Text>
-                {new Date(order.createdAt).toLocaleDateString("tr-TR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </Text>
-            </Group>
-
-            {order.discountAmount > 0 && (
-              <>
-                <Group justify="space-between">
-                  <Text
-                    fw={600}
-                    size="sm"
-                    tt="uppercase"
-                    style={{
-                      fontWeight: 300,
-                      letterSpacing: "0.1em",
-                    }}
-                  >
-                    Ara Toplam
-                  </Text>
-                  <Text>{order.totalAmount.toFixed(2)} TL</Text>
-                </Group>
-                <Group justify="space-between">
-                  <Text
-                    fw={600}
-                    size="sm"
-                    tt="uppercase"
-                    style={{
-                      fontWeight: 300,
-                      letterSpacing: "0.1em",
-                    }}
-                  >
-                    İndirim
-                  </Text>
-                  <Text c="green">-{order.discountAmount.toFixed(2)} TL</Text>
-                </Group>
-              </>
-            )}
-
-            <Group justify="space-between">
-              <Text
-                fw={600}
-                size="sm"
-                tt="uppercase"
-                style={{
-                  fontWeight: 300,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Toplam Tutar
-              </Text>
-              <Text fz="lg" fw={700}>
-                {order.finalAmount.toFixed(2)} TL
-              </Text>
-            </Group>
-          </Stack>
-        </Paper>
-
-        <Title order={2} fz="xl" mb="lg">
-          Sipariş Edilen Ürünler
-        </Title>
-        <Stack gap="md">
-          {order.items.map((item) => (
-            <Paper
-              key={item.id}
-              p="md"
-              withBorder
+        <Stack gap="lg">
+          <Group justify="space-between">
+            <Text
+              fw={600}
+              size="sm"
+              tt="uppercase"
               style={{
-                cursor: "pointer",
-                transition: "box-shadow 0.2s",
-              }}
-              onClick={() => navigate(`/product/${item.productId}`)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow =
-                  "0 4px 20px rgba(0,0,0,0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "none";
+                fontWeight: 300,
+                letterSpacing: "0.1em",
               }}
             >
-              <Flex align="center" gap="md">
-                <Box
+              Sipariş Numarası
+            </Text>
+            <Text fw={600}>{order.orderNumber}</Text>
+          </Group>
+
+          <Group justify="space-between">
+            <Text
+              fw={600}
+              size="sm"
+              tt="uppercase"
+              style={{
+                fontWeight: 300,
+                letterSpacing: "0.1em",
+              }}
+            >
+              Durum
+            </Text>
+            <Text fw={600} c="orange">
+              Hazırlanıyor
+            </Text>
+          </Group>
+
+          <Group justify="space-between">
+            <Text
+              fw={600}
+              size="sm"
+              tt="uppercase"
+              style={{
+                fontWeight: 300,
+                letterSpacing: "0.1em",
+              }}
+            >
+              Tarih
+            </Text>
+            <Text>
+              {new Date(order.createdAt).toLocaleDateString("tr-TR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+          </Group>
+
+          {order.discountAmount > 0 && (
+            <>
+              <Group justify="space-between">
+                <Text
+                  fw={600}
+                  size="sm"
+                  tt="uppercase"
                   style={{
-                    width: "80px",
-                    height: "80px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    overflow: "hidden",
+                    fontWeight: 300,
+                    letterSpacing: "0.1em",
                   }}
                 >
-                  <Image
-                    src={getImageUrl(item.productImages?.[0])}
-                    alt={item.productName}
-                    w={80}
-                    h={80}
-                    fit="contain"
-                  />
-                </Box>
-                <Box style={{ flex: 1 }}>
-                  <Text fw={600}>{item.productName}</Text>
-                  <Text size="sm" c="dimmed">
-                    Beden: {item.selectedSize || "N/A"}
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    Adet: {item.quantity}
-                  </Text>
-                </Box>
-                <Text fw={600}>
-                  {(item.price * item.quantity).toFixed(2)} TL
+                  Ara Toplam
                 </Text>
-              </Flex>
-            </Paper>
-          ))}
+                <Text>{order.totalAmount.toFixed(2)} TL</Text>
+              </Group>
+              <Group justify="space-between">
+                <Text
+                  fw={600}
+                  size="sm"
+                  tt="uppercase"
+                  style={{
+                    fontWeight: 300,
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  İndirim
+                </Text>
+                <Text c="green">-{order.discountAmount.toFixed(2)} TL</Text>
+              </Group>
+            </>
+          )}
+
+          <Group justify="space-between">
+            <Text
+              fw={600}
+              size="sm"
+              tt="uppercase"
+              style={{
+                fontWeight: 300,
+                letterSpacing: "0.1em",
+              }}
+            >
+              Toplam Tutar
+            </Text>
+            <Text fz="lg" fw={700}>
+              {order.finalAmount.toFixed(2)} TL
+            </Text>
+          </Group>
         </Stack>
+      </Paper>
+
+      <Title order={2} fz="xl" mb="lg">
+        Sipariş Edilen Ürünler
+      </Title>
+      <Stack gap="md">
+        {order.items.map((item) => (
+          <Paper
+            key={item.id}
+            p="md"
+            withBorder
+            className="cursor-pointer hover-shadow"
+            onClick={() => navigate(`/product/${item.productId}`)}
+          >
+            <Flex align="center" gap="md">
+              <Box
+                w={80}
+                h={80}
+                bg="#f5f5f5"
+                className="flex-center overflow-hidden"
+                style={{
+                  borderRadius: "8px",
+                }}
+              >
+                <Image
+                  src={getImageUrl(item.productImages?.[0])}
+                  alt={item.productName}
+                  w={80}
+                  h={80}
+                  fit="contain"
+                />
+              </Box>
+              <Box flex={1}>
+                <Text fw={600}>{item.productName}</Text>
+                <Text size="sm" c="dimmed">
+                  Beden: {item.selectedSize || "N/A"}
+                </Text>
+                <Text size="sm" c="dimmed">
+                  Adet: {item.quantity}
+                </Text>
+              </Box>
+              <Text fw={600}>
+                {(item.price * item.quantity).toFixed(2)} TL
+              </Text>
+            </Flex>
+          </Paper>
+        ))}
+      </Stack>
     </PageLayout>
   );
 };

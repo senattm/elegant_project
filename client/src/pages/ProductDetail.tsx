@@ -122,8 +122,8 @@ const ProductDetail = () => {
     <PageLayout pt={{ base: 120, md: 140 }}>
       <BackButton />
 
-      <Box style={{ display: "flex", justifyContent: "center" }}>
-        <Grid align="flex-start" style={{ maxWidth: "1200px", width: "100%" }}>
+      <Box className="flex-center">
+        <Grid align="flex-start" maw={1200} w="100%">
           <Grid.Col span={{ base: 12, md: 7 }}>
             <Box style={{ display: "flex", gap: 16, maxWidth: "100%" }}>
               {images.length > 1 && (
@@ -133,21 +133,17 @@ const ProductDetail = () => {
                       key={index}
                       onClick={() => setSelectedImage(index)}
                       onMouseEnter={() => { }}
+                      className="cursor-pointer transition-all flex-center"
                       style={{
                         border:
                           selectedImage === index
                             ? "2px solid black"
                             : "2px solid transparent",
                         opacity: selectedImage === index ? 1 : 0.6,
-                        transition: "all 0.2s",
                         width: "80px",
                         height: "80px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
                         backgroundColor: "#f5f5f5",
                         overflow: "hidden",
-                        cursor: "pointer",
                       }}
                     >
                       <Image
@@ -163,16 +159,8 @@ const ProductDetail = () => {
                 </Stack>
               )}
 
-              <Box
-                style={{
-                  flex: 1,
-                  position: "relative",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "flex-start",
-                }}
-              >
-                <Box style={{ position: "relative", width: "100%" }}>
+              <Box flex={1} pos="relative" className="flex-start">
+                <Box pos="relative" w="100%">
                   <ImageSlider
                     images={images}
                     size="large"
@@ -188,11 +176,11 @@ const ProductDetail = () => {
                       e.stopPropagation();
                       toggleFavorite(product.id);
                     }}
+                    pos="absolute"
+                    top={20}
+                    right={20}
+                    bg="white"
                     style={{
-                      position: "absolute",
-                      top: "20px",
-                      right: "20px",
-                      backgroundColor: "white",
                       boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
                       zIndex: 40,
                     }}
@@ -209,7 +197,7 @@ const ProductDetail = () => {
           </Grid.Col>
 
           <Grid.Col span={{ base: 12, md: 5 }}>
-            <Stack gap="xl" style={{ position: "sticky", top: 160 }}>
+            <Stack gap="xl" pos="sticky" top={160}>
               <Box>
                 <Text
                   size="sm"
@@ -250,12 +238,10 @@ const ProductDetail = () => {
                     <UnstyledButton
                       key={size}
                       onClick={() => setSelectedSize(size)}
+                      className="flex-center transition-all"
                       style={{
                         width: 48,
                         height: 48,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
                         border:
                           selectedSize === size
                             ? "2px solid black"
@@ -264,7 +250,6 @@ const ProductDetail = () => {
                           selectedSize === size ? "black" : "white",
                         color: selectedSize === size ? "white" : "black",
                         fontWeight: selectedSize === size ? 600 : 400,
-                        transition: "all 0.2s",
                       }}
                     >
                       {size}

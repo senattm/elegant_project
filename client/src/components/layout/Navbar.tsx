@@ -150,32 +150,13 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                 color={textColor}
                 size="xl"
                 onClick={() => setSearchOpen(true)}
-                style={{
-                  transition: "transform 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                }}
+                className="hover-scale-lg"
               >
                 <IconSearch size={32} stroke={2} />
               </ActionIcon>
             )}
 
-            <Box
-              style={{
-                transition: "transform 0.2s ease",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
+            <Box className="hover-scale-lg">
               <Indicator
                 label={favorites.length}
                 disabled={favorites.length === 0}
@@ -201,18 +182,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
               </Indicator>
             </Box>
 
-            <Box
-              style={{
-                transition: "transform 0.2s ease",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
+            <Box className="hover-scale-lg">
               <Indicator
                 label={cartCount}
                 disabled={cartCount === 0}
@@ -252,15 +222,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                   variant="subtle"
                   color={textColor}
                   size="xl"
-                  style={{
-                    transition: "transform 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
+                  className="hover-scale-lg"
                 >
                   <IconUser size={32} stroke={2} />
                 </ActionIcon>

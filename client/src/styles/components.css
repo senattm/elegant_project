@@ -1,0 +1,48 @@
+.elegant-input input,
+.elegant-input .mantine-Input-input {
+    border-color: #ddd !important;
+}
+
+.elegant-input input:focus,
+.elegant-input .mantine-Input-input:focus {
+    border-color: black !important;
+}
+
+.elegant-input label,
+.elegant-input .mantine-Input-label {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #333;
+    letter-spacing: 0.05em;
+}
+
+.text-logo {
+    font-size: 2rem;
+    color: white;
+    letter-spacing: 0.2em;
+    font-weight: 400;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.text-title-large {
+    font-size: 2.2rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+}
+
+.text-link {
+    color: black;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.text-link:hover {
+    opacity: 0.8;
+}
+
+.bg-auth-image {
+    background-size: cover;
+    background-position: center;
+}

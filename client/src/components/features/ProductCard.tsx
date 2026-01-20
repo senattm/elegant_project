@@ -120,11 +120,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
                   onClick={() => {
                     setSelectedSize(size);
                   }}
+                  className="transition-all"
                   style={{
                     fontSize: rem(13),
                     fontWeight: hoveredSize === size ? 700 : 400,
                     color: hoveredSize === size ? "black" : "#adb5bd",
-                    transition: "all 0.2s ease",
                     padding: rem(4),
                   }}
                 >

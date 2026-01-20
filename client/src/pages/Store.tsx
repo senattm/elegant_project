@@ -296,9 +296,9 @@ const Store = () => {
           <Box
             mt="xl"
             pt="xl"
+            className="fade-in"
             style={{
               borderTop: "1px solid #e9ecef",
-              animation: "fadeIn 0.3s ease",
             }}
           >
             {" "}
@@ -325,10 +325,9 @@ const Store = () => {
                           key={category.name}
                           justify="space-between"
                           p="xs"
+                          className="cursor-pointer transition-colors"
                           style={{
                             borderRadius: "6px",
-                            transition: "background-color 0.2s",
-                            cursor: "pointer",
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.backgroundColor = "#f8f9fa";

@@ -107,7 +107,8 @@ export default function Footer() {
                   c="dimmed"
                   size="sm"
                   underline="hover"
-                  style={{ transition: "color 0.2s", width: "fit-content" }}
+                  className="transition-colors"
+                  style={{ width: "fit-content" }}
                 >
                   {item}
                 </Anchor>

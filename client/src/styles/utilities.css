@@ -1,15 +1,3 @@
-.hover-scale-lg {
-    transition: transform 0.2s ease;
-}
-
-.hover-scale-lg:hover {
-    transform: scale(1.1);
-}
-
-.transition-all {
-    transition: all 0.2s ease;
-}
-
 .cursor-pointer {
     cursor: pointer;
 }
@@ -18,23 +6,4 @@
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.elegant-input input,
-.elegant-input .mantine-Input-input {
-    border-color: #ddd !important;
-}
-
-.elegant-input input:focus,
-.elegant-input .mantine-Input-input:focus {
-    border-color: black !important;
-}
-
-.elegant-input label,
-.elegant-input .mantine-Input-label {
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 8px;
-    color: #333;
-    letter-spacing: 0.05em;
 }

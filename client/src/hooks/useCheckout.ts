@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { addressSchema, paymentSchema } from "../schemas/checkout";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom, tokenAtom } from "../store/atoms";
@@ -134,44 +135,39 @@ export const useCheckout = () => {
     const formatPhone = (value: string) => value.replace(/\D/g, "").slice(0, 11);
 
     const validate = (): boolean => {
+        let isValid = true;
         const newErrors: any = {};
 
         if (useNewAddress || !selectedAddressId) {
-            if (!addressData.fullName || addressData.fullName.length < 3) {
-                newErrors.fullName = "Ad soyad en az 3 karakter olmalıdır";
-            }
-            if (!addressData.phone || addressData.phone.length < 10) {
-                newErrors.phone = "Telefon numarası en az 10 haneli olmalıdır";
-            }
-            if (!addressData.addressLine || addressData.addressLine.length < 10) {
-                newErrors.addressLine = "Adres en az 10 karakter olmalıdır";
-            }
-            if (!addressData.city || addressData.city.length < 2) {
-                newErrors.city = "Şehir gerekli";
-            }
-            if (!addressData.district || addressData.district.length < 2) {
-                newErrors.district = "İlçe gerekli";
+            const result = addressSchema.safeParse(addressData);
+            if (!result.success) {
+                isValid = false;
+                result.error.issues.forEach((issue) => {
+                    newErrors[issue.path[0]] = issue.message;
+                });
             }
         }
 
         if (useNewPaymentMethod || !selectedPaymentMethodId) {
-            if (!paymentData.cardNumber || paymentData.cardNumber.length !== 16) {
-                newErrors.cardNumber = "Kart numarası 16 haneli olmalıdır";
+            const result = paymentSchema.safeParse(paymentData);
+            if (!result.success) {
+                isValid = false;
+                result.error.issues.forEach((issue) => {
+                    newErrors[issue.path[0]] = issue.message;
+                });
             }
-            if (!paymentData.cardHolderName || paymentData.cardHolderName.length < 3) {
-                newErrors.cardHolderName = "Kart sahibi adı gerekli";
+        } else {
+            const result = paymentSchema.pick({ cvv: true }).safeParse({ cvv: paymentData.cvv });
+            if (!result.success) {
+                isValid = false;
+                result.error.issues.forEach((issue) => {
+                    newErrors[issue.path[0]] = issue.message;
+                });
             }
-            if (!paymentData.expiryDate || paymentData.expiryDate.length !== 5) {
-                newErrors.expiryDate = "Son kullanma tarihi AA/YY formatında olmalıdır";
-            }
-        }
-
-        if (!paymentData.cvv || paymentData.cvv.length < 3) {
-            newErrors.cvv = "CVV en az 3 haneli olmalıdır";
         }
 
         setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        return isValid;
     };
 
     const handleSubmit = async () => {

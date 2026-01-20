@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { addressSchema, paymentSchema } from "../schemas/checkout";
+import { updateProfileSchema, changePasswordSchema } from "../schemas/profile";
 import {
   Container,
   Paper,
@@ -79,8 +81,10 @@ const Profile = () => {
   const [paymentMethodError, setPaymentMethodError] = useState("");
 
   const handleUpdateProfile = async () => {
-    if (!name.trim()) {
-      setProfileError("İsim boş olamaz");
+    const result = updateProfileSchema.safeParse({ name });
+
+    if (!result.success) {
+      setProfileError(result.error.issues[0].message);
       return;
     }
 
@@ -111,18 +115,14 @@ const Profile = () => {
   };
 
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword) {
-      setPasswordError("Tüm alanları doldurun");
-      return;
-    }
+    const result = changePasswordSchema.safeParse({
+      currentPassword,
+      newPassword,
+      confirmPassword
+    });
 
-    if (newPassword.length < 6) {
-      setPasswordError("Yeni şifre en az 6 karakter olmalı");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError("Yeni şifreler eşleşmiyor");
+    if (!result.success) {
+      setPasswordError(result.error.issues[0].message);
       return;
     }
 
@@ -209,44 +209,10 @@ const Profile = () => {
   };
 
   const handleSaveAddress = async () => {
-    if (
-      !addressForm.fullName ||
-      !addressForm.phone ||
-      !addressForm.addressLine ||
-      !addressForm.city ||
-      !addressForm.district
-    ) {
-      setAddressError("Tüm zorunlu alanları doldurun");
-      return;
-    }
+    const result = addressSchema.safeParse(addressForm);
 
-    if (addressForm.fullName.length < 3) {
-      setAddressError("Ad soyad en az 3 karakter olmalı");
-      return;
-    }
-
-    if (addressForm.phone.length < 10) {
-      setAddressError("Telefon en az 10 haneli olmalı");
-      return;
-    }
-
-    if (!/^[0-9]+$/.test(addressForm.phone)) {
-      setAddressError("Telefon sadece rakamlardan oluşmalı");
-      return;
-    }
-
-    if (addressForm.addressLine.length < 10) {
-      setAddressError("Adres en az 10 karakter olmalı");
-      return;
-    }
-
-    if (addressForm.city.length < 2) {
-      setAddressError("Şehir en az 2 karakter olmalı");
-      return;
-    }
-
-    if (addressForm.district.length < 2) {
-      setAddressError("İlçe en az 2 karakter olmalı");
+    if (!result.success) {
+      setAddressError(result.error.issues[0].message);
       return;
     }
 
@@ -324,24 +290,11 @@ const Profile = () => {
   };
 
   const handleSavePaymentMethod = async () => {
-    if (
-      !paymentMethodForm.cardNumber ||
-      paymentMethodForm.cardNumber.length !== 16
-    ) {
-      setPaymentMethodError("Kart numarası 16 haneli olmalıdır");
-      return;
-    }
+    const schema = paymentSchema.omit({ cvv: true });
+    const result = schema.safeParse(paymentMethodForm);
 
-    if (
-      !paymentMethodForm.cardHolderName ||
-      paymentMethodForm.cardHolderName.length < 3
-    ) {
-      setPaymentMethodError("Kart sahibi adı en az 3 karakter olmalıdır");
-      return;
-    }
-
-    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentMethodForm.expiryDate)) {
-      setPaymentMethodError("Geçerli bir tarih girin (MM/YY)");
+    if (!result.success) {
+      setPaymentMethodError(result.error.issues[0].message);
       return;
     }
 

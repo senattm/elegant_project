@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { loginSchema, registerSchema } from "../schemas/auth";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -43,8 +44,13 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        if (!formData.email || !formData.password) {
-          addNotification("Lütfen tüm alanları doldurun", "error");
+        const result = loginSchema.safeParse({
+          email: formData.email,
+          password: formData.password
+        });
+
+        if (!result.success) {
+          addNotification(result.error.issues[0].message, "error");
           setLoading(false);
           return;
         }
@@ -52,25 +58,10 @@ const Auth = () => {
         await authLogin(formData.email, formData.password);
         navigate("/");
       } else {
-        if (
-          !formData.name ||
-          !formData.email ||
-          !formData.password ||
-          !formData.confirmPassword
-        ) {
-          addNotification("Lütfen tüm alanları doldurun", "error");
-          setLoading(false);
-          return;
-        }
+        const result = registerSchema.safeParse(formData);
 
-        if (formData.password !== formData.confirmPassword) {
-          addNotification("Şifreler eşleşmiyor", "error");
-          setLoading(false);
-          return;
-        }
-
-        if (formData.password.length < 6) {
-          addNotification("Şifre en az 6 karakter olmalıdır", "error");
+        if (!result.success) {
+          addNotification(result.error.issues[0].message, "error");
           setLoading(false);
           return;
         }

@@ -215,6 +215,7 @@ export const useCheckout = () => {
             setErrors({ submit: error.response?.data?.message || "Sipariş oluşturulamadı" });
         } finally {
             setIsCreatingOrder(false);
+            setPaymentData(prev => ({ ...prev, cvv: "" }));
         }
     };
 

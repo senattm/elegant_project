@@ -5,7 +5,7 @@ import PageHeader from "../components/layout/PageHeader";
 import EmptyState from "../components/ui/EmptyState";
 import { useFavorites } from "../store/hooks/useFavorites";
 import { useProducts } from "../store/hooks/useProducts";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import ProductCard from "../components/features/ProductCard";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
@@ -27,8 +27,9 @@ const Favorites = () => {
     fetchProducts();
   }, []);
 
-  const favoriteProducts = products.filter((product) =>
-    favorites.includes(product.id)
+  const favoriteProducts = useMemo(
+    () => products.filter((product) => favorites.includes(product.id)),
+    [products, favorites]
   );
 
   return (
@@ -39,7 +40,7 @@ const Favorites = () => {
         mb={50}
       />
 
-        {favoriteProducts.length === 0 ? (
+      {favoriteProducts.length === 0 ? (
         <EmptyState
           message="Henüz favori ürününüz yok"
           description="Beğendiğiniz ürünleri favorilerinize ekleyebilirsiniz"
@@ -50,13 +51,13 @@ const Favorites = () => {
             />
           }
         />
-        ) : (
+      ) : (
         <SimpleGrid cols={{ base: 1, xs: 2, sm: 2, md: 3, lg: 4 }} spacing="lg">
-            {favoriteProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </SimpleGrid>
-        )}
+          {favoriteProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </SimpleGrid>
+      )}
     </PageLayout>
   );
 };

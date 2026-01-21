@@ -16,7 +16,7 @@ import {
   IconMessageCircle,
   IconX,
   IconSend,
-  IconRobot,
+  IconUser,
 } from "@tabler/icons-react";
 
 interface Message {
@@ -98,7 +98,8 @@ const Chatbot = () => {
               onClick={() => setIsOpen(true)}
               style={{
                 boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                color: "#666",
+                backgroundColor: "#000",
+                color: "#fff",
               }}
             >
               <IconMessageCircle size={28} />
@@ -132,8 +133,8 @@ const Chatbot = () => {
               justify="space-between"
               p="md"
               style={{
-                backgroundColor: "#E3F2FD",
-                borderBottom: "1px solid rgba(25,118,210,0.2)",
+                backgroundColor: "#fff",
+                borderBottom: "1px solid #000",
               }}
             >
               <Group gap="sm">
@@ -141,17 +142,17 @@ const Chatbot = () => {
                   size={36}
                   radius="xl"
                   style={{
-                    backgroundColor: "#f5f5f5",
-                    border: "1px solid rgba(25,118,210,0.3)",
+                    backgroundColor: "#000",
+                    border: "1px solid #000",
                   }}
                 >
-                  <IconRobot size={20} color="#1976D2" />
+                  <IconUser size={20} color="#fff" />
                 </Avatar>
                 <Stack gap={0}>
-                  <Text size="xs" fw={600} c="#1976D2" lts={0.5}>
+                  <Text size="xs" fw={600} c="#000" lts={0.5}>
                     ELEGĀNT ASİSTAN
                   </Text>
-                  <Text size="xs" c="rgba(25,118,210,0.7)">
+                  <Text size="xs" c="#999">
                     Çevrimiçi
                   </Text>
                 </Stack>
@@ -159,13 +160,13 @@ const Chatbot = () => {
               <ActionIcon
                 variant="subtle"
                 onClick={() => setIsOpen(false)}
-                style={{ color: "#1976D2" }}
+                style={{ color: "#000" }}
               >
                 <IconX size={20} />
               </ActionIcon>
             </Group>
 
-            <ScrollArea viewportRef={viewport} flex={1} p="md">
+            <ScrollArea viewportRef={viewport} flex={1} p="md" style={{ backgroundColor: "#fff" }}>
               <Stack gap="md">
                 {messages.map((message) => (
                   <Box
@@ -179,13 +180,14 @@ const Chatbot = () => {
                     <Paper
                       px="md"
                       py="xs"
-                      bg={message.sender === "user" ? "black" : "#f5f5f5"}
-                      c={message.sender === "user" ? "white" : "black"}
+                      bg={message.sender === "user" ? "#000" : "#f5f5f0"}
+                      c={message.sender === "user" ? "#fff" : "#333"}
                       style={{
                         borderRadius:
                           message.sender === "user"
                             ? "16px 16px 4px 16px"
                             : "16px 16px 16px 4px",
+                        border: message.sender === "bot" ? "1px solid #e8e8e3" : "none",
                       }}
                     >
                       <Text size="sm" style={{ wordBreak: "break-word" }}>
@@ -199,7 +201,7 @@ const Chatbot = () => {
 
             <Group
               p="xs"
-              style={{ borderTop: "1px solid #e0e0e0" }}
+              style={{ borderTop: "1px solid #000", backgroundColor: "#fff" }}
             >
               <TextInput
                 placeholder="Mesajınızı yazın..."
@@ -218,9 +220,12 @@ const Chatbot = () => {
                 size={40}
                 radius="xl"
                 variant="filled"
-                bg="#1976D2"
+                bg="#000"
                 onClick={handleSend}
                 disabled={!inputValue.trim()}
+                style={{
+                  opacity: inputValue.trim() ? 1 : 0.5,
+                }}
               >
                 <IconSend size={18} />
               </ActionIcon>

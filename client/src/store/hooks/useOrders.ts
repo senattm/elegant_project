@@ -32,15 +32,15 @@ export const useOrders = () => {
 
     try {
       const orderItems = items.map((item) => {
-        const price =
-          typeof item.product.price === "string"
-            ? parseFloat(item.product.price)
-            : item.product.price;
+        const price = item.price !== undefined
+          ? item.price
+          : (typeof item.product.price === "string" ? parseFloat(item.product.price) : item.product.price);
 
         return {
           productId: item.product.id,
           quantity: item.quantity,
-          selectedSize: item.selectedSize,
+          variantId: item.variantId || undefined,
+          selectedSize: item.selectedSize || undefined,
           price: price,
         };
       });

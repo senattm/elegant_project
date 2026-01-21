@@ -45,7 +45,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!selectedSize) return;
-    addToCart(product, 1, selectedSize);
+    addToCart(product, 1, undefined, selectedSize);
     setSelectedSize(null);
     setIsHovered(false);
   };

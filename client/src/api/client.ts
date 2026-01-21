@@ -31,17 +31,17 @@ api.interceptors.request.use(
 
 export const cartApi = {
   get: () => api.get("/cart"),
-  add: (data: { productId: number; quantity: number; selectedSize?: string }) =>
+  add: (data: { productId: number; quantity: number; variantId?: number; selectedSize?: string }) =>
     api.post("/cart", data),
-  remove: (productId: number, selectedSize: string | undefined) => {
+  remove: (productId: number, variantId?: number, selectedSize?: string) => {
     const config = {
-      params: selectedSize ? { selectedSize } : undefined,
+      params: variantId ? { variantId } : selectedSize ? { selectedSize } : undefined,
     };
     return api.delete(`/cart/${productId}`, config);
   },
   update: (
     productId: number,
-    data: { quantity: number; selectedSize?: string }
+    data: { quantity: number; variantId?: number; selectedSize?: string }
   ) => api.put(`/cart/${productId}`, data),
   clear: () => api.delete("/cart"),
 };
@@ -66,6 +66,7 @@ export const ordersApi = {
     items: Array<{
       productId: number;
       quantity: number;
+      variantId?: number;
       selectedSize?: string;
       price: number;
     }>,

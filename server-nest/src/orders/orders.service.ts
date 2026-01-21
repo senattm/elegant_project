@@ -81,33 +81,41 @@ export class OrdersService {
           },
         });
 
-        const productIds = items.map((item) => item.productId);
-        const products = await tx.products.findMany({
-          where: { id: { in: productIds } },
-          select: { id: true, stock: true },
-        });
-
-        const stockMap = new Map<number, number>(
-          products.map((p) => [p.id, p.stock]),
-        );
-
-        const quantityByProduct = new Map<number, number>();
         for (const item of items) {
-          const prev = quantityByProduct.get(item.productId) ?? 0;
-          quantityByProduct.set(item.productId, prev + item.quantity);
-        }
+          if (item.variantId) {
+            const variant = await tx.product_variants.findUnique({
+              where: { id: item.variantId },
+              include: { products: { select: { id: true } } },
+            });
 
-        for (const [productId, totalQty] of quantityByProduct.entries()) {
-          const stock = stockMap.get(productId);
+            if (!variant) {
+              throw new NotFoundException(`Varyant ID ${item.variantId} bulunamadı.`);
+            }
 
-          if (stock === undefined) {
-            throw new NotFoundException(`Ürün ID ${productId} bulunamadı.`);
-          }
+            if (variant.product_id !== item.productId) {
+              throw new BadRequestException(`Varyant bu ürüne ait değil.`);
+            }
 
-          if (stock < totalQty) {
-            throw new BadRequestException(
-              `Ürün ID ${productId} için yeterli stok yok.`,
-            );
+            if (variant.stock < item.quantity) {
+              throw new BadRequestException(
+                `Varyant ID ${item.variantId} için yeterli stok yok. Mevcut stok: ${variant.stock}`,
+              );
+            }
+          } else {
+            const product = await tx.products.findUnique({
+              where: { id: item.productId },
+              select: { id: true, stock: true },
+            });
+
+            if (!product) {
+              throw new NotFoundException(`Ürün ID ${item.productId} bulunamadı.`);
+            }
+
+            if (product.stock < item.quantity) {
+              throw new BadRequestException(
+                `Ürün ID ${item.productId} için yeterli stok yok. Mevcut stok: ${product.stock}`,
+              );
+            }
           }
         }
 
@@ -116,30 +124,54 @@ export class OrdersService {
         for (const item of items) {
           const itemTotal = item.price * item.quantity;
 
+          let finalSize = item.selectedSize || null;
+          if (item.variantId && !finalSize) {
+            const variant = await tx.product_variants.findUnique({
+              where: { id: item.variantId },
+              select: { size: true },
+            });
+            if (variant) {
+              finalSize = variant.size;
+            }
+          }
+
           await tx.order_items.create({
             data: {
               order_id: order.id,
               product_id: item.productId,
+              variant_id: item.variantId || null,
               quantity: item.quantity,
               price: item.price,
               total: itemTotal,
-              selected_size: item.selectedSize || null,
+              selected_size: finalSize,
             },
           });
 
-          await tx.products.update({
-            where: { id: item.productId },
-            data: {
-              stock: {
-                decrement: item.quantity,
+          if (item.variantId) {
+            await tx.product_variants.update({
+              where: { id: item.variantId },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
               },
-            },
-          });
+            });
+          } else {
+            await tx.products.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
+              },
+            });
+          }
 
           orderItemsToReturn.push({
             productId: item.productId,
             quantity: item.quantity,
-            selectedSize: item.selectedSize,
+            variantId: item.variantId,
+            selectedSize: finalSize || undefined,
             price: item.price,
           });
         }
@@ -181,6 +213,7 @@ export class OrdersService {
                 },
               },
             },
+            product_variants: true,
           },
           orderBy: { id: 'asc' },
         },
@@ -201,8 +234,9 @@ export class OrdersService {
         .map((item) => ({
           id: item.id,
           productId: item.product_id,
+          variantId: item.variant_id,
           quantity: item.quantity,
-          selectedSize: item.selected_size,
+          selectedSize: item.product_variants?.size || item.selected_size || undefined,
           price: parseFloat(item.price.toString()),
           productName: item.products?.name,
           productImages:
@@ -227,6 +261,7 @@ export class OrdersService {
                 },
               },
             },
+            product_variants: true,
           },
           orderBy: { id: 'asc' },
         },
@@ -250,8 +285,9 @@ export class OrdersService {
         .map((item) => ({
           id: item.id,
           productId: item.product_id,
+          variantId: item.variant_id,
           quantity: item.quantity,
-          selectedSize: item.selected_size,
+          selectedSize: item.product_variants?.size || item.selected_size,
           price: parseFloat(item.price.toString()),
           productName: item.products?.name,
           productImages:

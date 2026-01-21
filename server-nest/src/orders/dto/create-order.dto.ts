@@ -20,7 +20,12 @@ export class OrderItemDto {
   @Min(1)
   quantity: number;
 
-  @ApiProperty({ example: 'M', description: 'Seçili beden', required: false })
+  @ApiProperty({ example: 1, description: 'Varyant ID', required: false })
+  @IsNumber()
+  @IsOptional()
+  variantId?: number;
+
+  @ApiProperty({ example: 'M', description: 'Seçili beden (deprecated - variantId kullanın)', required: false })
   @IsString()
   @IsOptional()
   selectedSize?: string;

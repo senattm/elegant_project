@@ -45,6 +45,7 @@ export class CartController {
       req.user.id,
       dto.productId,
       dto.quantity || 1,
+      dto.variantId,
       dto.selectedSize,
     );
   }
@@ -63,6 +64,7 @@ export class CartController {
       req.user.id,
       +productId,
       dto.quantity,
+      dto.variantId,
       dto.selectedSize,
     );
   }
@@ -70,16 +72,19 @@ export class CartController {
   @Delete(':productId')
   @ApiOperation({ summary: 'Sepetten ürün çıkar' })
   @ApiParam({ name: 'productId', type: 'number', description: 'Ürün ID' })
+  @ApiQuery({ name: 'variantId', required: false, description: 'Varyant ID', type: Number })
   @ApiQuery({ name: 'selectedSize', required: false, description: 'Seçili beden' })
   @ApiResponse({ status: 200, description: 'Ürün sepetten çıkarıldı' })
   removeFromCart(
     @Request() req,
     @Param('productId') productId: string,
+    @Query('variantId') variantId?: string,
     @Query('selectedSize') selectedSize?: string,
   ) {
     return this.cartService.removeFromCart(
       req.user.id,
       +productId,
+      variantId ? +variantId : undefined,
       selectedSize,
     );
   }

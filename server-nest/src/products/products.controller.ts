@@ -22,4 +22,13 @@ export class ProductsController {
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(+id);
   }
+
+  @Get(':id/variants')
+  @ApiOperation({ summary: 'Ürüne ait tüm varyantları getir' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Ürün ID' })
+  @ApiResponse({ status: 200, description: 'Varyantlar başarıyla getirildi' })
+  @ApiResponse({ status: 404, description: 'Ürün bulunamadı' })
+  getVariantsByProduct(@Param('id') id: string) {
+    return this.productsService.getVariantsByProduct(+id);
+  }
 }

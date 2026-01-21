@@ -80,7 +80,7 @@ const Cart = () => {
 
               return (
                 <Flex
-                  key={`${item.product.id}-${item.selectedSize}`}
+                  key={`${item.product.id}-${item.variantId || item.selectedSize}`}
                   gap={30}
                   p="30px 20px"
                   align="center"
@@ -99,7 +99,7 @@ const Cart = () => {
                       {item.product.name}
                     </Text>
                     <Text fz={14} c="dimmed" mb={12}>
-                      BEDEN: {item.selectedSize}
+                      BEDEN: {item.selectedSize || "N/A"}
                     </Text>
                     <Text fz={18} fw={600}>
                       {price.toFixed(2)} TL
@@ -112,7 +112,8 @@ const Cart = () => {
                       updateQuantity(
                         item.product.id,
                         newQuantity,
-                        item.selectedSize
+                        item.variantId || undefined,
+                        item.selectedSize || undefined
                       )
                     }
                     min={1}
@@ -126,7 +127,7 @@ const Cart = () => {
                     variant="subtle"
                     color="red"
                     onClick={() =>
-                      removeFromCart(item.product.id, item.selectedSize)
+                      removeFromCart(item.product.id, item.variantId || undefined, item.selectedSize || undefined)
                     }
                   >
                     <IconTrash />

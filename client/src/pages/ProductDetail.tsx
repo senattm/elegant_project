@@ -55,11 +55,6 @@ const ProductDetail = () => {
     if (id) fetchProduct();
   }, [id]);
 
-  const handleAddToCart = () => {
-    if (!product || !selectedSize) return;
-    addToCart(product, quantity, selectedSize);
-  };
-
   if (loading) {
     return <LoadingState message="Ürün yükleniyor..." />;
   }
@@ -78,14 +73,31 @@ const ProductDetail = () => {
 
   const images = product.images || [];
   const isProductFavorite = isFavorite(product.id);
-  const price =
-    typeof product.price === "number"
-      ? product.price
-      : parseFloat(product.price);
-  const availableSizes = getProductSizes(
-    product.category_id,
-    product.parent_category_id
-  );
+  
+  const variants = product.variants && product.variants.length > 0 
+    ? product.variants 
+    : null;
+  const availableSizes = variants 
+    ? variants.map(v => v.size).filter((s): s is string => s !== null)
+    : getProductSizes(product.category_id, product.parent_category_id);
+  
+  const selectedVariant = variants?.find(v => v.size === selectedSize);
+  const displayPrice = selectedVariant?.price || 
+    (typeof product.price === "number" ? product.price : parseFloat(product.price));
+  const displayStock = selectedVariant?.stock ?? product.stock;
+
+  const handleAddToCart = () => {
+    if (!product || !selectedSize) return;
+    
+    if (variants) {
+      const variant = variants.find(v => v.size === selectedSize);
+      if (variant) {
+        addToCart(product, quantity, variant.id, selectedSize);
+      }
+    } else {
+      addToCart(product, quantity, undefined, selectedSize);
+    }
+  };
 
   return (
     <PageLayout pt={{ base: 120, md: 140 }}>
@@ -183,7 +195,7 @@ const ProductDetail = () => {
               </Box>
 
               <Text fz={28} fw={600}>
-                {price.toFixed(2)} TL
+                {displayPrice.toFixed(2)} TL
               </Text>
 
               {product.description && (
@@ -203,27 +215,33 @@ const ProductDetail = () => {
                   Beden
                 </Text>
                 <Group gap="sm">
-                  {availableSizes.map((size) => (
-                    <UnstyledButton
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className="flex-center transition-all"
-                      style={{
-                        width: 48,
-                        height: 48,
-                        border:
-                          selectedSize === size
-                            ? "2px solid black"
-                            : "1px solid #ddd",
-                        backgroundColor:
-                          selectedSize === size ? "black" : "white",
-                        color: selectedSize === size ? "white" : "black",
-                        fontWeight: selectedSize === size ? 600 : 400,
-                      }}
-                    >
-                      {size}
-                    </UnstyledButton>
-                  ))}
+                  {availableSizes.map((size) => {
+                    const variant = variants?.find(v => v.size === size);
+                    const isSelected = selectedSize === size;
+                    const isOutOfStock = variant ? variant.stock === 0 : false;
+                    
+                    return (
+                      <UnstyledButton
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        disabled={isOutOfStock}
+                        className="flex-center transition-all"
+                        style={{
+                          width: 48,
+                          height: 48,
+                          border: isSelected ? "2px solid black" : "1px solid #ddd",
+                          backgroundColor: isSelected ? "black" : isOutOfStock ? "#f5f5f5" : "white",
+                          color: isSelected ? "white" : isOutOfStock ? "#ccc" : "black",
+                          fontWeight: isSelected ? 600 : 400,
+                          opacity: isOutOfStock ? 0.5 : 1,
+                          cursor: isOutOfStock ? "not-allowed" : "pointer",
+                        }}
+                        title={isOutOfStock ? "Stokta yok" : undefined}
+                      >
+                        {size || "N/A"}
+                      </UnstyledButton>
+                    );
+                  })}
                 </Group>
               </Box>
 
@@ -246,18 +264,23 @@ const ProductDetail = () => {
 
               <Button
                 fullWidth
-                disabled={!selectedSize}
+                disabled={!selectedSize || displayStock === 0}
                 onClick={handleAddToCart}
                 style={{
                   height: 56,
                 }}
               >
-                {selectedSize ? "SEPETE EKLE" : "BEDEN SEÇİN"}
+                {!selectedSize ? "BEDEN SEÇİN" : displayStock === 0 ? "STOKTA YOK" : "SEPETE EKLE"}
               </Button>
 
-              {product.stock !== undefined && product.stock < 10 && (
+              {displayStock !== undefined && displayStock > 0 && displayStock < 10 && (
                 <Text size="sm" c="orange" ta="center">
-                  Son {product.stock} ürün!
+                  Son {displayStock} ürün!
+                </Text>
+              )}
+              {displayStock === 0 && (
+                <Text size="sm" c="red" ta="center">
+                  Stokta yok
                 </Text>
               )}
             </Stack>

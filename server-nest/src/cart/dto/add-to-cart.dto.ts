@@ -1,4 +1,5 @@
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AddToCartDto {
@@ -12,7 +13,13 @@ export class AddToCartDto {
   @Min(1)
   quantity?: number;
 
-  @ApiProperty({ example: 'M', description: 'Seçili beden', required: false })
+  @ApiProperty({ example: 1, description: 'Varyant ID', required: false })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  variantId?: number;
+
+  @ApiProperty({ example: 'M', description: 'Seçili beden (deprecated - variantId kullanın)', required: false })
   @IsString()
   @IsOptional()
   selectedSize?: string;

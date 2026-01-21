@@ -30,6 +30,8 @@ export const useCart = () => {
         },
         quantity: item.quantity,
         selectedSize: item.selected_size,
+        variantId: item.variant_id || null,
+        price: typeof item.price === "number" ? item.price : parseFloat(item.price),
       }));
       setCart(cartItems);
     } catch (error: any) {
@@ -43,6 +45,7 @@ export const useCart = () => {
   const addToCart = async (
     product: Product,
     quantity: number = 1,
+    variantId?: number,
     size?: string
   ) => {
     if (!token) {
@@ -51,7 +54,7 @@ export const useCart = () => {
     }
 
     try {
-      await cartApi.add({ productId: product.id, quantity, selectedSize: size });
+      await cartApi.add({ productId: product.id, quantity, variantId, selectedSize: size });
       addNotification("Ürün sepete eklendi!", "success");
       await fetchCart();
     } catch (error: any) {
@@ -63,11 +66,11 @@ export const useCart = () => {
     }
   };
 
-  const removeFromCart = async (productId: number, selectedSize?: string) => {
+  const removeFromCart = async (productId: number, variantId?: number, selectedSize?: string) => {
     if (!token) return;
 
     try {
-      await cartApi.remove(productId, selectedSize);
+      await cartApi.remove(productId, variantId, selectedSize);
       addNotification("Ürün sepetten çıkarıldı", "info");
       await fetchCart();
     } catch (error: any) {
@@ -82,12 +85,13 @@ export const useCart = () => {
   const updateQuantity = async (
     productId: number,
     quantity: number,
+    variantId?: number,
     selectedSize?: string
   ) => {
     if (!token) return;
 
     try {
-      await cartApi.update(productId, { quantity, selectedSize });
+      await cartApi.update(productId, { quantity, variantId, selectedSize });
       await fetchCart();
     } catch (error: any) {
       console.error("Miktar güncellenemedi:", error);
@@ -100,10 +104,9 @@ export const useCart = () => {
 
   const getTotalPrice = () => {
     return cart.reduce((total, item) => {
-      const price =
-        typeof item.product.price === "string"
-          ? parseFloat(item.product.price)
-          : item.product.price;
+      const price = item.price !== undefined
+        ? item.price
+        : (typeof item.product.price === "string" ? parseFloat(item.product.price) : item.product.price);
       return total + price * item.quantity;
     }, 0);
   };

@@ -12,20 +12,41 @@ export class CartService {
 
   constructor(private prisma: PrismaService) { }
 
-  private async validateStock(productId: number, requiredQuantity: number) {
-    const product = await this.prisma.products.findUnique({
-      where: { id: productId },
-      select: { stock: true },
-    });
+  private async validateStock(productId: number, variantId: number | null, requiredQuantity: number) {
+    if (variantId) {
+      const variant = await this.prisma.product_variants.findUnique({
+        where: { id: variantId },
+        select: { stock: true, product_id: true },
+      });
 
-    if (!product) {
-      throw new NotFoundException('Ürün bulunamadı');
-    }
+      if (!variant) {
+        throw new NotFoundException('Varyant bulunamadı');
+      }
 
-    if (requiredQuantity > product.stock) {
-      throw new BadRequestException(
-        `Stok yetersiz. Mevcut stok: ${product.stock}`,
-      );
+      if (variant.product_id !== productId) {
+        throw new BadRequestException('Varyant bu ürüne ait değil');
+      }
+
+      if (requiredQuantity > variant.stock) {
+        throw new BadRequestException(
+          `Stok yetersiz. Mevcut stok: ${variant.stock}`,
+        );
+      }
+    } else {
+      const product = await this.prisma.products.findUnique({
+        where: { id: productId },
+        select: { stock: true },
+      });
+
+      if (!product) {
+        throw new NotFoundException('Ürün bulunamadı');
+      }
+
+      if (requiredQuantity > product.stock) {
+        throw new BadRequestException(
+          `Stok yetersiz. Mevcut stok: ${product.stock}`,
+        );
+      }
     }
   }
 
@@ -44,37 +65,59 @@ export class CartService {
             },
           },
         },
+        product_variants: true,
       },
       orderBy: { id: 'desc' },
     });
 
-    return cartItems.map((item) => ({
-      id: item.id,
-      quantity: item.quantity,
-      selected_size: item.selected_size,
-      product_id: item.products?.id,
-      name: item.products?.name,
-      description: item.products?.description,
-      price: item.products?.price,
-      stock: item.products?.stock,
-      category: item.products?.categories?.name || null,
-      images: item.products?.product_images.map((img) => img.image_url) || [],
-    }));
+    return cartItems.map((item) => {
+      const variant = item.product_variants;
+      const price = variant?.price ? Number(variant.price) : (item.products?.price ? Number(item.products.price) : 0);
+      const stock = variant?.stock ?? item.products?.stock ?? 0;
+      const size = variant?.size ?? item.selected_size;
+
+      return {
+        id: item.id,
+        quantity: item.quantity,
+        selected_size: size,
+        variant_id: variant?.id || null,
+        product_id: item.products?.id,
+        name: item.products?.name,
+        description: item.products?.description,
+        price: price,
+        stock: stock,
+        category: item.products?.categories?.name || null,
+        images: item.products?.product_images.map((img) => img.image_url) || [],
+      };
+    });
   }
 
   async addToCart(
     userId: number,
     productId: number,
     quantity: number = 1,
+    variantId?: number,
     selectedSize?: string,
   ) {
-    const sizeValue = selectedSize || null;
+    let finalVariantId: number | null = variantId || null;
+
+    if (!finalVariantId && selectedSize) {
+      const variant = await this.prisma.product_variants.findFirst({
+        where: {
+          product_id: productId,
+          size: selectedSize,
+        },
+      });
+      if (variant) {
+        finalVariantId = variant.id;
+      }
+    }
 
     const existingItem = await this.prisma.cart_items.findFirst({
       where: {
         user_id: userId,
         product_id: productId,
-        selected_size: sizeValue,
+        variant_id: finalVariantId,
       },
     });
 
@@ -82,7 +125,7 @@ export class CartService {
       ? existingItem.quantity! + quantity
       : quantity;
 
-    await this.validateStock(productId, totalQuantity);
+    await this.validateStock(productId, finalVariantId, totalQuantity);
 
     if (existingItem) {
       return await this.prisma.cart_items.update({
@@ -95,8 +138,9 @@ export class CartService {
       data: {
         user_id: userId,
         product_id: productId,
+        variant_id: finalVariantId,
         quantity,
-        selected_size: sizeValue,
+        selected_size: selectedSize || null,
       },
     });
   }
@@ -105,25 +149,38 @@ export class CartService {
     userId: number,
     productId: number,
     quantity: number,
+    variantId?: number,
     selectedSize?: string,
   ) {
     this.logger.log(
-      `updateQuantity called - userId: ${userId}, productId: ${productId}, quantity: ${quantity}, selectedSize: "${selectedSize}"`,
+      `updateQuantity called - userId: ${userId}, productId: ${productId}, quantity: ${quantity}, variantId: ${variantId}, selectedSize: "${selectedSize}"`,
     );
 
     if (quantity <= 0) {
-      return this.removeFromCart(userId, productId, selectedSize);
+      return this.removeFromCart(userId, productId, variantId, selectedSize);
     }
 
-    await this.validateStock(productId, quantity);
+    let finalVariantId: number | null = variantId || null;
 
-    const sizeValue = selectedSize || null;
+    if (!finalVariantId && selectedSize) {
+      const variant = await this.prisma.product_variants.findFirst({
+        where: {
+          product_id: productId,
+          size: selectedSize,
+        },
+      });
+      if (variant) {
+        finalVariantId = variant.id;
+      }
+    }
+
+    await this.validateStock(productId, finalVariantId, quantity);
 
     const cartItem = await this.prisma.cart_items.findFirst({
       where: {
         user_id: userId,
         product_id: productId,
-        selected_size: sizeValue,
+        variant_id: finalVariantId,
       },
     });
 
@@ -135,7 +192,7 @@ export class CartService {
         },
       });
       this.logger.error(
-        `Sepet öğesi bulunamadı! Aranan: size="${sizeValue}", Mevcut items:`,
+        `Sepet öğesi bulunamadı! Aranan: variantId="${finalVariantId}", Mevcut items:`,
         allItems,
       );
       throw new NotFoundException('Sepet öğesi bulunamadı');
@@ -150,15 +207,28 @@ export class CartService {
   async removeFromCart(
     userId: number,
     productId: number,
+    variantId?: number,
     selectedSize?: string,
   ) {
-    const sizeValue = selectedSize || null;
+    let finalVariantId: number | null = variantId || null;
+
+    if (!finalVariantId && selectedSize) {
+      const variant = await this.prisma.product_variants.findFirst({
+        where: {
+          product_id: productId,
+          size: selectedSize,
+        },
+      });
+      if (variant) {
+        finalVariantId = variant.id;
+      }
+    }
 
     const cartItem = await this.prisma.cart_items.findFirst({
       where: {
         user_id: userId,
         product_id: productId,
-        selected_size: sizeValue,
+        variant_id: finalVariantId,
       },
     });
 

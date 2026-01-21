@@ -169,7 +169,7 @@ export const useCheckout = () => {
         setIsCreatingOrder(true);
         try {
             let addressId = selectedAddressId;
-            if (useNewAddress || !selectedAddressId) {
+            if (!selectedAddressId) {
                 const addressResponse = await addressesApi.create(addressData);
                 addressId = addressResponse.data.id.toString();
             }

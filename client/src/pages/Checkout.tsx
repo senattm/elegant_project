@@ -48,6 +48,13 @@ const Checkout = () => {
     setAddressData({ ...addressData, [field]: value });
   };
 
+  const handleSelectAddress = (id: string | null) => {
+    setSelectedAddressId(id);
+    if (id) {
+      setUseNewAddress(false);
+    }
+  };
+
   const handlePaymentChange = (field: string, value: string) => {
     setPaymentData({ ...paymentData, [field]: value });
   };
@@ -59,6 +66,20 @@ const Checkout = () => {
         cardNumber: `000000000000${method.card_last4}`,
         cardHolderName: method.card_holder,
         expiryDate: method.expiry_date || "",
+        cvv: "",
+      });
+      setUseNewPaymentMethod(false);
+    }
+  };
+
+  const handleToggleNewPaymentMethod = () => {
+    setUseNewPaymentMethod(!useNewPaymentMethod);
+    if (!useNewPaymentMethod) {
+      setSelectedPaymentMethodId(null);
+      setPaymentData({
+        cardNumber: "",
+        cardHolderName: "",
+        expiryDate: "",
         cvv: "",
       });
     }
@@ -76,7 +97,7 @@ const Checkout = () => {
             <AddressSection
               savedAddresses={savedAddresses}
               selectedAddressId={selectedAddressId}
-              onSelectAddress={setSelectedAddressId}
+              onSelectAddress={handleSelectAddress}
               useNewAddress={useNewAddress}
               onToggleNewAddress={() => setUseNewAddress(!useNewAddress)}
               addressData={addressData}
@@ -92,7 +113,7 @@ const Checkout = () => {
               selectedPaymentMethodId={selectedPaymentMethodId}
               onSelectPaymentMethod={handleSelectPaymentMethod}
               useNewPaymentMethod={useNewPaymentMethod}
-              onToggleNewPaymentMethod={() => setUseNewPaymentMethod(!useNewPaymentMethod)}
+              onToggleNewPaymentMethod={handleToggleNewPaymentMethod}
               paymentData={paymentData}
               onPaymentChange={handlePaymentChange}
               savePaymentMethod={savePaymentMethod}

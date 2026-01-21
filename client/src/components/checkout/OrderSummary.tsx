@@ -1,19 +1,9 @@
 import { Paper, Text, Stack, Divider, Group, Image, Box } from "@mantine/core";
 import { IconTruck, IconDiscount } from "@tabler/icons-react";
-
-interface CartItem {
-    product: {
-        id: number;
-        name: string;
-        price: number | string;
-        images?: string[];
-    };
-    quantity: number;
-    selectedSize: string;
-}
+import type { CartItem } from "../../types";
 
 interface OrderSummaryProps {
-    cart: CartItem[];
+    cart: Array<CartItem>;
     total: number;
     discount: number;
     shippingCost: number;
@@ -47,7 +37,7 @@ const OrderSummary = ({
                         const imageUrl = getImageUrl(item.product.images?.[0] || "");
 
                         return (
-                            <Group key={`${item.product.id}-${item.selectedSize}`} gap="md">
+                            <Group key={`${item.product.id}-${item.selectedSize || 'no-size'}`} gap="md">
                                 <Image
                                     src={imageUrl}
                                     alt={item.product.name}
@@ -60,7 +50,7 @@ const OrderSummary = ({
                                         {item.product.name}
                                     </Text>
                                     <Text fz="xs" c="dimmed">
-                                        Beden: {item.selectedSize} | Adet: {item.quantity}
+                                        {item.selectedSize && `Beden: ${item.selectedSize} | `}Adet: {item.quantity}
                                     </Text>
                                     <Text fz="sm" fw={600}>
                                         {(price * item.quantity).toFixed(2)} TL

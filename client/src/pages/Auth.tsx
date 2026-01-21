@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { loginSchema, registerSchema } from "../schemas/auth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -29,6 +29,15 @@ const Auth = () => {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+  }, [isLogin]);
 
   const { login: authLogin, register: authRegister } = useAuth();
   const { addNotification } = useNotification();

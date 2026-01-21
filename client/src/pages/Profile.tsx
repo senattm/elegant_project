@@ -37,17 +37,14 @@ const Profile = () => {
   const [user, setUser] = useAtom(userAtom);
   const [token] = useAtom(tokenAtom);
 
-  // Profile form state
   const [name, setName] = useState(user?.name || "");
   const profileState = useFormState();
 
-  // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const passwordState = useFormState();
 
-  // Address state
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [addressModalOpened, setAddressModalOpened] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -61,7 +58,6 @@ const Profile = () => {
   });
   const addressState = useFormState();
 
-  // Payment method state
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [paymentMethodModalOpened, setPaymentMethodModalOpened] = useState(false);
   const [paymentMethodForm, setPaymentMethodForm] = useState({
@@ -287,7 +283,6 @@ const Profile = () => {
   return (
     <Container size="sm" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
       <Stack gap="xl">
-        {/* Addresses Section */}
         <Paper shadow="none" p="xl" withBorder>
           <Group justify="space-between" mb="md">
             <Text fz={20} fw={500}>
@@ -352,7 +347,6 @@ const Profile = () => {
           )}
         </Paper>
 
-        {/* Payment Methods Section */}
         <Paper shadow="none" p="xl" withBorder>
           <Group justify="space-between" mb="md">
             <Text fz={20} fw={500}>
@@ -407,7 +401,6 @@ const Profile = () => {
           )}
         </Paper>
 
-        {/* Profile Info Section */}
         <ProfileSection title="Profil Bilgileri">
           <TextInput
             label="Ad Soyad"
@@ -434,7 +427,6 @@ const Profile = () => {
           </Group>
         </ProfileSection>
 
-        {/* Password Change Section */}
         <ProfileSection title="Şifre Değiştir">
           <PasswordInput
             label="Mevcut Şifre"
@@ -471,7 +463,6 @@ const Profile = () => {
         </ProfileSection>
       </Stack>
 
-      {/* Modals */}
       <AddressModal
         opened={addressModalOpened}
         onClose={() => setAddressModalOpened(false)}

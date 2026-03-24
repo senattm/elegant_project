@@ -98,8 +98,8 @@ const Chatbot = () => {
               onClick={() => setIsOpen(true)}
               style={{
                 boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                backgroundColor: "#000",
-                color: "#fff",
+                backgroundColor: "#fff",
+                color: "#000",
               }}
             >
               <IconMessageCircle size={28} />

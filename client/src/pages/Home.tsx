@@ -12,6 +12,7 @@ import {
 import { Carousel } from "@mantine/carousel";
 import { motion } from "framer-motion";
 import Hero from "../components/features/Hero";
+import MyWardrobe from "../components/features/MyWardrobe";
 import { productsApi } from "../api/client";
 
 const Home = () => {
@@ -191,6 +192,8 @@ const Home = () => {
           </Carousel>
         )}
       </Container>
+
+      <MyWardrobe />
 
       <Box bg="#f8f9fa" pt={20} pb={{ base: 60, md: 100 }}>
         <Container size="xl">

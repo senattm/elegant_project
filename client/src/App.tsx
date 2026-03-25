@@ -14,6 +14,7 @@ import OrderDetail from "./pages/OrderDetail";
 import Orders from "./pages/Orders";
 import ProductDetail from "./pages/ProductDetail";
 import Profile from "./pages/Profile";
+import Wardrobe from "./pages/Wardrobe";
 import Layout from "./components/layout/Layout";
 import Chatbot from "./components/ui/Chatbot";
 import { useCart } from "./store/hooks/useCart";
@@ -48,6 +49,7 @@ function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:orderId" element={<OrderDetail />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/wardrobe" element={<Wardrobe />} />
         </Route>
       </Routes>
       <Chatbot />

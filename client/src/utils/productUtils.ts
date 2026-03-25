@@ -1,23 +1,15 @@
-export const SHOE_SIZES = ["36", "37", "38", "39", "40", "41"];
-export const BAG_SIZES = ["STD"];
-export const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"];
+const ORDERS = ['XS', 'S', 'M', 'L', 'XL', 'STANDART', 'STD'];
 
-export const CATEGORY_IDS = {
-    SHOES: 3,
-    BAGS: 4,
-};
+export const sortSizes = (sizes: string[]): string[] => {
+    return [...sizes].sort((a, b) => {
+        const aIdx = ORDERS.indexOf(a.toUpperCase());
+        const bIdx = ORDERS.indexOf(b.toUpperCase());
 
-export const getProductSizes = (categoryId: number, parentId?: number | null): string[] => {
-    const ids = [Number(categoryId)];
-    if (parentId) ids.push(Number(parentId));
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
 
-    if (ids.includes(CATEGORY_IDS.BAGS)) {
-        return BAG_SIZES;
-    }
-
-    if (ids.includes(CATEGORY_IDS.SHOES)) {
-        return SHOE_SIZES;
-    }
-
-    return CLOTHING_SIZES;
+        const nA = parseFloat(a), nB = parseFloat(b);
+        return (!isNaN(nA) && !isNaN(nB)) ? nA - nB : a.localeCompare(b);
+    });
 };

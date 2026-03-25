@@ -23,7 +23,7 @@ import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
 import ImageSlider from "../components/ui/ImageSlider";
 import { getImageUrl } from "../utils/imageUrl";
-import { getProductSizes } from "../utils/productUtils";
+import { sortSizes } from "../utils/productUtils";
 import { productsApi } from "../api/client";
 
 
@@ -73,22 +73,23 @@ const ProductDetail = () => {
 
   const images = product.images || [];
   const isProductFavorite = isFavorite(product.id);
-  
-  const variants = product.variants && product.variants.length > 0 
-    ? product.variants 
+
+  const variants = product.variants && product.variants.length > 0
+    ? product.variants
     : null;
-  const availableSizes = variants 
-    ? variants.map(v => v.size).filter((s): s is string => s !== null)
-    : getProductSizes(product.category_id, product.parent_category_id);
-  
+
+  const availableSizes = variants
+    ? sortSizes(variants.map(v => v.size).filter((s): s is string => s !== null))
+    : ["STANDART"];
+
   const selectedVariant = variants?.find(v => v.size === selectedSize);
-  const displayPrice = selectedVariant?.price || 
+  const displayPrice = selectedVariant?.price ||
     (typeof product.price === "number" ? product.price : parseFloat(product.price));
   const displayStock = selectedVariant?.stock ?? product.stock;
 
   const handleAddToCart = () => {
     if (!product || !selectedSize) return;
-    
+
     if (variants) {
       const variant = variants.find(v => v.size === selectedSize);
       if (variant) {
@@ -219,7 +220,7 @@ const ProductDetail = () => {
                     const variant = variants?.find(v => v.size === size);
                     const isSelected = selectedSize === size;
                     const isOutOfStock = variant ? variant.stock === 0 : false;
-                    
+
                     return (
                       <UnstyledButton
                         key={size}

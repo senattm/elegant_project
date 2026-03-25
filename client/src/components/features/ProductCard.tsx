@@ -14,7 +14,7 @@ import { motion } from "framer-motion";
 import { useFavorites, useCart } from "../../store/hooks";
 import type { Product } from "../../store/atoms";
 import ImageSlider from "../ui/ImageSlider";
-import { getProductSizes } from "../../utils/productUtils";
+import { sortSizes } from "../../utils/productUtils";
 
 interface ProductCardProps {
   product: Product;
@@ -40,12 +40,24 @@ const ProductCard = ({ product }: ProductCardProps) => {
     return price.toFixed(2);
   }, [product.price]);
 
-  const availableSizes = getProductSizes(product.category_id, product.parent_category_id);
+  const availableSizes = useMemo(() => {
+    const variants = product.variants;
+    if (variants && variants.length > 0) {
+      const sizes = variants
+        .map((v) => v.size)
+        .filter((s): s is string => !!s && s.trim() !== "");
+      return sizes.length > 0 ? sortSizes(sizes) : ["STD"];
+    }
+    return ["STD"];
+  }, [product.variants]);
 
   const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!selectedSize) return;
-    addToCart(product, 1, undefined, selectedSize);
+
+    const variant = product.variants?.find((v) => v.size === selectedSize);
+    addToCart(product, 1, variant?.id, selectedSize);
+
     setSelectedSize(null);
     setIsHovered(false);
   };

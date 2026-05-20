@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import Hero from "../components/features/Hero";
 import MyWardrobe from "../components/features/MyWardrobe";
 import { productsApi } from "../api/client";
+import { getImageUrl } from "../utils/imageUrl";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -26,16 +27,6 @@ const Home = () => {
     }>
   >([]);
   const [loading, setLoading] = useState(true);
-
-  const categoryImages: Record<string, string> = {
-    Elbiseler: "kategori_elbise.png",
-    "Ceketler & Kabanlar": "kategori_ceket.png",
-    Ayakkabılar: "kategori_ayakkabı.png",
-    "Çantalar & Aksesuarlar": "kategori_canta.jpg",
-    "Bluzlar & Gömlekler": "kategori_gomlek.png",
-    "Kazaklar & Hırkalar": "kategori_kazak.jpg",
-    Pantolonlar: "kategori_pantolon.png",
-  };
 
   const categoryDescriptions: Record<string, string> = {
     Elbiseler: "Zarif ve şık koleksiyon",
@@ -51,22 +42,29 @@ const Home = () => {
     const fetchCategories = async () => {
       try {
         const response = await productsApi.getAll();
-        const categoriesMap = new Map<string, number>();
+        const categoriesMap = new Map<string, { count: number, image: string }>();
 
         response.data.forEach((product: any) => {
           if (product.category) {
-            const count = categoriesMap.get(product.category) || 0;
-            categoriesMap.set(product.category, count + 1);
+            const current = categoriesMap.get(product.category) || { count: 0, image: "" };
+            
+            if (!current.image && product.images && product.images.length > 0) {
+              current.image = getImageUrl(product.images[0]);
+            }
+            
+            categoriesMap.set(product.category, {
+              count: current.count + 1,
+              image: current.image
+            });
           }
         });
 
         const categoriesArray = Array.from(categoriesMap.entries())
-          .map(([name, product_count]) => ({
+          .map(([name, data]) => ({
             name,
-            image: `http://localhost:5000/images/${categoryImages[name] || "deneme.jpg"
-              }`,
+            image: data.image || "http://localhost:5000/images/deneme.jpg",
             description: categoryDescriptions[name] || "Kaliteli ürünler",
-            product_count,
+            product_count: data.count,
           }))
           .filter((cat) => cat.product_count > 0);
 

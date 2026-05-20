@@ -14,9 +14,9 @@ const MyWardrobe = () => {
     const [isAuthenticated] = useAtom(isAuthenticatedAtom);
 
     const [displayItems, setDisplayItems] = useState([
-        { id: 1, image: "http://localhost:5000/images/kategori_elbise.png", name: "Siyah Saten Elbise" },
-        { id: 2, image: "http://localhost:5000/images/kategori_ceket.png", name: "Oversize Blazer" },
-        { id: 3, image: "http://localhost:5000/images/kategori_ayakkabı.png", name: "Deri Topuklu Ayakkabı" },
+        { id: 1, image: getImageUrl("101-0.jpg"), name: "Siyah Saten Elbise" },
+        { id: 2, image: getImageUrl("104-0.jpg"), name: "Oversize Blazer" },
+        { id: 3, image: getImageUrl("110-0.jpg"), name: "Deri Topuklu Ayakkabı" },
     ]);
     const [itemCount, setItemCount] = useState(0);
     const [showBadge, setShowBadge] = useState(false);

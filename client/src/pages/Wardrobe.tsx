@@ -1,12 +1,78 @@
-import { useEffect, useState } from "react";
-import { Container, Title, Text, Grid, Image, Paper, Box, Button, Group, Stack, Center, Loader } from "@mantine/core";
-import { IconSparkles, IconArrowLeft, IconShoppingBag, IconClothesRack, IconHeart } from "@tabler/icons-react";
+import { useEffect, useState, useMemo } from "react";
+import { Container, Title, Text, Grid, Image, Paper, Box, Button, Group, Stack, Center, Loader, Modal, Badge, SimpleGrid, UnstyledButton } from "@mantine/core";
+import { IconSparkles, IconArrowLeft, IconShoppingBag, IconClothesRack, IconHeart, IconChevronRight } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { useOrders } from "../store/hooks/useOrders";
 import { getImageUrl } from "../utils/imageUrl";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../store/atoms";
+import { productsApi } from "../api/client";
+import { useDisclosure } from "@mantine/hooks";
+
+const WardrobeCard = ({ product, handleGetRecommendations }: any) => {
+    const [isHovered, setIsHovered] = useState(false);
+    
+    return (
+        <Box
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            pos="relative"
+            mb="xl"
+        >
+            <Box pos="relative" style={{ overflow: "hidden" }}>
+                <Box 
+                    style={{ aspectRatio: "2/3", backgroundColor: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+                    onClick={() => handleGetRecommendations(product)}
+                >
+                    <Image src={product.image} fit="cover" h="100%" w="100%" />
+                </Box>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
+                    style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        padding: 12,
+                        backgroundColor: "rgba(255,255,255,0.98)",
+                        zIndex: 35,
+                    }}
+                >
+                    <Button
+                        fullWidth
+                        size="sm"
+                        bg="black"
+                        radius={0}
+                        onClick={(e) => { e.stopPropagation(); handleGetRecommendations(product); }}
+                        styles={{
+                            root: {
+                                height: 42,
+                                fontSize: 12,
+                                letterSpacing: 1,
+                                fontWeight: 600,
+                            },
+                        }}
+                    >
+                        KOMBİNLE
+                    </Button>
+                </motion.div>
+            </Box>
+
+            <Box
+                pt="xs"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleGetRecommendations(product)}
+            >
+                <Text size="sm" c="gray.7" mb={4} truncate="end">
+                    {product.name}
+                </Text>
+            </Box>
+        </Box>
+    );
+};
 
 const Wardrobe = () => {
     const navigate = useNavigate();
@@ -14,6 +80,28 @@ const Wardrobe = () => {
     const [isAuthenticated] = useAtom(isAuthenticatedAtom);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [recLoading, setRecLoading] = useState(false);
+    const [heroOutfit, setHeroOutfit] = useState<Record<string, any>>({});
+    const [alternatives, setAlternatives] = useState<Record<string, any[]>>({});
+    const [selectedProduct, setSelectedProduct] = useState<any>(null);
+    const [opened, { open, close }] = useDisclosure(false);
+    const [cohesionScore, setCohesionScore] = useState<number>(0);
+
+    const roleLabels: Record<string, string> = {
+        upper: "ÜST PARÇA",
+        lower: "ALT PARÇA",
+        shoes: "AYAKKABI",
+        outerwear: "DIŞ GİYİM",
+        accessory: "AKSESUAR",
+        dress: "ELBİSE",
+        // Yeni Layer yapıları için
+        mid_layer: "ÜST PARÇA",
+        lower_body: "ALT PARÇA",
+        footwear: "AYAKKABI",
+        outer_layer: "DIŞ GİYİM",
+        full_body: "TEK PARÇA / ELBİSE",
+        bag: "ÇANTA"
+    };
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -28,7 +116,8 @@ const Wardrobe = () => {
                         id: i.productId,
                         name: i.productName,
                         image: getImageUrl(i.productImages?.[0]),
-                        category: i.category || 'Zamansız Parça'
+                        category: i.category || 'Zamansız Parça',
+                        price: i.unitPrice || i.price || 0
                     }));
 
                     const unique = Array.from(new Map(items.map((p: any) => [p.id, p])).values());
@@ -42,6 +131,34 @@ const Wardrobe = () => {
         fetch();
     }, [isAuthenticated, getUserOrders]);
 
+    const [selectedCategory, setSelectedCategory] = useState<string>('TÜMÜ');
+
+    const uniqueCategories = useMemo(() => {
+        const cats = new Set(products.map(p => p.category));
+        return ['TÜMÜ', ...Array.from(cats)].filter(Boolean);
+    }, [products]);
+
+    const filteredProducts = useMemo(() => {
+        if (selectedCategory === 'TÜMÜ') return products;
+        return products.filter(p => p.category === selectedCategory);
+    }, [products, selectedCategory]);
+
+    const handleGetRecommendations = async (product: any) => {
+        setSelectedProduct(product);
+        setRecLoading(true);
+        open();
+        try {
+            const response = await productsApi.getRecommendations(product.id);
+            setHeroOutfit(response.data.heroOutfit || {});
+            setAlternatives(response.data.alternatives || {});
+            setCohesionScore(response.data.cohesionScore || 0);
+        } catch (error) {
+            console.error("Öneriler yüklenemedi:", error);
+        } finally {
+            setRecLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <Center h="60vh">
@@ -51,7 +168,7 @@ const Wardrobe = () => {
     }
 
     return (
-        <Box py={80} bg="white" mih="100vh" style={{ fontFamily: 'Montserrat, sans-serif', overflow: "visible" }}>
+        <Box py={60} bg="white" mih="100vh" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <Container size="xl">
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -63,13 +180,40 @@ const Wardrobe = () => {
                         <Text fw={500} size="xs" style={{ letterSpacing: "1px" }}>GERİ DÖN</Text>
                     </Group>
 
-                    <Box mb={50}>
-                        <Group gap="xs" mb={4}>
-                            <IconHeart size={24} fill="#f8e1e7" color="#e0a6b2" />
-                            <Text fw={700} fz={22} c="#e0a6b2" style={{ letterSpacing: "2px" }}>SİZE ÖZEL</Text>
+                    <Group justify="space-between" align="flex-end" mb="xl">
+                        <Title order={1} fw={400} style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 5vw, 3.5rem)' }}>
+                            Dolabım <Text component="span" c="dimmed" fs="italic" fw={300}>/ koleksiyon</Text>
+                        </Title>
+                        <Group gap="xl" align="center" style={{ paddingBottom: '8px' }}>
+                            <Stack gap={0} align="center">
+                                <Text fz={28} fw={500} style={{ fontFamily: 'Playfair Display, serif' }}>{products.length}</Text>
+                                <Text fz={10} c="dimmed" tt="uppercase" fw={600} style={{ letterSpacing: '2px' }}>PARÇA</Text>
+                            </Stack>
                         </Group>
-                        <Title order={1} fz={32} fw={500} style={{ letterSpacing: "1px" }}>Dolabım</Title>
-                    </Box>
+                    </Group>
+                    <Box h={1} bg="gray.2" mb="xl" w="100%" />
+
+                    <Group gap="md" mb={40} style={{ overflowX: 'auto', flexWrap: 'nowrap' }} pb={10}>
+                        {uniqueCategories.map((filter) => (
+                            <Button 
+                                key={filter as string} 
+                                variant="outline" 
+                                radius="md" 
+                                size="md"
+                                onClick={() => setSelectedCategory(filter as string)}
+                                style={{ 
+                                    borderColor: selectedCategory === filter ? 'black' : '#e0e0e0',
+                                    color: selectedCategory === filter ? 'black' : '#333',
+                                    fontWeight: 500,
+                                    letterSpacing: '1px',
+                                    backgroundColor: selectedCategory === filter ? '#f8f9fa' : 'transparent',
+                                    flexShrink: 0
+                                }}
+                            >
+                                {filter as string}
+                            </Button>
+                        ))}
+                    </Group>
                 </motion.div>
 
                 {!isAuthenticated || products.length === 0 ? (
@@ -79,22 +223,21 @@ const Wardrobe = () => {
                     >
                         <Center py={100}>
                             <Stack align="center" gap="xl" ta="center">
-                                <Box p={40} bg="#fff5f7" style={{ borderRadius: "50%", border: "2px dashed #f8e1e7" }}>
-                                    <IconClothesRack size={60} stroke={1} color="#e0a6b2" />
+                                <Box p={40} bg="#fafafa" style={{ borderRadius: "50%", border: "1px solid #eee" }}>
+                                    <IconClothesRack size={60} stroke={1} color="#999" />
                                 </Box>
                                 <Box>
-                                    <Title order={2} fz={28} fw={600} mb="xs">Dolabınızda henüz parça yok mu? ✨</Title>
-                                    <Text c="dimmed" size="lg" mb="xl">Koleksiyonumuzdaki en trend parçalarla dolabınızı canlandırmaya başlayın!</Text>
+                                    <Title order={2} fz={28} fw={400} mb="xs" style={{ fontFamily: 'Playfair Display, serif' }}>Dolabınızda henüz parça yok</Title>
+                                    <Text c="dimmed" size="md" mb="xl">Koleksiyonumuzdaki zarif parçalarla dolabınızı oluşturmaya başlayın.</Text>
                                 </Box>
                                 <Button
                                     radius={0}
-                                    h={60}
+                                    h={50}
                                     bg="black"
                                     color="white"
-                                    px={50}
-                                    size="lg"
+                                    px={40}
                                     onClick={() => navigate("/store")}
-                                    leftSection={<IconShoppingBag size={20} />}
+                                    leftSection={<IconShoppingBag size={18} />}
                                     style={{ letterSpacing: "1px" }}
                                 >
                                     HEMEN KEŞFET
@@ -103,76 +246,146 @@ const Wardrobe = () => {
                         </Center>
                     </motion.div>
                 ) : (
-                    <Grid gutter={40}>
-                        {products.map((product, idx) => (
-                            <Grid.Col key={`${product.id}-${idx}`} span={{ base: 12, sm: 6, lg: 4 }}>
-                                <motion.div
-                                    whileHover={{ y: -10 }}
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: idx * 0.1 }}
-                                >
-                                    <Paper
-                                        radius={0}
-                                        bg="#ffffff"
-                                        p={30}
-                                        style={{ border: "none", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)" }}
+                    <Box mt="xl">
+                        <Grid gutter={20}>
+                            {filteredProducts.map((product, idx) => (
+                                <Grid.Col key={`${product.id}-${idx}`} span={{ base: 6, sm: 6, md: 4, lg: 3 }}>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.4, delay: idx * 0.05 }}
+                                        style={{ height: '100%' }}
                                     >
-                                        <Stack gap="xl">
-                                            <Box style={{
-                                                aspectRatio: "1/1",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                padding: 20,
-                                                background: "white",
-                                                border: "none"
-                                            }}>
-                                                <Image
-                                                    src={product.image}
-                                                    fit="contain"
-                                                    h="100%"
-                                                    w="100%"
-                                                />
-                                            </Box>
-
-                                            <Box>
-                                                <Text fz={11} fw={700} tt="uppercase" c="#e0a6b2" mb={4} style={{ letterSpacing: "2px" }}>{product.category}</Text>
-                                                <Title order={3} fz={24} fw={700} style={{ letterSpacing: "0.5px" }}>{product.name}</Title>
-                                            </Box>
-
-                                            <Paper
-                                                bg="#fff5f7"
-                                                p="xl"
-                                                radius={0}
-                                                style={{ border: "2px dashed #f8e1e7" }}
-                                            >
-                                                <Stack gap="md" align="center">
-                                                    <Text fz="sm" ta="center" fw={500} c="gray.8">
-                                                        Bu harika parça için size özel bir önerimiz var! ✨
-                                                    </Text>
-                                                    <Button
-                                                        variant="filled"
-                                                        color="black"
-                                                        radius={0}
-                                                        fullWidth
-                                                        size="md"
-                                                        leftSection={<IconSparkles size={18} />}
-                                                        style={{ height: 50, fontWeight: 700, letterSpacing: "1px" }}
-                                                        onClick={() => navigate(`/product/${product.id}`)}
-                                                    >
-                                                        STİL ÖNERİMİZ 🔥
-                                                    </Button>
-                                                </Stack>
-                                            </Paper>
-                                        </Stack>
-                                    </Paper>
-                                </motion.div>
-                            </Grid.Col>
-                        ))}
-                    </Grid>
+                                        <WardrobeCard product={product} handleGetRecommendations={handleGetRecommendations} />
+                                    </motion.div>
+                                </Grid.Col>
+                            ))}
+                        </Grid>
+                    </Box>
                 )}
             </Container>
+
+            <Modal
+                opened={opened}
+                onClose={close}
+                size="90%"
+                radius={0}
+                padding={0}
+                withCloseButton={false}
+                styles={{
+                    content: { backgroundColor: '#fcfcfc' }
+                }}
+            >
+                <Box p={50}>
+                    <Group justify="space-between" mb={50}>
+                        <Title order={2} fz={32} fw={400} style={{ fontFamily: 'Playfair Display, serif' }}>Sizin İçin Seçtiklerimiz</Title>
+                        <UnstyledButton onClick={close} style={{ opacity: 0.5 }}>
+                            <Text size="sm" fw={600} style={{ letterSpacing: "1px" }}>KAPAT</Text>
+                        </UnstyledButton>
+                    </Group>
+
+                    {recLoading ? (
+                        <Center h={400}>
+                            <Stack align="center" gap="lg">
+                                <Loader color="black" type="bars" />
+                                <Text size="sm" fw={500} c="dimmed" ta="center">Sizin için en uyumlu görünümü<br />tasarlıyoruz...</Text>
+                            </Stack>
+                        </Center>
+                    ) : (
+                        <Grid gutter={60} align="flex-start">
+                            {/* SOL: KULLANICININ ÜRÜNÜ */}
+                            <Grid.Col span={{ base: 12, md: 4, lg: 3 }}>
+                                <Stack align="flex-start" gap="md">
+                                    <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>SEÇİLEN PARÇA</Text>
+                                    <Paper radius={0} p={0} bg="white"
+                                        style={{
+                                            width: "100%",
+                                            aspectRatio: "3/4",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            overflow: "hidden"
+                                        }}
+                                    >
+                                        <Image src={selectedProduct?.image} fit="cover" h="100%" w="100%" />
+                                    </Paper>
+                                    <Box w="100%">
+                                        <Text size="sm" c="gray.7" mb={4} truncate="end">{selectedProduct?.name}</Text>
+                                        <Text size="md" fw={600} c="black">{typeof selectedProduct?.price === 'number' ? selectedProduct.price.toFixed(2) : parseFloat(selectedProduct?.price || '0').toFixed(2)} TL</Text>
+                                    </Box>
+                                </Stack>
+                            </Grid.Col>
+
+                            {/* SAĞ: ÖNERİLER */}
+                            <Grid.Col span={{ base: 12, md: 8, lg: 9 }}>
+                                <Stack gap="xl">
+                                    <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>TAMAMLAYICI ÖNERİLER</Text>
+                                    
+                                    {Object.keys(heroOutfit).length > 0 ? (
+                                        <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="xl">
+                                            {Object.entries(heroOutfit).map(([role, item]) => {
+                                                const isOwned = products.some((p: any) => p.id === item.id);
+                                                return (
+                                                <Stack key={role} align="flex-start" gap="sm">
+                                                    <Paper radius={0} p={0} bg="white"
+                                                        style={{
+                                                            width: "100%",
+                                                            aspectRatio: "3/4",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            cursor: "pointer",
+                                                            overflow: "hidden",
+                                                            position: "relative"
+                                                        }}
+                                                        onClick={() => { close(); navigate(`/product/${item.id}`); }}
+                                                    >
+                                                        {isOwned && (
+                                                            <Badge 
+                                                                bg="rgba(0,0,0,0.8)" 
+                                                                c="white" 
+                                                                radius={0} 
+                                                                size="xs" 
+                                                                style={{ position: "absolute", top: 10, left: 10, zIndex: 10, letterSpacing: "1px", fontSize: "9px" }}
+                                                            >
+                                                                DOLABINIZDA
+                                                            </Badge>
+                                                        )}
+                                                        <Image src={getImageUrl(item.images?.[0])} fit="cover" h="100%" w="100%" />
+                                                    </Paper>
+                                                    <Box w="100%">
+                                                        <Text size="10px" c="dimmed" tt="uppercase" fw={600} mb={2} style={{ letterSpacing: "1px" }}>{roleLabels[role] || role}</Text>
+                                                        <Text size="sm" c="gray.7" mb={4} truncate="end">{item.name}</Text>
+                                                        
+                                                        <Group justify="space-between" align="center" mt={4}>
+                                                            <Text size="md" fw={600} c="black">{typeof item.price === 'number' ? item.price.toFixed(2) : parseFloat(item.price || '0').toFixed(2)} TL</Text>
+                                                            {!isOwned && (
+                                                                <Text 
+                                                                    size="11px" 
+                                                                    fw={600} 
+                                                                    c="black" 
+                                                                    style={{ textDecoration: "underline", cursor: "pointer", letterSpacing: "1px" }}
+                                                                    onClick={() => { close(); navigate(`/product/${item.id}`); }}
+                                                                >
+                                                                    SATIN AL
+                                                                </Text>
+                                                            )}
+                                                        </Group>
+                                                    </Box>
+                                                </Stack>
+                                            )})}
+                                        </SimpleGrid>
+                                    ) : (
+                                        <Box py={40}>
+                                            <Text c="dimmed">Bu parça için henüz tamamlayıcı bir öneri bulunamadı.</Text>
+                                        </Box>
+                                    )}
+                                </Stack>
+                            </Grid.Col>
+                        </Grid>
+                    )}
+                </Box>
+            </Modal>
         </Box>
     );
 };

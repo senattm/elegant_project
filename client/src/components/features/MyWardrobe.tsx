@@ -20,6 +20,7 @@ const MyWardrobe = () => {
     ]);
     const [itemCount, setItemCount] = useState(0);
     const [showBadge, setShowBadge] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
     useEffect(() => {
         const fetchRealProducts = async () => {
@@ -51,127 +52,125 @@ const MyWardrobe = () => {
     }, [isAuthenticated, getUserOrders]);
 
     return (
-        <Box py={100} bg="white" style={{ borderTop: "1px solid #f1f1f1" }}>
+        <Box py={120} bg="#fafafa" style={{ borderTop: "1px solid #f1f1f1", overflow: "hidden" }}>
             <Container size="xl">
-                <Grid gutter={50} align="center">
-                    <Grid.Col span={{ base: 12, md: 5 }}>
+                <Grid gutter={80} align="center">
+                    <Grid.Col span={{ base: 12, md: 5 }} pl={{ base: 0, md: 80, lg: 140 }}>
                         <motion.div
                             initial={{ opacity: 0, x: -30 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.8 }}
                             viewport={{ once: true }}
                         >
-                            <Group gap="xs" mb="md">
-                                <IconClothesRack size={24} stroke={1.5} />
-                                <Text fw={500} style={{ letterSpacing: "1px" }}>DOLABIM</Text>
-                            </Group>
-
-                            <Title order={2} fz={40} mb="xl" style={{ letterSpacing: "1px" }}>
-                                STİLİNİZİ <br /> YENİDEN KURGULAYIN
+                            <Title order={2} fz={{ base: 40, md: 56 }} mb="lg" fw={400} style={{ fontFamily: 'Playfair Display, serif', lineHeight: 1 }}>
+                                Dolabınız
                             </Title>
 
-                            <Text size="lg" c="dimmed" mb={40} lh={1.8} fw={300}>
-                                Aldığınız her parça, hikayenizin bir parçası. Dolabınızdaki ürünleri bir araya getirelim ve size özel zamansız kombin önerileri sunalım.
+                            <Text size="lg" c="gray.7" mb={40} lh={1.8} fw={400}>
+                                Satın aldığınız her parça otomatik olarak koleksiyonunuza eklenir. Akıllı algoritmamız, parçalarınızı analiz ederek her gün için yepyeni ve kusursuz kombinler yaratır.
                             </Text>
 
                             <Group gap="md">
                                 <Button
                                     variant="filled"
                                     color="black"
-                                    size="lg"
-                                    radius={0}
-                                    onClick={() => navigate("/wardrobe")}
-                                    rightSection={<IconSparkles size={18} />}
-                                    style={{ height: 54, paddingLeft: 30, paddingRight: 30 }}
-                                >
-                                    KOMBİN ÖNERİSİ AL
-                                </Button>
-                                <Button
-                                    variant="subtle"
-                                    color="gray"
-                                    size="lg"
+                                    size="xl"
                                     radius={0}
                                     onClick={() => navigate("/wardrobe")}
                                     rightSection={<IconArrowRight size={18} />}
-                                    style={{ height: 54 }}
+                                    style={{ paddingLeft: 40, paddingRight: 40, letterSpacing: "1px", fontWeight: 600, fontSize: "13px" }}
                                 >
-                                    TÜMÜNÜ GÖR
+                                    DOLABIMI KEŞFET
                                 </Button>
                             </Group>
                         </motion.div>
                     </Grid.Col>
 
                     <Grid.Col span={{ base: 12, md: 7 }}>
-                        <Box pos="relative">
-                            <Grid gutter="md" pos="relative" style={{ zIndex: 1 }}>
-                                {displayItems.map((item, index) => (
-                                    <Grid.Col key={`${item.id}-${index}`} span={index === 0 ? 12 : 6}>
-                                        <motion.div
-                                            whileHover={{ scale: 1.02 }}
-                                            transition={{ duration: 0.3 }}
+                        <Box 
+                            pos="relative" 
+                            h={{ base: 400, sm: 500 }} 
+                            w="100%" 
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            onMouseEnter={() => setIsHovered(true)}
+                            onMouseLeave={() => setIsHovered(false)}
+                        >
+                            {displayItems.map((item, index) => {
+                                const isTop = index === 0;
+                                
+                                // Default positions (Stacked)
+                                const defaultRotate = index === 0 ? 0 : index === 1 ? -12 : 12;
+                                const defaultScale = index === 0 ? 1 : index === 1 ? 0.9 : 0.9;
+                                const defaultYOffset = index === 0 ? 0 : index === 1 ? -20 : 20;
+                                const defaultXOffset = index === 0 ? 0 : index === 1 ? -80 : 80;
+                                
+                                // Hovered positions (Spread)
+                                const hoverRotate = index === 0 ? 0 : index === 1 ? -20 : 20;
+                                const hoverScale = index === 0 ? 1.05 : 0.95;
+                                const hoverYOffset = index === 0 ? -15 : index === 1 ? -10 : 30;
+                                const hoverXOffset = index === 0 ? 0 : index === 1 ? -200 : 200;
+                                
+                                const zIndex = 10 - index;
+                                
+                                return (
+                                    <motion.div
+                                        key={item.id}
+                                        initial={{ opacity: 0, y: 100 }}
+                                        whileInView={{ opacity: 1 }}
+                                        animate={{ 
+                                            y: isHovered ? hoverYOffset : defaultYOffset, 
+                                            x: isHovered ? hoverXOffset : defaultXOffset, 
+                                            rotate: isHovered ? hoverRotate : defaultRotate, 
+                                            scale: isHovered ? hoverScale : defaultScale 
+                                        }}
+                                        transition={{ duration: 0.6, type: "spring", stiffness: 200, damping: 20 }}
+                                        viewport={{ once: true }}
+                                        style={{
+                                            position: 'absolute',
+                                            width: '52%',
+                                            maxWidth: '300px',
+                                            aspectRatio: '3/4',
+                                            zIndex: zIndex,
+                                        }}
+                                    >
+                                        <Paper 
+                                            radius="lg" 
+                                            p={0} 
+                                            bg="white" 
+                                            shadow={isTop ? "xl" : "sm"} 
+                                            style={{ 
+                                                overflow: 'hidden', 
+                                                height: '100%',
+                                                width: '100%',
+                                                border: '8px solid white',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => navigate("/wardrobe")}
                                         >
-                                            <Paper
-                                                radius={0}
-                                                p={index === 0 ? 60 : 40}
-                                                bg="#fcfcfc"
-                                                style={{
-                                                    border: "1px solid #f1f1f1",
-                                                    cursor: "pointer",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center"
-                                                }}
-                                                onClick={() => navigate("/wardrobe")}
-                                            >
-                                                <Box pos="relative" style={{ aspectRatio: "1/1", width: "100%", textAlign: "center" }}>
-                                                    <Image
-                                                        src={item.image}
-                                                        alt={item.name}
-                                                        fit="contain"
-                                                        h="100%"
-                                                        w="100%"
-                                                        style={{ filter: "grayscale(2%) brightness(1)" }}
-                                                    />
-                                                    <Box
-                                                        pos="absolute"
-                                                        bottom={-25}
-                                                        left={0}
-                                                        right={0}
-                                                        ta="center"
-                                                    >
-                                                        <Text fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "1px" }}>
-                                                            {showBadge ? 'Dolabınızdan' : 'Son Alınanlar'}
-                                                        </Text>
-                                                        <Text fz="xs" fw={400} c="black">{item.name}</Text>
-                                                    </Box>
+                                            <Image src={item.image} fit="cover" h="100%" w="100%" />
+                                            {isTop && (
+                                                <Box 
+                                                    pos="absolute" 
+                                                    bottom={15} 
+                                                    left={15} 
+                                                    right={15}
+                                                    bg="rgba(255, 255, 255, 0.9)" 
+                                                    style={{ 
+                                                        backdropFilter: "blur(8px)", 
+                                                        borderRadius: "12px",
+                                                    }} 
+                                                    px={16} 
+                                                    py={10}
+                                                >
+                                                    <Text size="sm" fw={600} c="black" truncate="end" ta="center">{item.name}</Text>
                                                 </Box>
-                                            </Paper>
-                                        </motion.div>
-                                    </Grid.Col>
-                                ))}
-                            </Grid>
+                                            )}
+                                        </Paper>
+                                    </motion.div>
+                                );
+                            })}
 
-                            {showBadge && (
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    whileInView={{ scale: 1 }}
-                                    transition={{ type: "spring", stiffness: 100, delay: 0.8 }}
-                                    viewport={{ once: true }}
-                                    style={{
-                                        position: "absolute",
-                                        bottom: -20,
-                                        right: 20,
-                                        zIndex: 5
-                                    }}
-                                >
-                                    <Paper p="xl" bg="black" c="white" radius={100} w={100} h={100} style={{ display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-                                        <Stack gap={0} align="center">
-                                            <Text fw={700} fz={20}>+{itemCount}</Text>
-                                            <Text fz={8} tt="uppercase">Ürün</Text>
-                                        </Stack>
-                                    </Paper>
-                                </motion.div>
-                            )}
+
                         </Box>
                     </Grid.Col>
                 </Grid>

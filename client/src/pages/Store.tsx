@@ -51,17 +51,13 @@ const Store = () => {
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category");
 
-    if (categoryFromUrl && categories.length > 0) {
+    if (categoryFromUrl) {
       const decodedCategory = decodeURIComponent(categoryFromUrl);
-      const matchingCategory = categories.find((c) => c.name === decodedCategory);
-
-      if (matchingCategory) {
-        setSelectedCategories([decodedCategory]);
-        setSearchQuery("");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
+      setSelectedCategories([decodedCategory]);
+      setSearchQuery("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [searchParams, categories]);
+  }, [searchParams]);
 
   const fetchCategories = async () => {
     try {
@@ -89,11 +85,8 @@ const Store = () => {
       const categoryFromUrl = searchParams.get("category");
       if (categoryFromUrl) {
         const decodedCategory = decodeURIComponent(categoryFromUrl);
-        const matchingCategory = categoriesArray.find((c) => c.name === decodedCategory);
-        if (matchingCategory) {
-          setSelectedCategories([decodedCategory]);
-          setSearchQuery("");
-        }
+        setSelectedCategories([decodedCategory]);
+        setSearchQuery("");
       }
     } catch (error) {
       console.error("Failed to fetch categories:", error);

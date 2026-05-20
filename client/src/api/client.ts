@@ -59,6 +59,7 @@ export const productsApi = {
   getByCategory: (categoryName: string) =>
     api.get(`/products/category/${categoryName}`),
   getCategories: () => api.get("/products/categories"),
+  getRecommendations: (id: number) => api.get(`/products/${id}/recommendations`),
 };
 
 export const ordersApi = {
@@ -124,4 +125,8 @@ export const paymentMethodsApi = {
     provider?: string;
   }) => api.post("/payment-methods", data),
   delete: (id: number) => api.delete(`/payment-methods/${id}`),
+};
+
+export const chatbotApi = {
+  sendMessage: (message: string) => api.post("/chatbot/message", { message }),
 };

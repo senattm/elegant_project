@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { chatbotApi } from "../../api/client";
 import {
   Box,
   Text,
@@ -27,7 +29,9 @@ interface Message {
 }
 
 const Chatbot = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -52,8 +56,8 @@ const Chatbot = () => {
     }
   }, [messages, isOpen]);
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
+  const handleSend = async () => {
+    if (!inputValue.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -64,16 +68,38 @@ const Chatbot = () => {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
+    setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const response = await chatbotApi.sendMessage(userMessage.text);
+      const { message, action, path } = response.data;
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Teşekkür ederim! Size yardımcı olmak için buradayım. Daha fazla bilgi için lütfen sorunuzu detaylandırın.",
+        text: message || "Üzgünüm, bir hata oluştu.",
         sender: "bot",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
+
+      if (action === "redirect" && path) {
+        setTimeout(() => {
+          navigate(path);
+          setIsOpen(false);
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Chatbot error:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "Üzgünüm, şu anda yanıt veremiyorum.",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -222,9 +248,10 @@ const Chatbot = () => {
                 variant="filled"
                 bg="#000"
                 onClick={handleSend}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || isLoading}
+                loading={isLoading}
                 style={{
-                  opacity: inputValue.trim() ? 1 : 0.5,
+                  opacity: inputValue.trim() && !isLoading ? 1 : 0.5,
                 }}
               >
                 <IconSend size={18} />

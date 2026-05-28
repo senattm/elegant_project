@@ -13,7 +13,7 @@ import { getServerUrl } from "../utils/serverUrl";
 import { sectionTitleStyle, smallLabelStyle } from "../theme";
 
 const HOME_STRIP_SIZE = 4;
-const baseImgUrl = "http://localhost:5000/images";
+const baseImgUrl = `${getServerUrl()}/images`;
 
 const pickProducts = (products: Product[], count: number, offset = 0) =>
   products.length ? Array.from({ length: count }, (_, i) => products[(offset + i) % products.length]) : [];

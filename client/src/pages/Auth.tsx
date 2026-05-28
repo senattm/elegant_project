@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { loginSchema, registerSchema } from "../schemas/auth";
 import { useNavigate } from "react-router-dom";
+import { getServerUrl } from "../utils/serverUrl";
 import {
   Box,
   Flex,
@@ -44,7 +45,7 @@ const Auth = () => {
   const navigate = useNavigate();
 
   const imageBoxStyle = {
-    backgroundImage: "url(http://localhost:5000/images/deneme.jpg)",
+    backgroundImage: `url(${getServerUrl()}/images/deneme.jpg)`,
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

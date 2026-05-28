@@ -92,7 +92,6 @@ const Wardrobe = () => {
         outerwear: "DIŞ GİYİM",
         accessory: "AKSESUAR",
         dress: "ELBİSE",
-        // Yeni Layer yapıları için
         mid_layer: "ÜST PARÇA",
         lower_body: "ALT PARÇA",
         footwear: "AYAKKABI",

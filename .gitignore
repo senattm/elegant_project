@@ -55,5 +55,6 @@ client/.vite/
 
 # Python
 venv/
+python-engine/venv/
 __pycache__/
 *.pyc

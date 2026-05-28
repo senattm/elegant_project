@@ -1,304 +1,158 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Container,
-  Text,
-  Box,
-  Title,
-  Loader,
-  Center,
-  AspectRatio,
-} from "@mantine/core";
+import { Box, Center, Container, Loader, Text, Title } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
-import { BackgroundImage } from "@mantine/core";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Hero from "../components/features/Hero";
+import HomeProductStrip from "../components/features/HomeProductStrip";
 import MyWardrobe from "../components/features/MyWardrobe";
 import { productsApi } from "../api/client";
+import type { Product } from "../types";
 import { getImageUrl } from "../utils/imageUrl";
+import { getServerUrl } from "../utils/serverUrl";
 
-/* ─────────────────────────────────────────────
-    1. ARKA PLAN İÇİN PARTICLE CANVAS (Background)
-───────────────────────────────────────────── */
-const BackgroundParticleCanvas = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: 0, y: 0 });
-  const animRef = useRef<number | null>(null);
+const HOME_STRIP_SIZE = 4;
+const baseImgUrl = "http://localhost:5000/images";
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+const pickProducts = (products: Product[], count: number, offset = 0) =>
+  products.length ? Array.from({ length: count }, (_, i) => products[(offset + i) % products.length]) : [];
 
-    const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
+type Category = { name: string; image: string; product_count: number };
 
-    const COUNT = 140;
-    const pts = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      r: Math.random() * 1.4 + 0.3,
-      op: Math.random() * 0.45 + 0.1,
-      pulse: Math.random() * Math.PI * 2,
-    }));
-
-    const onMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseRef.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-    };
-    canvas.addEventListener("mousemove", onMove);
-
-    let t = 0;
-    const draw = () => {
-      ctx.fillStyle = "#0a0a0a";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      t += 0.016;
-
-      for (let w = 0; w < 4; w++) {
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height * 0.38 + w * 50);
-        for (let x = 0; x <= canvas.width; x += 3) {
-          const y =
-            canvas.height * 0.38 +
-            w * 50 +
-            Math.sin(x * 0.007 + t * 0.38 + w * 1.1) * 24 +
-            Math.sin(x * 0.013 + t * 0.22 - w * 0.8) * 14;
-          ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = `rgba(255,255,255,${0.035 - w * 0.006})`;
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-      }
-
-      const { x: mx, y: my } = mouseRef.current;
-      const g = ctx.createRadialGradient(mx, my, 0, mx, my, 100);
-      g.addColorStop(0, "rgba(255,255,255,0.07)");
-      g.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(mx, my, 100, 0, Math.PI * 2);
-      ctx.fill();
-
-      for (let i = 0; i < pts.length; i++) {
-        const p = pts[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.pulse += 0.01;
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
-        const alpha = p.op * (0.7 + 0.3 * Math.sin(p.pulse));
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-        ctx.fill();
-
-        for (let j = i + 1; j < pts.length; j++) {
-          const q = pts[j];
-          const dx = p.x - q.x, dy = p.y - q.y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 85) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(q.x, q.y);
-            ctx.strokeStyle = `rgba(255,255,255,${0.055 * (1 - d / 85)})`;
-            ctx.lineWidth = 0.35;
-            ctx.stroke();
-          }
-        }
-      }
-      animRef.current = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      if (animRef.current) cancelAnimationFrame(animRef.current);
-      window.removeEventListener("resize", resize);
-      canvas.removeEventListener("mousemove", onMove);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        display: "block",
-        pointerEvents: "none",
-        zIndex: 1,
-      }}
-    />
-  );
-};
-
-/* ─────────────────────────────────────────────
-    2. DATA VERİLERİ (İstatistik ve Sözlük)
-───────────────────────────────────────────── */
 const statsData = [
   { num: "400+", label: "Benzersiz Parça" },
   { num: "25", label: "Yıllık Deneyim" },
   { num: "11", label: "Kategori" },
 ];
 
-const tickerWords = [
-  "Zamansız Tasarım",
-  "Yüksek Kalite",
-  "Özgün Stil",
-  "Sürdürülebilir Moda",
-  "Elegance Redefined",
-  "Timeless Collection",
-  "Minimal Luxury",
-  "Statement Pieces",
-];
+const categoryImages: Record<string, string> = {
+  ayakkabı: "shoes.jpg",
+  gömlek: "shirt.jpg",
+  top: "blouse.jpg",
+  elbise: "dress.jpg",
+  jean: "jeans.jpg",
+  pantolon: "pants.jpg",
+  etek: "skirt.jpg",
+  çanta: "bag.jpg",
+  aksesuar: "accesories.jpg",
+  aksesuarlar: "accesories.jpg",
+  "kaban ve ceket": "jacket.jpg",
+  "kazak ve hırka": "jumper.jpg"
+};
 
-/* ─────────────────────────────────────────────
-    2A. YAVAŞ AKAN SONSUZ TICKER ŞERİDİ
-───────────────────────────────────────────── */
+const sectionTitleStyle = { fontFamily: "'Georgia', serif", fontWeight: 300, letterSpacing: "4px", textTransform: "uppercase" as const, lineHeight: 1.05 };
+const smallLabelStyle = { fontSize: 10, letterSpacing: "4px", textTransform: "uppercase" as const };
+
+const BackgroundParticleCanvas = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const points = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35,
+      r: Math.random() * 1.4 + 0.3, op: Math.random() * 0.45 + 0.1, pulse: Math.random() * Math.PI * 2,
+    }));
+
+    let t = 0, animId: number;
+    const draw = () => {
+      ctx.fillStyle = "#0a0a0a"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      t += 0.016;
+
+      Array.from({ length: 4 }).forEach((_, w) => {
+        ctx.beginPath(); ctx.moveTo(0, canvas.height * 0.38 + w * 50);
+        for (let x = 0; x <= canvas.width; x += 3) {
+          const y = canvas.height * 0.38 + w * 50 + Math.sin(x * 0.007 + t * 0.38 + w * 1.1) * 24 + Math.sin(x * 0.013 + t * 0.22 - w * 0.8) * 14;
+          ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = `rgba(255,255,255,${0.035 - w * 0.006})`; ctx.lineWidth = 0.8; ctx.stroke();
+      });
+
+      points.forEach((p, i) => {
+        p.x += p.vx; p.y += p.vy; p.pulse += 0.01;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${p.op * (0.7 + 0.3 * Math.sin(p.pulse))})`; ctx.fill();
+
+        points.slice(i + 1).forEach((q) => {
+          const dx = p.x - q.x, dy = p.y - q.y, dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist >= 85) return;
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = `rgba(255,255,255,${0.055 * (1 - dist / 85)})`; ctx.lineWidth = 0.35; ctx.stroke();
+        });
+      });
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
+  }, []);
+
+  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", pointerEvents: "none", zIndex: 1 }} />;
+};
+
 const MarqueeTicker = () => {
-  const tickerStr = [...tickerWords, ...tickerWords].join(" · ");
-
+  const words = ["Zamansız Tasarım", "Yüksek Kalite", "Özgün Stil", "Sürdürülebilir Moda", "Elegance Redefined", "Timeless Collection", "Minimal Luxury", "Statement Pieces"];
+  const text = [...words, ...words].join(" · ");
   return (
-    <Box
-      style={{
-        background: "#fff",
-        borderTop: "1px solid #e8e8e8",
-        borderBottom: "1px solid #e8e8e8",
-        overflow: "hidden",
-        whiteSpace: "nowrap",
-        padding: "10px 0",
-      }}
-    >
-      <motion.div
-        animate={{ x: [0, "-50%"] }}
-        transition={{ duration: 45, ease: "linear", repeat: Infinity }}
-        style={{ display: "inline-block" }}
-      >
-        <Text
-          component="span"
-          style={{
-            fontSize: 10,
-            letterSpacing: "4px",
-            textTransform: "uppercase",
-            fontWeight: 500,
-            color: "#111",
-          }}
-        >
-          {tickerStr} &nbsp;&nbsp;&nbsp; {tickerStr}
+    <Box bg="white" py={10} style={{ borderBlock: "1px solid #e8e8e8", overflow: "hidden", whiteSpace: "nowrap" }}>
+      <motion.div animate={{ x: [0, "-50%"] }} transition={{ duration: 45, ease: "linear", repeat: Infinity }} style={{ display: "inline-block" }}>
+        <Text component="span" c="#111" fw={500} style={{ fontSize: 10, letterSpacing: 4, textTransform: "uppercase" }}>
+          {text} &nbsp;&nbsp;&nbsp; {text}
         </Text>
       </motion.div>
     </Box>
   );
 };
 
-/* ─────────────────────────────────────────────
-    2B. İNTERAKTİF ARKA PLANLI İSTATİSTİK GRİDİ
-───────────────────────────────────────────── */
 const StatsSection = () => {
-  const [counts, setCounts] = useState<any[]>(statsData.map(() => 0));
-  const ref = useRef(null);
+  const [counts, setCounts] = useState<string[]>(statsData.map(i => i.num));
+  const ref = useRef<HTMLDivElement>(null);
   const triggered = useRef(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !triggered.current) {
-          triggered.current = true;
-          statsData.forEach((s, i) => {
-            const raw = parseFloat(s.num.replace(/[^0-9.]/g, ""));
-            const suffix = s.num.replace(/[0-9.]/g, "");
-            let cur = 0;
-            const steps = 55;
-            const step = raw / steps;
-            const id = setInterval(() => {
-              cur = Math.min(cur + step, raw);
-              setCounts((prev) => {
-                const next = [...prev];
-                next[i] = cur >= raw ? s.num : Math.round(cur) + suffix;
-                return next;
-              });
-              if (cur >= raw) clearInterval(id);
-            }, 22);
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || triggered.current) return;
+      triggered.current = true;
+
+      statsData.forEach((item, index) => {
+        const target = parseFloat(item.num.replace(/[^0-9.]/g, ""));
+        const suffix = item.num.replace(/[0-9.]/g, "");
+        let current = 0, step = target / 55;
+
+        const id = setInterval(() => {
+          current = Math.min(current + step, target);
+          setCounts(prev => {
+            const next = [...prev];
+            next[index] = current >= target ? item.num : `${Math.round(current)}${suffix}`;
+            return next;
           });
-        }
-      },
-      { threshold: 0.4 }
-    );
+          if (current >= target) clearInterval(id);
+        }, 22);
+      });
+    }, { threshold: 0.4 });
+
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
 
   return (
-    <Box
-      ref={ref}
-      style={{
-        position: "relative",
-        background: "#0a0a0a",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        overflow: "hidden",
-      }}
-      py={60}
-    >
+    <Box ref={ref} pos="relative" bg="#0a0a0a" py={{ base: 28, md: 36 }} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
       <BackgroundParticleCanvas />
-
-      <Container size="xl" style={{ position: "relative", zIndex: 2 }}>
-        <Box
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "1px",
-            background: "rgba(255,255,255,0.07)",
-          }}
-        >
-          {statsData.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              viewport={{ once: true }}
-              style={{
-                background: "#0a0a0a",
-                padding: "40px 0",
-                textAlign: "center",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 48,
-                  fontWeight: 200,
-                  color: "#fff",
-                  letterSpacing: "2px",
-                  lineHeight: 1,
-                  fontFamily: "'Georgia', serif",
-                  marginBottom: 10,
-                }}
-              >
-                {counts[i] || s.num}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 10,
-                  letterSpacing: "3px",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.35)",
-                }}
-              >
-                {s.label}
-              </Text>
+      <Container size="xl" pos="relative" style={{ zIndex: 2 }}>
+        <Box style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "rgba(255,255,255,0.07)" }}>
+          {statsData.map((item, idx) => (
+            <motion.div key={item.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: idx * 0.1 }} viewport={{ once: true }} style={{ background: "#0a0a0a", padding: "22px 0", textAlign: "center" }}>
+              <Text c="white" mb={6} style={{ fontSize: "clamp(32px, 4vw, 42px)", fontWeight: 200, letterSpacing: 2, lineHeight: 1, fontFamily: "'Georgia', serif" }}>{counts[idx]}</Text>
+              <Text c="rgba(255,255,255,0.35)" style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase" }}>{item.label}</Text>
             </motion.div>
           ))}
         </Box>
@@ -307,242 +161,182 @@ const StatsSection = () => {
   );
 };
 
-/* ─────────────────────────────────────────────
-    3. EDITORIAL FEATURED LOOK (Asimetrik Grid)
-───────────────────────────────────────────── */
 const EditorialSection = () => {
   const navigate = useNavigate();
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const yLeft = useTransform(scrollYProgress, [0, 1], [40, -40]);
   const yRight = useTransform(scrollYProgress, [0, 1], [-20, 20]);
 
-  const editorialCards = [
-    {
-      tag: "Öne Çıkan",
-      title: "Sezonun\nSesli Parçası",
-      body: "Koleksiyonumuzdan bu sezon en çok konuşulan tasarım. Sadelik içinde güç.",
-      bg: "#111",
-      color: "#fff",
-      accent: "rgba(255,255,255,0.08)",
-      category: "Elbiseler",
-    },
-    {
-      tag: "Editörün Seçimi",
-      title: "Minimal\nAma Güçlü",
-      body: "Her detayın hesaplanmış olduğu, sezonun vazgeçilmezi.",
-      bg: "#f5f4f0",
-      color: "#111",
-      accent: "rgba(0,0,0,0.04)",
-      category: "Ceketler & Kabanlar",
-    },
-  ];
+  const goCategory = (cat: string) => navigate(`/store?category=${encodeURIComponent(cat)}`);
 
   return (
-    <Box ref={ref} style={{ background: "white", overflow: "hidden" }}>
-      <Container size="xl" py={100}>
-        <Box mb={60} style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7 }}
-            viewport={{ once: true }}
-          >
-            <Text
-              style={{
-                fontSize: 11,
-                letterSpacing: "5px",
-                textTransform: "uppercase",
-                color: "rgba(0,0,0,0.35)",
-                marginBottom: 10,
-              }}
-            >
-              Editörün Seçimleri
-            </Text>
-            <Title
-              order={2}
-              style={{
-                fontSize: "clamp(36px,5vw,56px)",
-                fontWeight: 300,
-                letterSpacing: "4px",
-                textTransform: "uppercase",
-                lineHeight: 1.05,
-                fontFamily: "'Georgia', serif",
-              }}
-            >
-              Öne Çıkan<br />Kombiner
-            </Title>
+    <Box ref={ref} bg="white" style={{ overflow: "hidden" }}>
+      <Container size="xl" py={60}>
+
+        <Box style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 2, background: "rgba(0,0,0,0.1)" }}>
+          <motion.div style={{ y: yLeft }}>
+            <Box onClick={() => goCategory("Elbiseler")} style={{ minHeight: 520, cursor: "pointer", position: "relative", overflow: "hidden" }}>
+              <Box style={{ position: "absolute", inset: 0, backgroundImage: `url('${baseImgUrl}/dress.jpg')`, backgroundSize: "cover", backgroundPosition: "center top" }} />
+              <Box style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.88) 100%)" }} />
+              <motion.div animate={{ opacity: [0.03, 0.07, 0.03] }} transition={{ duration: 4, repeat: Infinity }} style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.04) 40px)", pointerEvents: "none" }} />
+              <Box p="52px 48px" style={{ position: "relative", zIndex: 1, minHeight: 520, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                <Text mb={16} c="rgba(255,255,255,0.4)" style={smallLabelStyle}>Öne Çıkan</Text>
+                <Title order={3} c="white" mb={20} style={{ ...sectionTitleStyle, fontSize: 42, whiteSpace: "pre-line" }}>{"Sezonun\nSesli Parçası"}</Title>
+                <Text mb={32} c="rgba(255,255,255,0.5)" style={{ fontSize: 13, lineHeight: 1.8, maxWidth: 320 }}>Koleksiyonumuzdan bu sezon en çok konuşulan tasarım. Sadelik içinde güç.</Text>
+                <motion.div whileHover={{ x: 6 }} transition={{ type: "spring", stiffness: 300 }}>
+                  <Text c="white" style={{ ...smallLabelStyle, display: "inline-flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.3)", paddingBottom: 4 }}>Koleksiyonu Gör <span>→</span></Text>
+                </motion.div>
+              </Box>
+            </Box>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            viewport={{ once: true }}
-            style={{ textAlign: "right", maxWidth: 260 }}
-          >
-            <Text style={{ fontSize: 13, color: "rgba(0,0,0,0.45)", lineHeight: 1.8, letterSpacing: "0.3px" }}>
-              Her parça bir ifade. Her kombin bir duruş. Zamanı durduran seçimler burada.
-            </Text>
+          <Box style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <motion.div style={{ y: yRight }}>
+              <Box onClick={() => goCategory("Ceketler & Kabanlar")} bg="#f5f4f0" p="40px 36px" style={{ minHeight: 260, cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "flex-end", position: "relative", overflow: "hidden" }}>
+                <Text mb={12} c="rgba(0,0,0,0.3)" style={smallLabelStyle}>Editörün Seçimi</Text>
+                <Title order={3} mb={16} style={{ ...sectionTitleStyle, fontSize: 28, letterSpacing: 2, whiteSpace: "pre-line" }}>{"Minimal\nAma Güçlü"}</Title>
+                <Text c="rgba(0,0,0,0.45)" style={{ fontSize: 12, lineHeight: 1.7 }}>Her detayın hesaplanmış olduğu, sezonun vazgeçilmezi.</Text>
+              </Box>
+            </motion.div>
+
+            <motion.div style={{ y: yRight }} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+              <Box style={{ minHeight: 260, position: "relative", overflow: "hidden" }}>
+                <Box style={{ position: "absolute", inset: 0, backgroundImage: `url('${baseImgUrl}/jacket.jpg')`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                <Box style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.82) 100%)" }} />
+                <Box p="40px 36px" style={{ position: "relative", zIndex: 1, minHeight: 260, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <Text style={{ position: "absolute", bottom: -20, right: 16, fontSize: 140, fontWeight: 200, color: "rgba(255,255,255,0.04)", fontFamily: "'Georgia', serif", lineHeight: 1, pointerEvents: "none", userSelect: "none", letterSpacing: -4 }}>26</Text>
+                  <Text c="rgba(255,255,255,0.3)" style={smallLabelStyle}>2026 Koleksiyonu</Text>
+                  <Box>
+                    <Text mb={20} c="rgba(255,255,255,0.45)" style={{ fontSize: 13, lineHeight: 1.9 }}>Yeni sezonda stili yeniden tanımlayan parçalar seçilmeyi bekliyor.</Text>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { navigate("/store"); window.scrollTo({ top: 0, behavior: "smooth" }); }} style={{ display: "inline-block", border: "1px solid rgba(255,255,255,0.2)", padding: "12px 28px", cursor: "pointer", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#fff" }}>Tümünü İncele</motion.div>
+                  </Box>
+                </Box>
+              </Box>
+            </motion.div>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
+  );
+};
+
+const CategoriesSection = ({ categories, loading }: { categories: Category[]; loading: boolean }) => {
+  const navigate = useNavigate();
+  const openCategory = (name: string) => { navigate(`/store?category=${encodeURIComponent(name)}`); window.scrollTo({ top: 0, behavior: "smooth" }); };
+
+  return (
+    <Box bg="#f5f4f0" style={{ borderTop: "1px solid rgba(0,0,0,0.06)", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+      <Container size="xl" py={{ base: 56, md: 80 }} id="categories">
+        <Box mb={{ base: 36, md: 52 }} style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 24 }}>
+          <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
+            <Text mb={10} c="rgba(0,0,0,0.35)" style={{ fontSize: 11, letterSpacing: 5, textTransform: "uppercase" }}>Koleksiyon</Text>
+            <Title order={2} style={{ ...sectionTitleStyle, fontSize: "clamp(32px, 5vw, 52px)" }}>Kategoriler</Title>
+          </motion.div>
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.2 }} viewport={{ once: true }} style={{ maxWidth: 280 }}>
+            <Text c="rgba(0,0,0,0.45)" style={{ fontSize: 13, lineHeight: 1.8, letterSpacing: 0.3 }}>Her kategori, zamansız parçalardan oluşan özenle seçilmiş bir dünya.</Text>
           </motion.div>
         </Box>
 
-        <Box
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.4fr 1fr",
-            gridTemplateRows: "auto auto",
-            gap: "2px",
-            background: "rgba(0,0,0,0.1)",
-          }}
-        >
-          <motion.div style={{ y: yLeft, gridRow: "1 / 3" }}>
-            <Box
-              onClick={() => navigate(`/store?category=${encodeURIComponent(editorialCards[0].category)}`)}
-              style={{
-                background: editorialCards[0].bg,
-                height: "100%",
-                minHeight: 520,
-                padding: "52px 48px",
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              <Box style={{ position: "absolute", top: 24, left: 24, width: 32, height: 32, borderTop: "1px solid rgba(255,255,255,0.25)", borderLeft: "1px solid rgba(255,255,255,0.25)" }} />
-              <Box style={{ position: "absolute", bottom: 24, right: 24, width: 32, height: 32, borderBottom: "1px solid rgba(255,255,255,0.25)", borderRight: "1px solid rgba(255,255,255,0.25)" }} />
-
-              <motion.div
-                animate={{ opacity: [0.03, 0.07, 0.03] }}
-                transition={{ duration: 4, repeat: Infinity }}
-                style={{
-                  position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                  backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.04) 40px)",
-                  pointerEvents: "none",
-                }}
-              />
-
-              <Box>
-                <Text style={{ fontSize: 10, letterSpacing: "4px", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 16 }}>
-                  {editorialCards[0].tag}
-                </Text>
-                <Title
-                  order={3}
-                  style={{
-                    fontSize: 42, fontWeight: 300, color: "#fff",
-                    letterSpacing: "3px", textTransform: "uppercase",
-                    lineHeight: 1.1, fontFamily: "'Georgia', serif",
-                    whiteSpace: "pre-line", marginBottom: 20,
-                  }}
-                >
-                  {editorialCards[0].title}
-                </Title>
-                <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.8, maxWidth: 320, marginBottom: 32 }}>
-                  {editorialCards[0].body}
-                </Text>
-                <motion.div whileHover={{ x: 6 }} transition={{ type: "spring", stiffness: 300 }}>
-                  <Text
-                    style={{
-                      fontSize: 10, letterSpacing: "4px", textTransform: "uppercase",
-                      color: "#fff", display: "inline-flex", alignItems: "center", gap: 12,
-                      borderBottom: "1px solid rgba(255,255,255,0.3)", paddingBottom: 4,
-                    }}
-                  >
-                    Koleksiyonu Gör <span>→</span>
-                  </Text>
+        {loading ? <Center py={48}> <Loader color="black" /> </Center> : (
+          <Carousel slideSize={{ base: "72%", sm: "48%", md: "32%", lg: "22%" }} slideGap={2} withControls align="start" controlSize={36} styles={{ control: { background: "#111", color: "#fff", border: "none", opacity: 0.9 }, controls: { gap: 8 } }}>
+            {[...categories].sort((a, b) => b.product_count - a.product_count).map((category, idx) => (
+              <Carousel.Slide key={category.name}>
+                <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: idx * 0.04 }} viewport={{ once: true }}>
+                  <Box className="category-card" onClick={() => openCategory(category.name)} style={{ cursor: "pointer", display: "flex", flexDirection: "column", gap: 14 }}>
+                    <Box style={{ position: "relative", aspectRatio: "3 / 4", overflow: "hidden", background: "#e8e6e1" }}>
+                      <motion.div style={{ position: "absolute", inset: 0, backgroundImage: `url('${category.image}')`, backgroundSize: "cover", backgroundPosition: "center top" }} whileHover={{ scale: 1.05 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }} />
+                      <Box className="category-card-overlay" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.55) 100%)" }} />
+                      <Text style={{ position: "absolute", bottom: 14, left: 16, ...smallLabelStyle, color: "rgba(255,255,255,0.7)" }}>{category.product_count} parça</Text>
+                    </Box>
+                    <Box px={4}>
+                      <Title order={4} mb={6} style={{ ...sectionTitleStyle, fontSize: 15, letterSpacing: 3, color: "#111" }}>{category.name.toLocaleUpperCase("tr-TR")}</Title>
+                      <Text c="rgba(0,0,0,0.4)" style={{ ...smallLabelStyle, fontSize: 9 }}>Keşfet →</Text>
+                    </Box>
+                  </Box>
                 </motion.div>
+              </Carousel.Slide>
+            ))}
+          </Carousel>
+        )}
+      </Container>
+    </Box>
+  );
+};
+
+const STORY_VIDEO_FALLBACK = "grid_video_1.mp4";
+
+const storyVideos = [
+  { file: "grid_video_1.mp4", label: "Koleksiyon" },
+  { file: "grid_video_2.mp4", label: "Doku" },
+  { file: "grid_video_3.mp4", label: "Sahne" },
+  { file: "grid_video_4.mp4", label: "Detay" },
+  { file: "grid_video_5.mp4", label: "Atmosfer" },
+];
+
+const storyMosaicSlots = [
+  { col: "1 / 3", row: "1 / 5", sh: "portrait" },
+  { col: "3 / 7", row: "1 / 3", sh: "landscape" },
+  { col: "3 / 5", row: "3 / 5", sh: "square" },
+  { col: "5 / 7", row: "3 / 5", sh: "square" },
+  { col: "1 / 7", row: "5 / 7", sh: "landscape-wide" },
+] as const;
+
+const StoryVideoTile = ({ file, label, compact }: { file: string; label: string; compact?: boolean }) => {
+  const base = getServerUrl();
+  const [src, setSrc] = useState(`${base}/videos/${file}`);
+  return (
+    <Box className="story-video-frame" style={{ position: "relative", overflow: "hidden", width: "100%", height: compact ? "100%" : undefined, aspectRatio: compact ? undefined : "1 / 1", background: "#e8e6e1", border: "1px solid rgba(0,0,0,0.08)" }}>
+      <video autoPlay loop muted playsInline onError={() => { const fb = `${base}/videos/${STORY_VIDEO_FALLBACK}`; if (src !== fb) setSrc(fb); }} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}>
+        <source src={src} type="video/mp4" key={src} />
+      </video>
+      {!compact && (
+        <Box style={{ position: "absolute", bottom: 10, left: 10, padding: "6px 10px", background: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.06)" }}>
+          <Text style={{ ...smallLabelStyle, fontSize: 8, color: "rgba(0,0,0,0.45)" }}>{label}</Text>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+const StorySection = () => {
+  const navigate = useNavigate();
+
+  return (
+    <Box bg="white" py={{ base: 72, md: 100 }} style={{ borderTop: "1px solid rgba(0,0,0,0.06)", overflow: "hidden" }}>
+      <Container size="xl">
+        <Box style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 48, alignItems: "center" }}>
+          <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }} style={{ display: "flex", justifyContent: "center" }}>
+            <Box hiddenFrom="sm" w="100%" maw={400} mx="auto">
+              <Box className="story-video-mosaic" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gridTemplateRows: "repeat(6, 1fr)", gap: 8, aspectRatio: "1/1" }}>
+                {storyMosaicSlots.map((slot, idx) => (
+                  <motion.div key={storyVideos[idx].file} className="story-video-mosaic-item" data-shape={slot.sh} style={{ gridColumn: slot.col, gridRow: slot.row }} initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, delay: idx * 0.07 }} viewport={{ once: true }}>
+                    <StoryVideoTile file={storyVideos[idx].file} label={storyVideos[idx].label} compact />
+                  </motion.div>
+                ))}
+              </Box>
+            </Box>
+            <Box visibleFrom="sm" w="100%">
+              <Box className="story-video-mosaic" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gridTemplateRows: "repeat(6, 1fr)", gap: 8, aspectRatio: "1/1" }}>
+                {storyMosaicSlots.map((slot, idx) => (
+                  <motion.div key={storyVideos[idx].file} className="story-video-mosaic-item" data-shape={slot.sh} style={{ gridColumn: slot.col, gridRow: slot.row }} initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, delay: idx * 0.07 }} viewport={{ once: true }}>
+                    <StoryVideoTile file={storyVideos[idx].file} label={storyVideos[idx].label} compact />
+                  </motion.div>
+                ))}
               </Box>
             </Box>
           </motion.div>
 
-          <motion.div style={{ y: yRight }}>
-            <Box
-              onClick={() => navigate(`/store?category=${encodeURIComponent(editorialCards[1].category)}`)}
-              style={{
-                background: editorialCards[1].bg,
-                minHeight: 260,
-                padding: "40px 36px",
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                borderBottom: "2px solid white",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              <Box style={{ position: "absolute", top: 20, left: 20, width: 24, height: 24, borderTop: "1px solid rgba(0,0,0,0.15)", borderLeft: "1px solid rgba(0,0,0,0.15)" }} />
-              <Text style={{ fontSize: 10, letterSpacing: "4px", textTransform: "uppercase", color: "rgba(0,0,0,0.3)", marginBottom: 12 }}>
-                {editorialCards[1].tag}
-              </Text>
-              <Title order={3} style={{ fontSize: 28, fontWeight: 300, letterSpacing: "2px", textTransform: "uppercase", lineHeight: 1.1, fontFamily: "'Georgia', serif", whiteSpace: "pre-line", marginBottom: 16 }}>
-                {editorialCards[1].title}
-              </Title>
-              <Text style={{ fontSize: 12, color: "rgba(0,0,0,0.45)", lineHeight: 1.7 }}>{editorialCards[1].body}</Text>
-            </Box>
-          </motion.div>
-
-          <motion.div
-            style={{ y: yRight }}
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <Box
-              style={{
-                background: "#111",
-                minHeight: 260,
-                padding: "40px 36px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              <Text
-                style={{
-                  position: "absolute", bottom: -20, right: 16,
-                  fontSize: 140, fontWeight: 200, color: "rgba(255,255,255,0.04)",
-                  fontFamily: "'Georgia', serif", lineHeight: 1, pointerEvents: "none",
-                  userSelect: "none", letterSpacing: "-4px",
-                }}
-              >
-                26
-              </Text>
-              <Text style={{ fontSize: 10, letterSpacing: "4px", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>
-                2026 Koleksiyonu
-              </Text>
-              <Box>
-                <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", lineHeight: 1.9, marginBottom: 20 }}>
-                  Yeni sezonda stili yeniden tanımlayan parçalar seçilmeyi bekliyor.
-                </Text>
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { navigate("/store"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                  style={{
-                    display: "inline-block",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    padding: "12px 28px",
-                    cursor: "pointer",
-                    fontSize: 10,
-                    letterSpacing: "3px",
-                    textTransform: "uppercase",
-                    color: "#fff",
-                  }}
-                >
-                  Tümünü İncele
-                </motion.div>
+          <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.75, delay: 0.08 }} viewport={{ once: true }}>
+            <Text mb={12} c="rgba(0,0,0,0.35)" style={{ fontSize: 11, letterSpacing: 5, textTransform: "uppercase" }}>Marka hikayesi</Text>
+            <Title order={2} mb={24} style={{ ...sectionTitleStyle, fontSize: "clamp(32px, 5vw, 52px)" }}>Kendini<br />Keşfet</Title>
+            <Box mb={28} style={{ width: 48, height: 1, background: "linear-gradient(90deg, #111, transparent)" }} />
+            <Text mb={32} c="rgba(0,0,0,0.5)" style={{ fontSize: 15, lineHeight: 1.9, maxWidth: 480, letterSpacing: 0.2 }}>Modanın geçici akımları yerine stilin kalıcılığına odaklanıyoruz. Nitelikli dokuları modern bir disiplinle buluşturuyor; stilinizi bir duruş ifadesine dönüştürmeniz için zamansız çizgiler sunuyoruz.</Text>
+            <motion.div whileHover={{ x: 6 }} transition={{ type: "spring", stiffness: 300 }}>
+              <Box component="button" type="button" onClick={() => { navigate("/store"); window.scrollTo({ top: 0, behavior: "smooth" }); }} style={{ display: "inline-flex", alignItems: "center", gap: 12, padding: "14px 32px", background: "transparent", border: "1px solid rgba(0,0,0,0.2)", color: "#111", cursor: "pointer", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", fontFamily: "inherit" }}>
+                Koleksiyonu İncele <span>→</span>
               </Box>
-            </Box>
+            </motion.div>
           </motion.div>
         </Box>
       </Container>
@@ -550,256 +344,55 @@ const EditorialSection = () => {
   );
 };
 
-/* ─────────────────────────────────────────────
-    ANA SAYFA AKIŞI
-───────────────────────────────────────────── */
 const Home = () => {
-  const navigate = useNavigate();
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [constraints, setConstraints] = useState({ left: 0, right: 0 });
-
-  const categoryDescriptions: Record<string, string> = {
-    Elbiseler: "Satın aldığınız her parça otomatik olarak koleksiyonunuza eklenir. Akıllı",
-    "Ceketler & Kabanlar": "Her detayda modern bir duruş ve estetik çizgiler.",
-    Ayakkabılar: "Stilinizi tamamlayan ve adımlarınıza eşlik eden konfor.",
-    "Çantalar & Aksesuarlar": "Zarif dokunuşlarla şıklığı en üst seviyeye taşıyın.",
-    "Bluzlar & Gömlekler": "Klasik hatların modern asimetriyle mükemmel uyumu.",
-    "Kazaklar & Hırkalar": "Sıcak, rafine dokular ve zamansız kış şıklığı.",
-    Pantolonlar: "Gün boyu konfor ve kusursuz silüetler için tasarlandı.",
-  };
-
-  const categoryImages: Record<string, string> = {
-    "ayakkabı": "http://localhost:5000/images/shoes.jpg",
-    "ayakkabılar": "http://localhost:5000/images/shoes.jpg",
-    "gömlek": "http://localhost:5000/images/shirt.jpg",
-    "bluzlar & gömlekler": "http://localhost:5000/images/shirt.jpg",
-    "bluz": "http://localhost:5000/images/blouse.jpg",
-    "elbise": "http://localhost:5000/images/dress.jpg",
-    "elbiseler": "http://localhost:5000/images/dress.jpg",
-    "kaban ve ceket": "http://localhost:5000/images/jacket.jpg",
-    "ceketler & kabanlar": "http://localhost:5000/images/jacket.jpg",
-    "ceket": "http://localhost:5000/images/jacket.jpg",
-    "kaban": "http://localhost:5000/images/jacket.jpg",
-    "jean": "http://localhost:5000/images/jeans.jpg",
-    "pantolon": "http://localhost:5000/images/pants.jpg",
-    "pantolonlar": "http://localhost:5000/images/pants.jpg",
-    "kazak": "http://localhost:5000/images/jumper.jpg",
-    "kazaklar": "http://localhost:5000/images/jumper.jpg",
-    "hırka": "http://localhost:5000/images/jumper.jpg",
-    "hırkalar": "http://localhost:5000/images/jumper.jpg",
-    "triko": "http://localhost:5000/images/jumper.jpg",
-    "trikolar": "http://localhost:5000/images/jumper.jpg",
-    "kazak ve hırka": "http://localhost:5000/images/jumper.jpg",
-    "kazaklar ve hırkalar": "http://localhost:5000/images/jumper.jpg",
-    "kazaklar & hırkalar": "http://localhost:5000/images/jumper.jpg",
-    "top": "http://localhost:5000/images/blouse.jpg",
-    "etek": "http://localhost:5000/images/skirt.jpg",
-    "etekler": "http://localhost:5000/images/skirt.jpg",
-    "çanta": "http://localhost:5000/images/bag.jpg",
-    "çantalar & aksesuarlar": "http://localhost:5000/images/bag.jpg",
-    "aksesuar": "http://localhost:5000/images/accesories.jpg",
-    "aksesuarlar": "http://localhost:5000/images/accesories.jpg",
-  };
-
-  // Kartların dikeydeki asimetrik dalgalanması (Arka plan kıvrım uyumu için keskinleştirildi)
-  const yOffsets = [0, 60, -30, 40, -50, 20, -10];
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    (async () => {
       try {
-        const response = await productsApi.getAll();
-        const categoriesMap = new Map();
-        response.data.forEach((product: any) => {
-          if (product.category) {
-            const current = categoriesMap.get(product.category) || { count: 0, image: "" };
-            if (!current.image && product.images?.length > 0) {
-              current.image = getImageUrl(product.images[0]);
-            }
-            categoriesMap.set(product.category, { count: current.count + 1, image: current.image });
-          }
+        const { data } = await productsApi.getAll();
+        setProducts(data);
+
+        const countsMap: Record<string, { count: number; img: string }> = {};
+        data.forEach((p: Product) => {
+          if (!p.category) return;
+          countsMap[p.category] = {
+            count: (countsMap[p.category]?.count || 0) + 1,
+            img: countsMap[p.category]?.img || getImageUrl(p.images?.[0])
+          };
         });
-        const categoriesArray = Array.from(categoriesMap.entries())
-          .map(([name, data]) => ({
-            name,
-            image: categoryImages[name.toLowerCase()] || data.image || "http://localhost:5000/images/deneme.jpg",
-            description: categoryDescriptions[name] || "Satın aldığınız her parça otomatik olarak eklenir.",
-            product_count: data.count,
-          }))
-          .filter((cat) => cat.product_count > 0);
-        setCategories(categoriesArray);
-      } catch (error) {
-        console.error("Kategoriler yüklenemedi:", error);
+
+        setCategories(Object.entries(countsMap).map(([name, res]) => ({
+          name,
+          image: `${baseImgUrl}/${categoryImages[name.toLowerCase()] || "deneme.jpg"}`,
+          product_count: res.count
+        })).filter(c => c.product_count > 0));
+      } catch (err) {
+        console.error("Kategoriler yüklenemedi:", err);
       } finally {
         setLoading(false);
       }
-    };
-    fetchCategories();
+    })();
   }, []);
-
-  // Kaydırma sınırlarını hesaplama (Framer Motion Drag Constraints)
-  useEffect(() => {
-    if (carouselRef.current) {
-      setConstraints({
-        left: -carouselRef.current.scrollWidth + carouselRef.current.offsetWidth,
-        right: 0,
-      });
-    }
-  }, [categories]);
 
   return (
     <Box style={{ overflowX: "hidden" }}>
-      {/* 1. Hero Giriş Ekranı */}
       <Hero />
-
-      {/* 2. Yavaş Akan Sonsuz Marquee Ticker */}
       <MarqueeTicker />
-
-      {/* 3. İnteraktif Arka Planlı İstatistik Paneli */}
       <StatsSection />
-
-      {/* 4. Kategoriler */}
-      <Box
-        style={{
-          position: "relative",
-          backgroundImage: "url('http://localhost:5000/images/categories_background.png')",
-          backgroundSize: "100% 100%",
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "center",
-          backgroundColor: "#fff",
-        }}
-      >
-        <Container size="xl" pt={80} pb={80} id="categories" style={{ position: "relative", zIndex: 1 }}>
-          {loading ? (
-            <Center py={40}>
-              <Loader color="black" />
-            </Center>
-          ) : (
-            <Carousel
-              slideSize={{ base: "80%", sm: "40%", md: "25%", lg: "20%" }}
-              slideGap={{ base: "md", md: "lg" }}
-              withControls
-              align="start"
-            >
-              {categories.map((category, index) => (
-                <Carousel.Slide key={category.name}>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: index * 0.05 }}
-                    viewport={{ once: true }}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "100%",
-                    }}
-                  >
-                    {/* Altta Olan Kart (Tek İndeksler) -> İsim ÜSTTE yazılır */}
-                    {index % 2 !== 0 && (
-                      <Box h={60} display="flex" style={{ alignItems: "center", justifyContent: "center", paddingBottom: "10px" }}>
-                        <Title
-                          order={4}
-                          style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontWeight: 500,
-                            fontSize: "20px",
-                            letterSpacing: "2px",
-                            color: "#111",
-                          }}
-                        >
-                          {category.name.toLocaleUpperCase("tr-TR")}
-                        </Title>
-                      </Box>
-                    )}
-
-                    <AspectRatio
-                      ratio={1 / 1}
-                      onClick={() => {
-                        navigate(`/store?category=${encodeURIComponent(category.name)}`);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      pos="relative"
-                      style={{
-                        cursor: "pointer",
-                        overflow: "hidden",
-                        borderRadius: "12px",
-                        border: "6px solid white",
-                        boxShadow: "0 15px 35px rgba(0,0,0,0.12)",
-                        width: "100%",
-                      }}
-                    >
-                      <BackgroundImage
-                        src={category.image}
-                        className="hover-scale"
-                        style={{ height: "100%", width: "100%" }} // Karartmayı kaldırdık, çünkü isim artık dışında
-                      />
-                    </AspectRatio>
-
-                    {/* Üstte Olan Kart (Çift İndeksler) -> İsim ALTTA yazılır */}
-                    {index % 2 === 0 && (
-                      <Box h={60} display="flex" style={{ alignItems: "center", justifyContent: "center", paddingTop: "10px" }}>
-                        <Title
-                          order={4}
-                          style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontWeight: 500,
-                            fontSize: "20px",
-                            letterSpacing: "2px",
-                            color: "#111",
-                          }}
-                        >
-                          {category.name.toLocaleUpperCase("tr-TR")}
-                        </Title>
-                      </Box>
-                    )}
-                  </motion.div>
-                </Carousel.Slide>
-              ))}
-            </Carousel>
-          )}
-        </Container>
-      </Box>
-
-      {/* 5. Asimetrik Editöryal Seçimler */}
-      <EditorialSection />
-
-      {/* 6. Yapay Zeka Gardırobu */}
-      <MyWardrobe />
-
-      {/* 7. Kendini Keşfet Hikaye Bölümü */}
-      <Box bg="#f8f9fa" pt={20} pb={{ base: 60, md: 100 }}>
-        <Container size="xl">
-          <Box style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "40px", flexWrap: "wrap" }}>
-            <Box pos="relative" w={500} maw="100%" style={{ overflow: "hidden", aspectRatio: "1.5/1", flexShrink: 0 }}>
-              <video
-                autoPlay loop muted playsInline
-                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
-              >
-                <source src="http://localhost:5000/videos/267244.mp4" type="video/mp4" />
-              </video>
-            </Box>
-
-            <Box px={{ base: "md", md: "lg" }} maw={600} style={{ textAlign: "left", flex: "0 1 auto" }}>
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-              >
-                <Title order={2} mb="lg" style={{ fontSize: "clamp(28px, 5vw, 42px)", letterSpacing: "2px" }}>
-                  KENDİNİ KEŞFET
-                </Title>
-                <Text size="lg" mb="xl" fw={300} lh={1.8} style={{ letterSpacing: "0.5px" }}>
-                  Modanın geçici akımları yerine, stilin kalıcılığına odaklanıyoruz. Koleksiyonlarımız; nitelikli dokuları modern bir disiplinle bir araya getirerek kişisel tarzınıza eşlik ediyor. Stil, sadece bir tercih değil, bir duruş ifadesidir. Kendinizi yansıtan zamansız çizgileri keşfetmeniz için tasarlıyoruz.
-                </Text>
-              </motion.div>
-            </Box>
-          </Box>
-        </Container>
-      </Box>
+      <CategoriesSection categories={categories} loading={loading} />
+      {!loading && (
+        <>
+          <HomeProductStrip eyebrow="Alışveriş" title="Öne Çıkan Parçalar" description="Koleksiyonun en çok tercih edilen parçaları" products={pickProducts(products, HOME_STRIP_SIZE, 0)} tone="light" />
+          <MyWardrobe />
+          <HomeProductStrip eyebrow="Alışveriş" title="Yeni Sezon" products={pickProducts(products, HOME_STRIP_SIZE, HOME_STRIP_SIZE)} tone="muted" />
+          <EditorialSection />
+          <HomeProductStrip eyebrow="Alışveriş" title="Tarzını Yarat" products={pickProducts(products, HOME_STRIP_SIZE, HOME_STRIP_SIZE * 2)} tone="light" />
+        </>
+      )}
+      <StorySection />
     </Box>
   );
 };

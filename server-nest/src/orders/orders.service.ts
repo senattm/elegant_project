@@ -211,6 +211,9 @@ export class OrdersService {
                 product_images: {
                   select: { image_url: true },
                 },
+                categories: {
+                  select: { name: true },
+                },
               },
             },
             product_variants: true,
@@ -239,6 +242,7 @@ export class OrdersService {
           selectedSize: item.product_variants?.size || item.selected_size || undefined,
           price: parseFloat(item.price.toString()),
           productName: item.products?.name,
+          category: item.products?.categories?.name,
           productImages:
             item.products?.product_images.map((img) => img.image_url) || [],
         })),
@@ -258,6 +262,9 @@ export class OrdersService {
               include: {
                 product_images: {
                   select: { image_url: true },
+                },
+                categories: {
+                  select: { name: true },
                 },
               },
             },
@@ -290,6 +297,7 @@ export class OrdersService {
           selectedSize: item.product_variants?.size || item.selected_size,
           price: parseFloat(item.price.toString()),
           productName: item.products?.name,
+          category: item.products?.categories?.name,
           productImages:
             item.products?.product_images.map((img) => img.image_url) || [],
         })),

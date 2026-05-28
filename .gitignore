@@ -50,3 +50,10 @@ client/.vite/
 # Test files
 *.test.js.snap
 
+# Keys
+*google-key.json
+
+# Python
+venv/
+__pycache__/
+*.pyc

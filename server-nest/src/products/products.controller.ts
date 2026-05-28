@@ -5,7 +5,7 @@ import { ProductsService } from './products.service';
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   @Get()
   @ApiOperation({ summary: 'Tüm ürünleri listele' })
@@ -30,5 +30,12 @@ export class ProductsController {
   @ApiResponse({ status: 404, description: 'Ürün bulunamadı' })
   getVariantsByProduct(@Param('id') id: string) {
     return this.productsService.getVariantsByProduct(+id);
+  }
+  @Get(':id/recommendations')
+  @ApiOperation({ summary: 'Ürün için AI destekli öneriler/kombinler getir' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Ürün ID' })
+  @ApiResponse({ status: 200, description: 'Öneriler başarıyla getirildi' })
+  getRecommendations(@Param('id') id: string) {
+    return this.productsService.getRecommendations(+id);
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVariantDto, UpdateVariantDto } from './dto';
 
@@ -36,7 +36,7 @@ export class ProductsService {
       id: product.id,
       name: product.name,
       description: product.description,
-      price: product.price,
+      price: product.price ? Number(product.price) : 0,
       stock: product.stock,
       category_id: product.category_id,
       parent_category_id: product.categories?.parent_id || null,
@@ -45,7 +45,7 @@ export class ProductsService {
       variants: product.product_variants?.map((variant: any) => ({
         id: variant.id,
         size: variant.size,
-        price: variant.price ? Number(variant.price) : Number(product.price),
+        price: variant.price ? Number(variant.price) : (product.price ? Number(product.price) : 0),
         stock: variant.stock,
         sku: variant.sku,
       })) || [],
@@ -198,5 +198,84 @@ export class ProductsService {
       stock: variant.stock,
       sku: variant.sku,
     }));
+  }
+
+
+
+  async getRecommendations(productId: number, limit: number = 3) {
+    try {
+      // 1. Try to get AI recommendations from Python microservice
+      try {
+        const response = await fetch(`http://127.0.0.1:8001/recommend?product_id=${productId}&limit=10`);
+        if (response.ok) {
+          const data = await response.json();
+          const recIds = data.recommendations;
+
+          if (recIds && recIds.length > 0) {
+            const products = await this.prisma.products.findMany({
+              where: { id: { in: recIds } },
+              include: this.productInclude,
+            });
+
+            // Maintain vector ranking order
+            const orderedProducts = recIds.map((id: number) => products.find(p => p.id === id)).filter(Boolean);
+            const mapped = orderedProducts.map(p => this.mapProductResponse(p));
+
+            const heroOutfit: Record<string, any> = {};
+            const alternatives: Record<string, any[]> = {};
+
+            for (const p of mapped) {
+              const role = p.category || 'Tamamlayıcı Parça';
+              if (!heroOutfit[role]) {
+                heroOutfit[role] = p;
+                alternatives[role] = [];
+              } else {
+                alternatives[role].push(p);
+              }
+            }
+
+            return {
+              heroOutfit,
+              alternatives,
+              cohesionScore: 92, // High confidence for ML vector match
+            };
+          }
+        }
+      } catch (err: any) {
+        console.warn("Python AI Engine is down, falling back to database...", err.message);
+      }
+
+      // 2. Fallback to same category
+      const product = await this.prisma.products.findUnique({ where: { id: productId } });
+      if (product) {
+        const fallback = await this.prisma.products.findMany({
+          where: { category_id: product.category_id, id: { not: productId } },
+          take: 4,
+          include: this.productInclude,
+        });
+        const mapped = fallback.map(p => this.mapProductResponse(p));
+        
+        const heroOutfit: Record<string, any> = {};
+        const alternatives: Record<string, any[]> = {};
+        
+        for (const p of mapped) {
+          const role = p.category || 'Öneri';
+          if (!heroOutfit[role]) {
+            heroOutfit[role] = p;
+            alternatives[role] = [];
+          } else {
+            alternatives[role].push(p);
+          }
+        }
+        
+        return {
+          heroOutfit,
+          alternatives,
+          cohesionScore: 50,
+        };
+      }
+    } catch { /* ignore */ }
+
+    return { heroOutfit: {}, alternatives: {}, cohesionScore: 0 };
   }
 }

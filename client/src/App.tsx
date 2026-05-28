@@ -36,7 +36,6 @@ function App() {
       <Notifications {...notificationConfig} />
       <Routes>
         <Route path="/auth" element={<Auth />} />
-
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
         </Route>

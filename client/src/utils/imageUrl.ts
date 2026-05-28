@@ -8,16 +8,17 @@ export const getImageUrl = (url: string | undefined | null): string => {
   }
   
   const serverUrl = getServerUrl();
+  let formattedUrl = url.startsWith('/') ? url.slice(1) : url;
   
-  if (!url.startsWith("/images/") && !url.startsWith("images/")) {
-    return `${serverUrl}/images/${url}`;
+  if (!formattedUrl.startsWith("images/")) {
+    if (!formattedUrl.startsWith("products/")) {
+      formattedUrl = `images/products/${formattedUrl}`;
+    } else {
+      formattedUrl = `images/${formattedUrl}`;
+    }
   }
   
-  if (url.startsWith("images/")) {
-    return `${serverUrl}/${url}`;
-  }
-  
-  return `${serverUrl}${url}`;
+  return `${serverUrl}/${formattedUrl}`;
 };
 
 

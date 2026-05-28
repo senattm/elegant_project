@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Box, Title, Text, Group, Center } from "@mantine/core";
+import { getServerUrl } from "../../utils/serverUrl";
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const Hero = () => {
         pos="absolute"
         inset={0}
         style={{
-          backgroundImage: "url('http://localhost:5000/images/login.jpg')",
+          backgroundImage: `url('${getServerUrl()}/images/hero-home.jpg')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundColor: "rgba(0,0,0,0.40)",

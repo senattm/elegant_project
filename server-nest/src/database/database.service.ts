@@ -10,11 +10,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     this.pool = new Pool({
-      host: this.configService.get('DATABASE_HOST'),
-      port: this.configService.get('DATABASE_PORT'),
-      database: this.configService.get('DATABASE_NAME'),
-      user: this.configService.get('DATABASE_USER'),
-      password: this.configService.get('DATABASE_PASSWORD'),
+      connectionString: this.configService.get('DATABASE_URL'),
     });
 
     try {

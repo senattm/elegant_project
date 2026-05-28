@@ -1,182 +1,343 @@
 import { useEffect, useState } from "react";
-import { Container, Box, Title, Text, Group, Button, Grid, Image, Paper, Stack } from "@mantine/core";
-import { IconSparkles, IconArrowRight, IconClothesRack } from "@tabler/icons-react";
+import { Box, Container, Text, Title } from "@mantine/core";
+import { IconArrowRight, IconHanger2 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useOrders } from "../../store/hooks/useOrders";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../../store/atoms";
 import { getImageUrl } from "../../utils/imageUrl";
+import { getServerUrl } from "../../utils/serverUrl";
+
+const sectionTitleStyle = {
+  fontFamily: "'Georgia', serif",
+  fontWeight: 300,
+  letterSpacing: "4px",
+  textTransform: "uppercase" as const,
+  lineHeight: 1.05,
+};
+
+const smallLabelStyle = {
+  fontSize: 10,
+  letterSpacing: "4px",
+  textTransform: "uppercase" as const,
+};
+
+type WardrobeItem = { id: number; image: string; name: string };
+
+const defaultItems: WardrobeItem[] = [
+  { id: 1, image: getImageUrl("101-0.jpg"), name: "Siyah Saten Elbise" },
+  { id: 2, image: getImageUrl("104-0.jpg"), name: "Oversize Blazer" },
+  { id: 3, image: getImageUrl("110-0.jpg"), name: "Deri Topuklu Ayakkabı" },
+];
+
+const highlights = [
+  { label: "Parçanı seç", desc: "Dolabından bir ürünle başla" },
+  { label: "Tam kombin", desc: "Üst, alt ve ayakkabı bir arada" },
+];
+
+const WardrobePiecesPanel = ({
+  items,
+  itemCount,
+  onOpen,
+}: {
+  items: WardrobeItem[];
+  itemCount: number;
+  onOpen: () => void;
+}) => (
+  <Box
+    onClick={onOpen}
+    style={{
+      cursor: "pointer",
+      background: "rgba(255,255,255,0.85)",
+      border: "1px solid rgba(0,0,0,0.08)",
+      boxShadow: "0 24px 56px rgba(0,0,0,0.07)",
+      padding: "24px 22px 22px",
+    }}
+  >
+    <Box mb={20} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+      <Text style={{ ...smallLabelStyle, fontSize: 9, color: "rgba(0,0,0,0.35)" }}>
+        Dolabınızdaki parçalar
+      </Text>
+      {itemCount > 0 && (
+        <Text c="rgba(0,0,0,0.4)" style={{ ...smallLabelStyle, fontSize: 9 }}>
+          {itemCount} parça
+        </Text>
+      )}
+    </Box>
+
+    <Box
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 2,
+        background: "rgba(0,0,0,0.06)",
+      }}
+    >
+      {items.map((item, index) => (
+        <motion.div
+          key={item.id}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: index * 0.08 }}
+          viewport={{ once: true }}
+          whileHover={{ y: -4 }}
+        >
+          <Box
+            className="wardrobe-card-light"
+            style={{
+              position: "relative",
+              aspectRatio: "3/4",
+              overflow: "hidden",
+              background: "#fff",
+              border: "1px solid rgba(0,0,0,0.06)",
+            }}
+          >
+            <Box
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundImage: `url('${item.image}')`,
+                backgroundSize: "cover",
+                backgroundPosition: "center top",
+              }}
+            />
+            <Box
+              p="10px 8px"
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: "linear-gradient(transparent, rgba(255,255,255,0.95) 35%)",
+              }}
+            >
+              <Text
+                truncate
+                ta="center"
+                c="#111"
+                style={{ fontSize: 9, letterSpacing: 0.8, textTransform: "uppercase" }}
+              >
+                {item.name}
+              </Text>
+            </Box>
+          </Box>
+        </motion.div>
+      ))}
+    </Box>
+
+    <Text mt={16} ta="center" c="rgba(0,0,0,0.35)" style={{ ...smallLabelStyle, fontSize: 9 }}>
+      Tüm dolabı gör →
+    </Text>
+  </Box>
+);
 
 const MyWardrobe = () => {
-    const navigate = useNavigate();
-    const { getUserOrders } = useOrders();
-    const [isAuthenticated] = useAtom(isAuthenticatedAtom);
+  const navigate = useNavigate();
+  const { getUserOrders } = useOrders();
+  const [isAuthenticated] = useAtom(isAuthenticatedAtom);
+  const [displayItems, setDisplayItems] = useState<WardrobeItem[]>(defaultItems);
+  const [itemCount, setItemCount] = useState(0);
 
-    const [displayItems, setDisplayItems] = useState([
-        { id: 1, image: getImageUrl("101-0.jpg"), name: "Siyah Saten Elbise" },
-        { id: 2, image: getImageUrl("104-0.jpg"), name: "Oversize Blazer" },
-        { id: 3, image: getImageUrl("110-0.jpg"), name: "Deri Topuklu Ayakkabı" },
-    ]);
-    const [itemCount, setItemCount] = useState(0);
-    const [showBadge, setShowBadge] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
+  useEffect(() => {
+    const fetchWardrobe = async () => {
+      if (!isAuthenticated) return;
 
-    useEffect(() => {
-        const fetchRealProducts = async () => {
-            if (isAuthenticated) {
-                try {
-                    const orders = await getUserOrders();
-                    if (orders && orders.length > 0) {
-                        const products = orders.flatMap((order: any) =>
-                            order.items.map((item: any) => ({
-                                id: item.productId,
-                                name: item.productName,
-                                image: getImageUrl(item.productImages?.[0] || 'deneme.jpg')
-                            }))
-                        );
+      try {
+        const orders = await getUserOrders();
+        if (!orders?.length) return;
 
-                        if (products.length > 0) {
-                            const uniqueProducts = Array.from(new Map(products.map((p: any) => [p.id, p])).values());
-                            setDisplayItems(uniqueProducts.slice(0, 3) as any);
-                            setItemCount(uniqueProducts.length);
-                            setShowBadge(true);
-                        }
-                    }
-                } catch (error) {
-                    console.error("Dolap ürünleri yüklenemedi:", error);
-                }
-            }
-        };
-        fetchRealProducts();
-    }, [isAuthenticated, getUserOrders]);
+        const products = orders.flatMap((order: { items: { productId: number; productName: string; productImages?: string[] }[] }) =>
+          order.items.map((item) => ({
+            id: item.productId,
+            name: item.productName,
+            image: getImageUrl(item.productImages?.[0] || "deneme.jpg"),
+          }))
+        );
 
-    return (
-        <Box py={120} bg="#fafafa" style={{ borderTop: "1px solid #f1f1f1", overflow: "hidden" }}>
-            <Container size="xl">
-                <Grid gutter={80} align="center">
-                    <Grid.Col span={{ base: 12, md: 5 }} pl={{ base: 0, md: 80, lg: 140 }}>
-                        <motion.div
-                            initial={{ opacity: 0, x: -30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.8 }}
-                            viewport={{ once: true }}
-                        >
-                            <Title order={2} fz={{ base: 40, md: 56 }} mb="lg" fw={400} style={{ fontFamily: 'Playfair Display, serif', lineHeight: 1 }}>
-                                Dolabınız
-                            </Title>
+        const unique = Array.from(new Map(products.map((p) => [p.id, p])).values());
+        if (unique.length > 0) {
+          setDisplayItems(unique.slice(0, 3));
+          setItemCount(unique.length);
+        }
+      } catch (error) {
+        console.error("Dolap parçaları yüklenemedi:", error);
+      }
+    };
 
-                            <Text size="lg" c="gray.7" mb={40} lh={1.8} fw={400}>
-                                Satın aldığınız her parça otomatik olarak koleksiyonunuza eklenir. Akıllı algoritmamız, parçalarınızı analiz ederek her gün için yepyeni ve kusursuz kombinler yaratır.
-                            </Text>
+    fetchWardrobe();
+  }, [isAuthenticated, getUserOrders]);
 
-                            <Group gap="md">
-                                <Button
-                                    variant="filled"
-                                    color="black"
-                                    size="xl"
-                                    radius={0}
-                                    onClick={() => navigate("/wardrobe")}
-                                    rightSection={<IconArrowRight size={18} />}
-                                    style={{ paddingLeft: 40, paddingRight: 40, letterSpacing: "1px", fontWeight: 600, fontSize: "13px" }}
-                                >
-                                    DOLABIMI KEŞFET
-                                </Button>
-                            </Group>
-                        </motion.div>
-                    </Grid.Col>
+  const wardrobeBg = `${getServerUrl()}/images/wardrobe_background.jpg`;
+  const goWardrobe = () => navigate("/wardrobe");
 
-                    <Grid.Col span={{ base: 12, md: 7 }}>
-                        <Box 
-                            pos="relative" 
-                            h={{ base: 400, sm: 500 }} 
-                            w="100%" 
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            onMouseEnter={() => setIsHovered(true)}
-                            onMouseLeave={() => setIsHovered(false)}
-                        >
-                            {displayItems.map((item, index) => {
-                                const isTop = index === 0;
-                                
-                                // Default positions (Stacked)
-                                const defaultRotate = index === 0 ? 0 : index === 1 ? -12 : 12;
-                                const defaultScale = index === 0 ? 1 : index === 1 ? 0.9 : 0.9;
-                                const defaultYOffset = index === 0 ? 0 : index === 1 ? -20 : 20;
-                                const defaultXOffset = index === 0 ? 0 : index === 1 ? -80 : 80;
-                                
-                                // Hovered positions (Spread)
-                                const hoverRotate = index === 0 ? 0 : index === 1 ? -20 : 20;
-                                const hoverScale = index === 0 ? 1.05 : 0.95;
-                                const hoverYOffset = index === 0 ? -15 : index === 1 ? -10 : 30;
-                                const hoverXOffset = index === 0 ? 0 : index === 1 ? -200 : 200;
-                                
-                                const zIndex = 10 - index;
-                                
-                                return (
-                                    <motion.div
-                                        key={item.id}
-                                        initial={{ opacity: 0, y: 100 }}
-                                        whileInView={{ opacity: 1 }}
-                                        animate={{ 
-                                            y: isHovered ? hoverYOffset : defaultYOffset, 
-                                            x: isHovered ? hoverXOffset : defaultXOffset, 
-                                            rotate: isHovered ? hoverRotate : defaultRotate, 
-                                            scale: isHovered ? hoverScale : defaultScale 
-                                        }}
-                                        transition={{ duration: 0.6, type: "spring", stiffness: 200, damping: 20 }}
-                                        viewport={{ once: true }}
-                                        style={{
-                                            position: 'absolute',
-                                            width: '52%',
-                                            maxWidth: '300px',
-                                            aspectRatio: '3/4',
-                                            zIndex: zIndex,
-                                        }}
-                                    >
-                                        <Paper 
-                                            radius="lg" 
-                                            p={0} 
-                                            bg="white" 
-                                            shadow={isTop ? "xl" : "sm"} 
-                                            style={{ 
-                                                overflow: 'hidden', 
-                                                height: '100%',
-                                                width: '100%',
-                                                border: '8px solid white',
-                                                cursor: 'pointer'
-                                            }}
-                                            onClick={() => navigate("/wardrobe")}
-                                        >
-                                            <Image src={item.image} fit="cover" h="100%" w="100%" />
-                                            {isTop && (
-                                                <Box 
-                                                    pos="absolute" 
-                                                    bottom={15} 
-                                                    left={15} 
-                                                    right={15}
-                                                    bg="rgba(255, 255, 255, 0.9)" 
-                                                    style={{ 
-                                                        backdropFilter: "blur(8px)", 
-                                                        borderRadius: "12px",
-                                                    }} 
-                                                    px={16} 
-                                                    py={10}
-                                                >
-                                                    <Text size="sm" fw={600} c="black" truncate="end" ta="center">{item.name}</Text>
-                                                </Box>
-                                            )}
-                                        </Paper>
-                                    </motion.div>
-                                );
-                            })}
+  return (
+    <Box
+      pos="relative"
+      py={{ base: 80, md: 112 }}
+      style={{
+        overflow: "hidden",
+        backgroundColor: "#f5f4f0",
+        borderTop: "1px solid rgba(0,0,0,0.06)",
+        borderBottom: "1px solid rgba(0,0,0,0.06)",
+      }}
+    >
+      <Box
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `url('${wardrobeBg}')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.12,
+          pointerEvents: "none",
+        }}
+      />
+      <motion.div
+        animate={{ opacity: [0.04, 0.08, 0.04] }}
+        transition={{ duration: 5, repeat: Infinity }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(0,0,0,0.03) 80px)",
+          pointerEvents: "none",
+        }}
+      />
 
+      <Container size="xl" pos="relative" style={{ zIndex: 1 }}>
+        <Box
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: 56,
+            alignItems: "center",
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, x: -28 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.75 }}
+            viewport={{ once: true }}
+            style={{ textAlign: "left" }}
+          >
+            <Box
+              pl={{ base: 0, sm: 28, md: 56, lg: 88 }}
+              pr={{ base: 0, md: 20 }}
+              maw={520}
+            >
+            <Box mb={20} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <Box
+                style={{
+                  width: 48,
+                  height: 48,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  background: "rgba(255,255,255,0.6)",
+                }}
+              >
+                <IconHanger2 size={24} stroke={1.2} color="#111" />
+              </Box>
+              <Text c="rgba(0,0,0,0.35)" style={{ fontSize: 12, letterSpacing: 5, textTransform: "uppercase" }}>
+                Kişisel dolap
+              </Text>
+            </Box>
 
-                        </Box>
-                    </Grid.Col>
-                </Grid>
-            </Container>
+            <Title order={2} mb={24} c="#111" style={{ ...sectionTitleStyle, fontSize: "clamp(40px, 5.5vw, 60px)" }}>
+              Dolabınız
+            </Title>
+
+            <Box
+              mb={28}
+              style={{
+                width: 56,
+                height: 1,
+                background: "linear-gradient(90deg, #111, transparent)",
+              }}
+            />
+
+            <Text mb={32} c="rgba(0,0,0,0.5)" style={{ fontSize: 16, lineHeight: 1.9, maxWidth: 460, letterSpacing: 0.2 }}>
+              Satın aldığınız parçalar dolabınızda toplanır. Birini seçtiğinizde size uygun üst, alt ve ayakkabıdan oluşan bir kombin önerelim.
+            </Text>
+
+            <Box
+              mb={36}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 2,
+                background: "rgba(0,0,0,0.06)",
+                maxWidth: 460,
+              }}
+            >
+              {highlights.map((item, i) => (
+                <Box
+                  key={item.label}
+                  p="20px 22px"
+                  style={{
+                    background: i === 0 ? "rgba(255,255,255,0.55)" : "#fff",
+                    border: "1px solid rgba(0,0,0,0.04)",
+                  }}
+                >
+                  <Text mb={8} style={{ ...smallLabelStyle, fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                    {item.label}
+                  </Text>
+                  <Text c="rgba(0,0,0,0.55)" style={{ fontSize: 13, lineHeight: 1.55 }}>
+                    {item.desc}
+                  </Text>
+                </Box>
+              ))}
+            </Box>
+
+            <motion.div whileHover={{ x: 6 }} transition={{ type: "spring", stiffness: 300 }}>
+              <Box
+                component="button"
+                type="button"
+                onClick={goWardrobe}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 16,
+                  padding: "16px 40px",
+                  background: "#111",
+                  border: "none",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  letterSpacing: 2,
+                  textTransform: "uppercase",
+                  fontFamily: "inherit",
+                  boxShadow: "0 14px 32px rgba(0,0,0,0.12)",
+                }}
+              >
+                Dolabımı Gör
+                <IconArrowRight size={18} stroke={1.5} />
+              </Box>
+            </motion.div>
+
+            {!isAuthenticated && (
+              <Text mt={22} c="rgba(0,0,0,0.35)" style={{ fontSize: 13, lineHeight: 1.65 }}>
+                Giriş yapın; satın aldıklarınız dolabınızda listelensin.
+              </Text>
+            )}
+            </Box>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            viewport={{ once: true }}
+            style={{ width: "100%", minWidth: 0 }}
+          >
+            <WardrobePiecesPanel items={displayItems} itemCount={itemCount} onOpen={goWardrobe} />
+          </motion.div>
         </Box>
-    );
+      </Container>
+    </Box>
+  );
 };
 
 export default MyWardrobe;

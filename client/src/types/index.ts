@@ -69,3 +69,27 @@ export interface Address {
   district: string;
   created_at: string;
 }
+
+export interface AddressFormInput {
+  title: string;
+  fullName: string;
+  phone: string;
+  addressLine: string;
+  city: string;
+  district: string;
+}
+
+export interface PaymentMethod {
+  id: number;
+  card_holder: string;
+  card_last4: string;
+  expiry_date: string | null;
+  provider: string;
+  created_at: string;
+}
+
+export interface PaymentMethodFormInput {
+  cardNumber: string;
+  cardHolderName: string;
+  expiryDate: string;
+}

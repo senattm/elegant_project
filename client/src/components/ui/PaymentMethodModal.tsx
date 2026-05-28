@@ -3,17 +3,13 @@ import { IconCreditCard, IconUser, IconCalendar } from "@tabler/icons-react";
 import { formatCardNumber, formatExpiryDate } from "../../utils/formatters";
 import FormAlert from "./FormAlert";
 
-interface PaymentMethodForm {
-    cardNumber: string;
-    cardHolderName: string;
-    expiryDate: string;
-}
+import type { PaymentMethodFormInput } from "../../types";
 
 interface PaymentMethodModalProps {
     opened: boolean;
     onClose: () => void;
-    form: PaymentMethodForm;
-    setForm: (form: PaymentMethodForm) => void;
+    form: PaymentMethodFormInput;
+    setForm: (form: PaymentMethodFormInput) => void;
     onSave: () => void;
     loading: boolean;
     error: string;

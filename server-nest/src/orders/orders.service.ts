@@ -183,6 +183,10 @@ export class OrdersService {
           });
         }
 
+        await tx.cart_items.deleteMany({
+          where: { user_id: userId },
+        });
+
         return {
           id: order.id,
           orderNumber: order.order_number,

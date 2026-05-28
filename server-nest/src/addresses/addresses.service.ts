@@ -10,6 +10,14 @@ import { CreateAddressDto, UpdateAddressDto } from './dto';
 export class AddressesService {
   constructor(private readonly prisma: PrismaService) { }
 
+  private activeAddressWhere(userId: number, addressId?: number) {
+    return {
+      user_id: userId,
+      deleted_at: null,
+      ...(addressId !== undefined ? { id: addressId } : {}),
+    };
+  }
+
   async create(userId: number, dto: CreateAddressDto) {
     const address = await this.prisma.addresses.create({
       data: {
@@ -31,7 +39,7 @@ export class AddressesService {
 
   async findAll(userId: number) {
     return await this.prisma.addresses.findMany({
-      where: { user_id: userId },
+      where: this.activeAddressWhere(userId),
       orderBy: { created_at: 'desc' },
       select: {
         id: true,
@@ -48,10 +56,7 @@ export class AddressesService {
 
   async findOne(userId: number, addressId: number) {
     const address = await this.prisma.addresses.findFirst({
-      where: {
-        id: addressId,
-        user_id: userId,
-      },
+      where: this.activeAddressWhere(userId, addressId),
       select: {
         id: true,
         title: true,
@@ -72,17 +77,13 @@ export class AddressesService {
   }
 
   async update(userId: number, addressId: number, dto: UpdateAddressDto) {
-    const existingAddress = await this.prisma.addresses.findUnique({
-      where: { id: addressId },
-      select: { user_id: true },
+    const existingAddress = await this.prisma.addresses.findFirst({
+      where: this.activeAddressWhere(userId, addressId),
+      select: { id: true },
     });
 
     if (!existingAddress) {
       throw new NotFoundException('Adres bulunamadı');
-    }
-
-    if (existingAddress.user_id !== userId) {
-      throw new ForbiddenException('Bu adrese erişim yetkiniz yok');
     }
 
     const address = await this.prisma.addresses.update({
@@ -104,21 +105,18 @@ export class AddressesService {
   }
 
   async remove(userId: number, addressId: number) {
-    const existingAddress = await this.prisma.addresses.findUnique({
-      where: { id: addressId },
-      select: { user_id: true },
+    const existingAddress = await this.prisma.addresses.findFirst({
+      where: this.activeAddressWhere(userId, addressId),
+      select: { id: true },
     });
 
     if (!existingAddress) {
       throw new NotFoundException('Adres bulunamadı');
     }
 
-    if (existingAddress.user_id !== userId) {
-      throw new ForbiddenException('Bu adrese erişim yetkiniz yok');
-    }
-
-    await this.prisma.addresses.delete({
+    await this.prisma.addresses.update({
       where: { id: addressId },
+      data: { deleted_at: new Date() },
     });
 
     return {

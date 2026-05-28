@@ -2,22 +2,13 @@ import { Modal, Stack, TextInput, Textarea, Group, Button } from "@mantine/core"
 import { IconHome, IconUser, IconPhone, IconMapPin } from "@tabler/icons-react";
 import { formatPhone } from "../../utils/formatters";
 import FormAlert from "./FormAlert";
-import type { Address } from "../../types";
-
-interface AddressForm {
-    title: string;
-    fullName: string;
-    phone: string;
-    addressLine: string;
-    city: string;
-    district: string;
-}
+import type { Address, AddressFormInput } from "../../types";
 
 interface AddressModalProps {
     opened: boolean;
     onClose: () => void;
-    form: AddressForm;
-    setForm: (form: AddressForm) => void;
+    form: AddressFormInput;
+    setForm: (form: AddressFormInput) => void;
     onSave: () => void;
     loading: boolean;
     error: string;

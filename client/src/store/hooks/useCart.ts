@@ -90,6 +90,11 @@ export const useCart = () => {
   ) => {
     if (!token) return;
 
+    if (quantity <= 0) {
+      await removeFromCart(productId, variantId, selectedSize);
+      return;
+    }
+
     try {
       await cartApi.update(productId, { quantity, variantId, selectedSize });
       await fetchCart();

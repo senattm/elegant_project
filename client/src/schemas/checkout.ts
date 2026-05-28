@@ -5,7 +5,10 @@ const phoneRegex = /^[0-9]{10,11}$/;
 export const addressSchema = z.object({
     title: z
         .string()
-        .min(2, "Adres başlığı en az 2 karakter olmalıdır"),
+        .trim()
+        .refine((value) => value === "" || value.length >= 2, {
+            message: "Adres başlığı en az 2 karakter olmalıdır",
+        }),
     fullName: z
         .string()
         .min(3, "Ad soyad en az 3 karakter olmalıdır"),
@@ -38,5 +41,8 @@ export const paymentSchema = z.object({
         .regex(/^[0-9]{3,4}$/, "CVV 3 veya 4 haneli olmalıdır"),
 });
 
+export const savedPaymentMethodSchema = paymentSchema.omit({ cvv: true });
+
 export type AddressFormValues = z.infer<typeof addressSchema>;
 export type PaymentFormValues = z.infer<typeof paymentSchema>;
+export type SavedPaymentMethodFormValues = z.infer<typeof savedPaymentMethodSchema>;

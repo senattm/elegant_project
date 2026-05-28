@@ -116,7 +116,7 @@ const Cart = () => {
                         item.selectedSize || undefined
                       )
                     }
-                    min={1}
+                    min={0}
                   />
 
                   <Text fz={18} fw={600} w={120} ta="right">

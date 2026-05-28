@@ -1,14 +1,8 @@
-import { Paper, Text, Stack, Select, Button, Checkbox, Group } from "@mantine/core";
+import { Paper, Text, Stack, Select, Button, Group, Anchor, Checkbox } from "@mantine/core";
+import { Link } from "react-router-dom";
 import { IconCreditCard, IconCalendar, IconLock, IconUser } from "@tabler/icons-react";
 import FormInput from "../ui/FormInput";
-
-interface PaymentMethod {
-    id: number;
-    card_holder: string;
-    card_last4: string;
-    expiry_date: string;
-    provider: string;
-}
+import type { PaymentMethod } from "../../types";
 
 interface PaymentSectionProps {
     savedPaymentMethods: PaymentMethod[];
@@ -24,8 +18,8 @@ interface PaymentSectionProps {
     };
     onPaymentChange: (field: string, value: string) => void;
     savePaymentMethod: boolean;
-    onToggleSavePaymentMethod: () => void;
-    errors: any;
+    onSavePaymentMethodChange: (value: boolean) => void;
+    errors: Record<string, string>;
     formatCardNumber: (value: string) => string;
     formatExpiryDate: (value: string) => string;
     formatCVV: (value: string) => string;
@@ -40,7 +34,7 @@ const PaymentSection = ({
     paymentData,
     onPaymentChange,
     savePaymentMethod,
-    onToggleSavePaymentMethod,
+    onSavePaymentMethodChange,
     errors,
     formatCardNumber,
     formatExpiryDate,
@@ -48,9 +42,14 @@ const PaymentSection = ({
 }: PaymentSectionProps) => {
     return (
         <Paper shadow="none" p="xl" withBorder>
-            <Text fz={20} fw={500} mb="md">
-                Kart Bilgileri
-            </Text>
+            <Group justify="space-between" mb="md">
+                <Text fz={20} fw={500}>
+                    Kart Bilgileri
+                </Text>
+                <Anchor component={Link} to="/profile" size="sm">
+                    Kartlarımı yönet
+                </Anchor>
+            </Group>
             <Stack gap="md">
                 {savedPaymentMethods.length > 0 && !useNewPaymentMethod ? (
                     <>
@@ -81,14 +80,14 @@ const PaymentSection = ({
                             required
                         />
                         <Button variant="subtle" onClick={onToggleNewPaymentMethod}>
-                            Yeni Kart Ekle
+                            Farklı kart ile öde
                         </Button>
                     </>
                 ) : (
                     <>
                         {savedPaymentMethods.length > 0 && (
                             <Button variant="subtle" onClick={onToggleNewPaymentMethod}>
-                                Kayıtlı Kartlarımı Kullan
+                                Kayıtlı kartlarımı kullan
                             </Button>
                         )}
                         <FormInput
@@ -134,9 +133,11 @@ const PaymentSection = ({
                             />
                         </Group>
                         <Checkbox
-                            label="Bu kartı kaydet"
+                            label="Kartınızı kaydetmek istiyor musunuz?"
                             checked={savePaymentMethod}
-                            onChange={() => onToggleSavePaymentMethod()}
+                            onChange={(event) =>
+                                onSavePaymentMethodChange(event.currentTarget.checked)
+                            }
                         />
                     </>
                 )}

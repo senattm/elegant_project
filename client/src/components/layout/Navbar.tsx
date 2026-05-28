@@ -22,6 +22,7 @@ import {
   IconUserCircle,
   IconPackage,
   IconLogout,
+  IconHanger,
 } from "@tabler/icons-react";
 import { useAuth } from "../../store/hooks";
 import { useFavorites } from "../../store/hooks/useFavorites";
@@ -243,6 +244,12 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                       onClick={() => navigate("/orders")}
                     >
                       Siparişlerim
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconHanger size={22} stroke={1.5} />}
+                      onClick={() => navigate("/wardrobe")}
+                    >
+                      Dolabım
                     </Menu.Item>
                     <Menu.Divider />
                     <Menu.Item

@@ -27,19 +27,31 @@ export const useAuth = () => {
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
   const [, setFavorites] = useAtom(favoritesAtom);
   const [, setCart] = useAtom(cartAtom);
-  const { addNotification } = useNotification();
+  const { addNotification, showAuthNotification } = useNotification();
 
   const authRequest = async (
     path: string,
     body: Record<string, unknown>
   ): Promise<AuthResponse> => {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new Error(
+        "Sunucuya bağlanılamadı. Backend'in çalıştığından emin olun (http://localhost:5000)."
+      );
+    }
 
-    const data = await response.json();
+    let data: AuthResponse & { message?: string | string[]; error?: string };
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error("Sunucudan geçersiz yanıt alındı.");
+    }
 
     if (!response.ok) {
       const message = Array.isArray(data.message)
@@ -56,7 +68,7 @@ export const useAuth = () => {
       const data = await authRequest("/auth/login", { email, password });
       setUser(data.user);
       setToken(data.token);
-      addNotification("Başarıyla giriş yaptınız!", "success");
+      showAuthNotification("login");
       return data;
     } catch (error: any) {
       addNotification(error.message || "Giriş başarısız", "error");
@@ -73,7 +85,7 @@ export const useAuth = () => {
       });
       setUser(data.user);
       setToken(data.token);
-      addNotification("Hesabınız oluşturuldu!", "success");
+      showAuthNotification("register");
       return data;
     } catch (error: any) {
       addNotification(error.message || "Kayıt başarısız", "error");
@@ -89,7 +101,7 @@ export const useAuth = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     localStorage.removeItem("favorites");
-    addNotification("Çıkış yapıldı", "info");
+    showAuthNotification("logout");
   };
 
   return {

@@ -91,6 +91,8 @@ const Wardrobe = () => {
         shoes: "AYAKKABI",
         outerwear: "DIŞ GİYİM",
         accessory: "AKSESUAR",
+        accessory_1: "AKSESUAR 1",
+        accessory_2: "AKSESUAR 2",
         dress: "ELBİSE",
         mid_layer: "ÜST PARÇA",
         lower_body: "ALT PARÇA",
@@ -314,7 +316,7 @@ const Wardrobe = () => {
                             {/* SAĞ: ÖNERİLER */}
                             <Grid.Col span={{ base: 12, md: 8, lg: 9 }}>
                                 <Stack gap="xl">
-                                    <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>TAMAMLAYICI ÖNERİLER</Text>
+                                    <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>TAM KOMBİN PLANI</Text>
                                     
                                     {Object.keys(heroOutfit).length > 0 ? (
                                         <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="xl">

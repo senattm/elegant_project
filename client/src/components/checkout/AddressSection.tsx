@@ -1,4 +1,5 @@
-import { Paper, Text, Stack, Select, Button, Group } from "@mantine/core";
+import { Paper, Text, Stack, Select, Button, Group, Anchor } from "@mantine/core";
+import { Link } from "react-router-dom";
 import { IconMapPin, IconUser, IconPhone, IconHome } from "@tabler/icons-react";
 import FormInput from "../ui/FormInput";
 import type { Address } from "../../types";
@@ -35,9 +36,14 @@ const AddressSection = ({
 }: AddressSectionProps) => {
     return (
         <Paper shadow="none" p="xl" withBorder>
-            <Text fz={20} fw={500} mb="md">
-                Teslimat Adresi
-            </Text>
+            <Group justify="space-between" mb="md">
+                <Text fz={20} fw={500}>
+                    Teslimat Adresi
+                </Text>
+                <Anchor component={Link} to="/profile" size="sm">
+                    Adreslerimi yönet
+                </Anchor>
+            </Group>
             <Stack gap="md">
                 {savedAddresses.length > 0 && !useNewAddress ? (
                     <>
@@ -68,6 +74,7 @@ const AddressSection = ({
                             icon={<IconHome size={18} />}
                             value={addressData.title}
                             onChange={(value) => onAddressChange("title", value)}
+                            error={errors.title}
                             required
                         />
                         <FormInput

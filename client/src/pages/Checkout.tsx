@@ -1,4 +1,4 @@
-import { Container, Box, Flex, Stack, Divider, Button, Group, Title } from "@mantine/core";
+import { Container, Box, Flex, Stack, Divider, Button, Group, Title, Alert } from "@mantine/core";
 import { useCheckout } from "../hooks/useCheckout";
 import AddressSection from "../components/checkout/AddressSection";
 import PaymentSection from "../components/checkout/PaymentSection";
@@ -38,12 +38,6 @@ const Checkout = () => {
     navigate,
   } = useCheckout();
 
-  const getImageUrl = (imageUrl: string) => {
-    const serverUrl =
-      import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
-    return imageUrl?.startsWith("http") ? imageUrl : `${serverUrl}${imageUrl}`;
-  };
-
   const handleAddressChange = (field: string, value: string) => {
     setAddressData({ ...addressData, [field]: value });
   };
@@ -76,12 +70,15 @@ const Checkout = () => {
     setUseNewPaymentMethod(!useNewPaymentMethod);
     if (!useNewPaymentMethod) {
       setSelectedPaymentMethodId(null);
+      setSavePaymentMethod(false);
       setPaymentData({
         cardNumber: "",
         cardHolderName: "",
         expiryDate: "",
         cvv: "",
       });
+    } else {
+      setSavePaymentMethod(false);
     }
   };
 
@@ -117,12 +114,18 @@ const Checkout = () => {
               paymentData={paymentData}
               onPaymentChange={handlePaymentChange}
               savePaymentMethod={savePaymentMethod}
-              onToggleSavePaymentMethod={() => setSavePaymentMethod(!savePaymentMethod)}
+              onSavePaymentMethodChange={setSavePaymentMethod}
               errors={errors}
               formatCardNumber={formatCardNumber}
               formatExpiryDate={formatExpiryDate}
               formatCVV={formatCVV}
             />
+
+            {errors.submit && (
+              <Alert color="red" title="Sipariş tamamlanamadı">
+                {errors.submit}
+              </Alert>
+            )}
 
             <Group justify="space-between">
               <Button variant="outline" onClick={() => navigate("/cart")}>
@@ -145,7 +148,6 @@ const Checkout = () => {
             shippingCost={shippingCost}
             finalTotal={finalTotal}
             isFirstOrder={isFirstOrder}
-            getImageUrl={getImageUrl}
           />
         </Flex>
       </Container>

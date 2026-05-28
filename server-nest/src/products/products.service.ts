@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { OutfitService } from '../outfit/outfit.service';
 import { CreateVariantDto, UpdateVariantDto } from './dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private outfitService: OutfitService,
+  ) {}
 
   private productInclude = {
     categories: {
@@ -202,50 +206,71 @@ export class ProductsService {
 
 
 
-  async getRecommendations(productId: number, limit: number = 3) {
+  private async buildHeroOutfitFromRoles(
+    roleEntries: [string, number][],
+  ): Promise<{ heroOutfit: Record<string, any>; alternatives: Record<string, any[]> } | null> {
+    const idsToLoad = [...new Set(roleEntries.map(([, id]) => id))];
+    if (!idsToLoad.length) return null;
+
+    const products = await this.prisma.products.findMany({
+      where: { id: { in: idsToLoad } },
+      include: this.productInclude,
+    });
+
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const heroOutfit: Record<string, any> = {};
+    const alternatives: Record<string, any[]> = {};
+
+    for (const [role, id] of roleEntries) {
+      const product = byId.get(id);
+      if (!product) continue;
+      heroOutfit[role] = this.mapProductResponse(product);
+      alternatives[role] = [];
+    }
+
+    return Object.keys(heroOutfit).length > 0 ? { heroOutfit, alternatives } : null;
+  }
+
+  async getRecommendations(productId: number, _limit: number = 3) {
     try {
-      // 1. Try to get AI recommendations from Python microservice
-      try {
-        const response = await fetch(`http://127.0.0.1:8001/recommend?product_id=${productId}&limit=10`);
-        if (response.ok) {
-          const data = await response.json();
-          const recIds = data.recommendations;
-
-          if (recIds && recIds.length > 0) {
-            const products = await this.prisma.products.findMany({
-              where: { id: { in: recIds } },
-              include: this.productInclude,
-            });
-
-            // Maintain vector ranking order
-            const orderedProducts = recIds.map((id: number) => products.find(p => p.id === id)).filter(Boolean);
-            const mapped = orderedProducts.map(p => this.mapProductResponse(p));
-
-            const heroOutfit: Record<string, any> = {};
-            const alternatives: Record<string, any[]> = {};
-
-            for (const p of mapped) {
-              const role = p.category || 'Tamamlayıcı Parça';
-              if (!heroOutfit[role]) {
-                heroOutfit[role] = p;
-                alternatives[role] = [];
-              } else {
-                alternatives[role].push(p);
-              }
-            }
-
-            return {
-              heroOutfit,
-              alternatives,
-              cohesionScore: 92, // High confidence for ML vector match
-            };
-          }
+      // 1. Yerleşik kombin motoru (Colab algoritması — Nest içinde, Python gerekmez)
+      const outfitRoles = this.outfitService.generateOutfitRoles(productId);
+      if (outfitRoles) {
+        const roleEntries = Object.entries(outfitRoles) as [string, number][];
+        const built = await this.buildHeroOutfitFromRoles(roleEntries);
+        if (built) {
+          return {
+            ...built,
+            cohesionScore: 92,
+            source: 'outfit-engine',
+          };
         }
-      } catch (err: any) {
-        console.warn("Python AI Engine is down, falling back to database...", err.message);
       }
 
-      // 2. Fallback to same category
+      // 2. İsteğe bağlı: harici Python servisi (8001) açıksa onu dene
+      try {
+        const response = await fetch(
+          `http://127.0.0.1:8001/recommend?product_id=${productId}`,
+          { signal: AbortSignal.timeout(3000) },
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const pyRoles = data.outfit_roles as Record<string, number> | undefined;
+          if (pyRoles) {
+            const roleEntries = Object.entries(pyRoles).filter(
+              ([role]) => role !== 'seed',
+            ) as [string, number][];
+            const built = await this.buildHeroOutfitFromRoles(roleEntries);
+            if (built) {
+              return { ...built, cohesionScore: 92, source: 'python-engine' };
+            }
+          }
+        }
+      } catch {
+        /* Python kapalıysa sorun değil */
+      }
+
+      // 3. Son çare: aynı kategoriden benzer ürünler (eski davranış)
       const product = await this.prisma.products.findUnique({ where: { id: productId } });
       if (product) {
         const fallback = await this.prisma.products.findMany({
@@ -272,10 +297,11 @@ export class ProductsService {
           heroOutfit,
           alternatives,
           cohesionScore: 50,
+          source: 'category-fallback',
         };
       }
     } catch { /* ignore */ }
 
-    return { heroOutfit: {}, alternatives: {}, cohesionScore: 0 };
+    return { heroOutfit: {}, alternatives: {}, cohesionScore: 0, source: 'none' };
   }
 }

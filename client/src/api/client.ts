@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getAuthToken } from "../utils/authToken";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -11,16 +12,9 @@ export const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const tokenString = localStorage.getItem("token");
-    if (tokenString) {
-      try {
-        const token = JSON.parse(tokenString);
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (error) {
-        console.error("Error parsing token:", error);
-      }
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

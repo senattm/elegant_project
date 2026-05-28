@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { addressSchema, paymentSchema } from "../schemas/checkout";
+import { useState } from "react";
 import { updateProfileSchema, changePasswordSchema } from "../schemas/profile";
 import {
   Container,
@@ -12,6 +11,8 @@ import {
   Paper,
   ActionIcon,
   Badge,
+  Loader,
+  Center,
 } from "@mantine/core";
 import {
   IconUser,
@@ -24,18 +25,26 @@ import {
   IconCreditCard,
 } from "@tabler/icons-react";
 import { useAtom } from "jotai";
-import { userAtom, tokenAtom } from "../store/atoms";
-import { authApi, addressesApi, paymentMethodsApi } from "../api/client";
-import type { Address } from "../types";
+import { userAtom, isAuthenticatedAtom } from "../store/atoms";
+import { authApi } from "../api/client";
+import { getApiErrorMessage } from "../utils/apiError";
 import { useFormState } from "../hooks/useFormState";
+import { useProfileAddresses } from "../hooks/useProfileAddresses";
+import { useProfilePaymentMethods } from "../hooks/useProfilePaymentMethods";
 import FormAlert from "../components/ui/FormAlert";
 import ProfileSection from "../components/ui/ProfileSection";
 import AddressModal from "../components/ui/AddressModal";
 import PaymentMethodModal from "../components/ui/PaymentMethodModal";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+
+type DeleteTarget =
+  | { type: "address"; id: number }
+  | { type: "payment"; id: number }
+  | null;
 
 const Profile = () => {
   const [user, setUser] = useAtom(userAtom);
-  const [token] = useAtom(tokenAtom);
+  const [isAuthenticated] = useAtom(isAuthenticatedAtom);
 
   const [name, setName] = useState(user?.name || "");
   const profileState = useFormState();
@@ -45,45 +54,16 @@ const Profile = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const passwordState = useFormState();
 
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [addressModalOpened, setAddressModalOpened] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [addressForm, setAddressForm] = useState({
-    title: "",
-    fullName: "",
-    phone: "",
-    addressLine: "",
-    city: "",
-    district: "",
-  });
-  const addressState = useFormState();
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
 
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
-  const [paymentMethodModalOpened, setPaymentMethodModalOpened] = useState(false);
-  const [paymentMethodForm, setPaymentMethodForm] = useState({
-    cardNumber: "",
-    cardHolderName: "",
-    expiryDate: "",
-  });
-  const paymentMethodState = useFormState();
-
-  useEffect(() => {
-    if (token) {
-      fetchAddresses();
-      fetchPaymentMethods();
-    }
-  }, [token]);
+  const addressManager = useProfileAddresses(isAuthenticated);
+  const paymentManager = useProfilePaymentMethods(isAuthenticated);
 
   const handleUpdateProfile = async () => {
     const result = updateProfileSchema.safeParse({ name });
 
     if (!result.success) {
       profileState.setError(result.error.issues[0].message);
-      return;
-    }
-
-    if (!token) {
-      profileState.setError("Oturum geçersiz");
       return;
     }
 
@@ -94,10 +74,8 @@ const Profile = () => {
       const response = await authApi.updateProfile({ name });
       setUser(response.data.user);
       profileState.setSuccess("Profil başarıyla güncellendi");
-    } catch (error: any) {
-      profileState.setError(
-        error.response?.data?.message || "Profil güncellenemedi"
-      );
+    } catch (error: unknown) {
+      profileState.setError(getApiErrorMessage(error, "Profil güncellenemedi"));
     }
   };
 
@@ -113,172 +91,39 @@ const Profile = () => {
       return;
     }
 
-    if (!token) {
-      passwordState.setError("Oturum geçersiz");
-      return;
-    }
-
     try {
       passwordState.setLoading(true);
       passwordState.reset();
 
-      await authApi.changePassword(
-        { currentPassword, newPassword }
-      );
+      await authApi.changePassword({ currentPassword, newPassword });
 
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       passwordState.setSuccess("Şifre başarıyla değiştirildi");
-    } catch (error: any) {
-      passwordState.setError(
-        error.response?.data?.message || "Şifre değiştirilemedi"
-      );
+    } catch (error: unknown) {
+      passwordState.setError(getApiErrorMessage(error, "Şifre değiştirilemedi"));
     }
   };
 
-  const fetchAddresses = async () => {
-    if (!token) return;
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
 
-    try {
-      const response = await addressesApi.getAll();
-      setAddresses(response.data);
-    } catch (error) {
-      console.error("Adresler yüklenemedi:", error);
-    }
-  };
-
-  const fetchPaymentMethods = async () => {
-    if (!token) return;
-
-    try {
-      const response = await paymentMethodsApi.getAll();
-      setPaymentMethods(response.data);
-    } catch (error) {
-      console.error("Ödeme yöntemleri yüklenemedi:", error);
-    }
-  };
-
-  const openAddressModal = (address?: Address) => {
-    if (address) {
-      setEditingAddress(address);
-      setAddressForm({
-        title: address.title || "",
-        fullName: address.full_name,
-        phone: address.phone,
-        addressLine: address.address_line,
-        city: address.city,
-        district: address.district,
-      });
+    if (deleteTarget.type === "address") {
+      await addressManager.deleteAddress(deleteTarget.id);
     } else {
-      setEditingAddress(null);
-      setAddressForm({
-        title: "",
-        fullName: "",
-        phone: "",
-        addressLine: "",
-        city: "",
-        district: "",
-      });
+      await paymentManager.deletePaymentMethod(deleteTarget.id);
     }
-    addressState.reset();
-    setAddressModalOpened(true);
+
+    setDeleteTarget(null);
   };
 
-  const handleSaveAddress = async () => {
-    const result = addressSchema.safeParse(addressForm);
-
-    if (!result.success) {
-      addressState.setError(result.error.issues[0].message);
-      return;
-    }
-
-    if (!token) {
-      addressState.setError("Oturum geçersiz");
-      return;
-    }
-
-    try {
-      addressState.setLoading(true);
-
-      if (editingAddress) {
-        await addressesApi.update(editingAddress.id, addressForm);
-      } else {
-        await addressesApi.create(addressForm);
-      }
-
-      await fetchAddresses();
-      setAddressModalOpened(false);
-      addressState.setSuccess(
-        editingAddress ? "Adres güncellendi" : "Adres eklendi"
-      );
-    } catch (error: any) {
-      addressState.setError(
-        error.response?.data?.message || "Adres kaydedilemedi"
-      );
-    }
-  };
-
-  const handleDeleteAddress = async (id: number) => {
-    if (!token || !confirm("Bu adresi silmek istediğinize emin misiniz?")) return;
-
-    try {
-      await addressesApi.delete(id);
-      await fetchAddresses();
-      addressState.setSuccess("Adres silindi");
-    } catch (error: any) {
-      addressState.setError(error.response?.data?.message || "Adres silinemedi");
-    }
-  };
-
-  const openPaymentMethodModal = () => {
-    setPaymentMethodForm({
-      cardNumber: "",
-      cardHolderName: "",
-      expiryDate: "",
-    });
-    paymentMethodState.reset();
-    setPaymentMethodModalOpened(true);
-  };
-
-  const handleSavePaymentMethod = async () => {
-    const result = paymentSchema.omit({ cvv: true }).safeParse(paymentMethodForm);
-
-    if (!result.success) {
-      paymentMethodState.setError(result.error.issues[0].message);
-      return;
-    }
-
-    if (!token) {
-      paymentMethodState.setError("Oturum geçersiz");
-      return;
-    }
-
-    try {
-      paymentMethodState.setLoading(true);
-
-      await paymentMethodsApi.create(paymentMethodForm);
-      await fetchPaymentMethods();
-      setPaymentMethodModalOpened(false);
-      paymentMethodState.setSuccess("Kart eklendi");
-    } catch (error: any) {
-      paymentMethodState.setError(
-        error.response?.data?.message || "Kart eklenemedi"
-      );
-    }
-  };
-
-  const handleDeletePaymentMethod = async (id: number) => {
-    if (!token || !confirm("Bu kartı silmek istediğinize emin misiniz?")) return;
-
-    try {
-      await paymentMethodsApi.delete(id);
-      await fetchPaymentMethods();
-      paymentMethodState.setSuccess("Kart silindi");
-    } catch (error: any) {
-      paymentMethodState.setError(error.response?.data?.message || "Kart silinemedi");
-    }
-  };
+  const isDeleting =
+    deleteTarget?.type === "address"
+      ? addressManager.deletingId === deleteTarget.id
+      : deleteTarget?.type === "payment"
+        ? paymentManager.deletingId === deleteTarget.id
+        : false;
 
   return (
     <Container size="sm" pt={{ base: 230, sm: 180, md: 140 }} pb={60}>
@@ -290,23 +135,26 @@ const Profile = () => {
             </Text>
             <Button
               leftSection={<IconPlus size={18} />}
-              onClick={() => openAddressModal()}
+              onClick={addressManager.openCreateModal}
               size="sm"
             >
               Yeni Adres
             </Button>
           </Group>
 
-          <FormAlert type="success" message={addressState.success} />
-          <FormAlert type="error" message={addressState.error} />
+          <FormAlert type="error" message={addressManager.loadError} />
 
-          {addresses.length === 0 ? (
+          {addressManager.loading && addressManager.addresses.length === 0 ? (
+            <Center py="xl">
+              <Loader size="sm" />
+            </Center>
+          ) : !addressManager.loadError && addressManager.addresses.length === 0 ? (
             <Text c="dimmed" ta="center" py="xl">
               Henüz kayıtlı adres yok
             </Text>
           ) : (
             <Stack gap="md">
-              {addresses.map((address) => (
+              {addressManager.addresses.map((address) => (
                 <Paper key={address.id} p="md" withBorder>
                   <Group justify="space-between" mb="xs">
                     <Group gap="xs">
@@ -316,14 +164,19 @@ const Profile = () => {
                     <Group gap="xs">
                       <ActionIcon
                         variant="subtle"
-                        onClick={() => openAddressModal(address)}
+                        onClick={() => addressManager.openEditModal(address)}
+                        aria-label="Adresi düzenle"
                       >
                         <IconEdit size={18} />
                       </ActionIcon>
                       <ActionIcon
                         variant="subtle"
                         color="red"
-                        onClick={() => handleDeleteAddress(address.id)}
+                        loading={addressManager.deletingId === address.id}
+                        onClick={() =>
+                          setDeleteTarget({ type: "address", id: address.id })
+                        }
+                        aria-label="Adresi sil"
                       >
                         <IconTrash size={18} />
                       </ActionIcon>
@@ -354,43 +207,52 @@ const Profile = () => {
             </Text>
             <Button
               leftSection={<IconPlus size={18} />}
-              onClick={openPaymentMethodModal}
+              onClick={paymentManager.openCreateModal}
               size="sm"
             >
               Yeni Kart
             </Button>
           </Group>
 
-          <FormAlert type="success" message={paymentMethodState.success} />
-          <FormAlert type="error" message={paymentMethodState.error} />
+          <FormAlert type="error" message={paymentManager.loadError} />
 
-          {paymentMethods.length === 0 ? (
+          {paymentManager.loading && paymentManager.paymentMethods.length === 0 ? (
+            <Center py="xl">
+              <Loader size="sm" />
+            </Center>
+          ) : !paymentManager.loadError && paymentManager.paymentMethods.length === 0 ? (
             <Text c="dimmed" ta="center" py="xl">
               Henüz kayıtlı kart yok
             </Text>
           ) : (
             <Stack gap="md">
-              {paymentMethods.map((pm) => (
+              {paymentManager.paymentMethods.map((pm) => (
                 <Paper key={pm.id} p="md" withBorder>
                   <Group justify="space-between">
                     <Group gap="md">
                       <IconCreditCard size={24} />
                       <div>
                         <Text size="sm" fw={500}>
-                          {pm.card_holder_name}
+                          {pm.card_holder}
                         </Text>
                         <Text size="sm" c="dimmed">
-                          **** **** **** {pm.last_four_digits}
+                          **** **** **** {pm.card_last4}
                         </Text>
-                        <Text size="xs" c="dimmed">
-                          {pm.expiry_date}
-                        </Text>
+                        {pm.expiry_date && (
+                          <Text size="xs" c="dimmed">
+                            SKT: {pm.expiry_date}
+                          </Text>
+                        )}
                       </div>
                     </Group>
                     <ActionIcon
                       variant="subtle"
                       color="red"
-                      onClick={() => handleDeletePaymentMethod(pm.id)}
+                      loading={paymentManager.deletingId === pm.id}
+                      onClick={() =>
+                        setDeleteTarget({ type: "payment", id: pm.id })
+                      }
+                      aria-label="Kartı sil"
                     >
                       <IconTrash size={18} />
                     </ActionIcon>
@@ -464,24 +326,37 @@ const Profile = () => {
       </Stack>
 
       <AddressModal
-        opened={addressModalOpened}
-        onClose={() => setAddressModalOpened(false)}
-        form={addressForm}
-        setForm={setAddressForm}
-        onSave={handleSaveAddress}
-        loading={addressState.loading}
-        error={addressState.error}
-        editingAddress={editingAddress}
+        opened={addressManager.modalOpened}
+        onClose={addressManager.closeModal}
+        form={addressManager.form}
+        setForm={addressManager.setForm}
+        onSave={addressManager.saveAddress}
+        loading={addressManager.saving}
+        error={addressManager.formError}
+        editingAddress={addressManager.editingAddress}
       />
 
       <PaymentMethodModal
-        opened={paymentMethodModalOpened}
-        onClose={() => setPaymentMethodModalOpened(false)}
-        form={paymentMethodForm}
-        setForm={setPaymentMethodForm}
-        onSave={handleSavePaymentMethod}
-        loading={paymentMethodState.loading}
-        error={paymentMethodState.error}
+        opened={paymentManager.modalOpened}
+        onClose={paymentManager.closeModal}
+        form={paymentManager.form}
+        setForm={paymentManager.setForm}
+        onSave={paymentManager.savePaymentMethod}
+        loading={paymentManager.saving}
+        error={paymentManager.formError}
+      />
+
+      <ConfirmDialog
+        opened={deleteTarget !== null}
+        title={deleteTarget?.type === "address" ? "Adresi sil" : "Kartı sil"}
+        message={
+          deleteTarget?.type === "address"
+            ? "Bu adresi silmek istediğinize emin misiniz?"
+            : "Bu kartı silmek istediğinize emin misiniz?"
+        }
+        loading={isDeleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
       />
     </Container>
   );

@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { addressSchema, paymentSchema } from "../schemas/checkout";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
-import { isAuthenticatedAtom, tokenAtom } from "../store/atoms";
-import { useCart, useOrders } from "../store/hooks";
+import { isAuthenticatedAtom } from "../store/atoms";
+import { useCart, useOrders, useNotification } from "../store/hooks";
 import { addressesApi, paymentMethodsApi, ordersApi } from "../api/client";
+import type { PaymentMethod } from "../types";
 import { formatPhone, formatCardNumber, formatExpiryDate } from "../utils/formatters";
 import type { Address } from "../types";
 
@@ -13,15 +14,6 @@ interface PaymentData {
     cardHolderName: string;
     expiryDate: string;
     cvv: string;
-}
-
-interface PaymentMethod {
-    id: number;
-    card_holder: string;
-    card_last4: string;
-    expiry_date: string;
-    provider: string;
-    created_at: string;
 }
 
 interface AddressData {
@@ -36,10 +28,11 @@ interface AddressData {
 export const useCheckout = () => {
     const navigate = useNavigate();
     const [isAuthenticated] = useAtom(isAuthenticatedAtom);
-    const [token] = useAtom(tokenAtom);
     const { cart, getTotalPrice, clearCart, fetchCart } = useCart();
     const { createOrder } = useOrders();
+    const { addNotification } = useNotification();
     const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+    const [savePaymentMethod, setSavePaymentMethod] = useState(false);
 
     const [paymentData, setPaymentData] = useState<PaymentData>({
         cardNumber: "",
@@ -55,8 +48,6 @@ export const useCheckout = () => {
     const [savedPaymentMethods, setSavedPaymentMethods] = useState<PaymentMethod[]>([]);
     const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
     const [useNewPaymentMethod, setUseNewPaymentMethod] = useState(false);
-    const [savePaymentMethod, setSavePaymentMethod] = useState(false);
-
     const [addressData, setAddressData] = useState<AddressData>({
         title: "",
         fullName: "",
@@ -82,7 +73,7 @@ export const useCheckout = () => {
     }, [isAuthenticated]);
 
     const loadSavedAddresses = async () => {
-        if (!token) return;
+        if (!isAuthenticated) return;
         try {
             const response = await addressesApi.getAll();
             setSavedAddresses(response.data);
@@ -95,7 +86,7 @@ export const useCheckout = () => {
     };
 
     const loadSavedPaymentMethods = async () => {
-        if (!token) return;
+        if (!isAuthenticated) return;
         try {
             const response = await paymentMethodsApi.getAll();
             setSavedPaymentMethods(response.data);
@@ -115,7 +106,7 @@ export const useCheckout = () => {
     };
 
     const checkFirstOrder = async () => {
-        if (!token) return;
+        if (!isAuthenticated) return;
         try {
             const response = await ordersApi.checkFirstOrder();
             setIsFirstOrder(response.data.isFirstOrder);
@@ -130,7 +121,10 @@ export const useCheckout = () => {
         let isValid = true;
         const newErrors: any = {};
 
-        if (useNewAddress || !selectedAddressId) {
+        const needsNewAddress =
+            savedAddresses.length === 0 || useNewAddress;
+
+        if (needsNewAddress) {
             const result = addressSchema.safeParse(addressData);
             if (!result.success) {
                 isValid = false;
@@ -138,9 +132,15 @@ export const useCheckout = () => {
                     newErrors[issue.path[0]] = issue.message;
                 });
             }
+        } else if (!selectedAddressId) {
+            isValid = false;
+            newErrors.address = "Lütfen bir teslimat adresi seçin";
         }
 
-        if (useNewPaymentMethod || !selectedPaymentMethodId) {
+        const needsNewPayment =
+            savedPaymentMethods.length === 0 || useNewPaymentMethod;
+
+        if (needsNewPayment) {
             const result = paymentSchema.safeParse(paymentData);
             if (!result.success) {
                 isValid = false;
@@ -148,13 +148,25 @@ export const useCheckout = () => {
                     newErrors[issue.path[0]] = issue.message;
                 });
             }
+        } else if (!selectedPaymentMethodId) {
+            isValid = false;
+            newErrors.payment = "Lütfen bir kart seçin";
         } else {
-            const result = paymentSchema.pick({ cvv: true }).safeParse({ cvv: paymentData.cvv });
-            if (!result.success) {
+            const cvvResult = paymentSchema.pick({ cvv: true }).safeParse({ cvv: paymentData.cvv });
+            if (!cvvResult.success) {
                 isValid = false;
-                result.error.issues.forEach((issue) => {
+                cvvResult.error.issues.forEach((issue) => {
                     newErrors[issue.path[0]] = issue.message;
                 });
+            }
+
+            const expiryResult = paymentSchema
+                .pick({ expiryDate: true })
+                .safeParse({ expiryDate: paymentData.expiryDate });
+            if (!expiryResult.success) {
+                isValid = false;
+                newErrors.expiryDate =
+                    "Kayıtlı kartın son kullanma tarihi geçersiz. Lütfen yeni kart ekleyin.";
             }
         }
 
@@ -162,40 +174,77 @@ export const useCheckout = () => {
         return isValid;
     };
 
+    const buildPaymentPayload = () => ({
+        cardNumber: paymentData.cardNumber.replace(/\D/g, ""),
+        cardHolderName: paymentData.cardHolderName.trim(),
+        expiryDate: paymentData.expiryDate,
+        cvv: paymentData.cvv,
+    });
+
     const handleSubmit = async () => {
         if (!validate()) return;
         if (cart.length === 0) return;
 
         setIsCreatingOrder(true);
+        setErrors({});
         try {
-            let addressId = selectedAddressId;
-            if (!selectedAddressId) {
-                const addressResponse = await addressesApi.create(addressData);
-                addressId = addressResponse.data.id.toString();
+            let resolvedAddressId: number;
+
+            const needsNewAddress =
+                savedAddresses.length === 0 || useNewAddress;
+
+            if (needsNewAddress) {
+                const addressResponse = await addressesApi.create({
+                    title: addressData.title.trim() || undefined,
+                    fullName: addressData.fullName.trim(),
+                    phone: addressData.phone.replace(/\D/g, ""),
+                    addressLine: addressData.addressLine.trim(),
+                    city: addressData.city.trim(),
+                    district: addressData.district.trim(),
+                });
+                const createdId = addressResponse.data?.address?.id;
+                if (!createdId) {
+                    throw new Error("Adres oluşturulamadı");
+                }
+                resolvedAddressId = createdId;
+                await loadSavedAddresses();
+            } else {
+                resolvedAddressId = parseInt(selectedAddressId!, 10);
             }
 
-            if ((useNewPaymentMethod || !selectedPaymentMethodId) && savePaymentMethod) {
-                await paymentMethodsApi.create(
-                    {
-                        cardNumber: paymentData.cardNumber,
-                        cardHolderName: paymentData.cardHolderName,
-                        expiryDate: paymentData.expiryDate,
-                    }
-                );
+            if (Number.isNaN(resolvedAddressId)) {
+                setErrors({ submit: "Geçerli bir teslimat adresi seçin" });
+                return;
             }
+
+            const paymentPayload = buildPaymentPayload();
+            const needsNewPayment =
+                savedPaymentMethods.length === 0 || useNewPaymentMethod;
 
             const orderResponse = await createOrder(
                 cart,
-                {
-                    cardNumber: paymentData.cardNumber,
-                    cardHolderName: paymentData.cardHolderName,
-                    expiryDate: paymentData.expiryDate,
-                    cvv: paymentData.cvv,
-                },
-                parseInt(addressId!)
+                paymentPayload,
+                resolvedAddressId
             );
 
-            clearCart();
+            if (needsNewPayment && savePaymentMethod) {
+                try {
+                    await paymentMethodsApi.create({
+                        cardNumber: paymentPayload.cardNumber,
+                        cardHolderName: paymentPayload.cardHolderName,
+                        expiryDate: paymentPayload.expiryDate,
+                    });
+                    addNotification("Kartınız kaydedildi", "success");
+                    await loadSavedPaymentMethods();
+                } catch (error) {
+                    addNotification(
+                        "Sipariş alındı ancak kart kaydedilemedi",
+                        "info"
+                    );
+                }
+            }
+
+            await clearCart();
             if (orderResponse?.id) {
                 navigate(`/orders/${orderResponse.id}`);
             } else {
@@ -203,7 +252,11 @@ export const useCheckout = () => {
             }
         } catch (error: any) {
             console.error("Sipariş oluşturulamadı:", error);
-            setErrors({ submit: error.response?.data?.message || "Sipariş oluşturulamadı" });
+            const apiMessage = error.response?.data?.message;
+            const submitMessage = Array.isArray(apiMessage)
+                ? apiMessage[0]
+                : apiMessage || error.message || "Sipariş oluşturulamadı";
+            setErrors({ submit: submitMessage });
         } finally {
             setIsCreatingOrder(false);
             setPaymentData(prev => ({ ...prev, cvv: "" }));

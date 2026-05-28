@@ -1,6 +1,7 @@
-import { Paper, Text, Stack, Divider, Group, Image, Box } from "@mantine/core";
+import { Paper, Text, Stack, Divider, Group, Box } from "@mantine/core";
 import { IconTruck, IconDiscount } from "@tabler/icons-react";
 import type { CartItem } from "../../types";
+import { getImageUrl } from "../../utils/imageUrl";
 
 interface OrderSummaryProps {
     cart: Array<CartItem>;
@@ -9,7 +10,6 @@ interface OrderSummaryProps {
     shippingCost: number;
     finalTotal: number;
     isFirstOrder: boolean;
-    getImageUrl: (url: string) => string;
 }
 
 const OrderSummary = ({
@@ -19,7 +19,6 @@ const OrderSummary = ({
     shippingCost,
     finalTotal,
     isFirstOrder,
-    getImageUrl,
 }: OrderSummaryProps) => {
     return (
         <Box w={{ base: "100%", md: 400 }}>
@@ -34,16 +33,16 @@ const OrderSummary = ({
                             typeof item.product.price === "string"
                                 ? parseFloat(item.product.price)
                                 : item.product.price;
-                        const imageUrl = getImageUrl(item.product.images?.[0] || "");
+                        const imageUrl = getImageUrl(item.product.images?.[0]);
 
                         return (
-                            <Group key={`${item.product.id}-${item.selectedSize || 'no-size'}`} gap="md">
-                                <Image
+                            <Group key={`${item.product.id}-${item.selectedSize || 'no-size'}`} gap="md" wrap="nowrap">
+                                <img
                                     src={imageUrl}
                                     alt={item.product.name}
-                                    w={60}
-                                    h={80}
-                                    fit="cover"
+                                    width={60}
+                                    height={80}
+                                    style={{ objectFit: "cover", flexShrink: 0 }}
                                 />
                                 <Box flex={1}>
                                     <Text fz="sm" fw={500} lineClamp={2}>

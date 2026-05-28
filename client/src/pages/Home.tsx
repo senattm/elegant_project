@@ -10,6 +10,7 @@ import { productsApi } from "../api/client";
 import type { Product } from "../types";
 import { getImageUrl } from "../utils/imageUrl";
 import { getServerUrl } from "../utils/serverUrl";
+import { sectionTitleStyle, smallLabelStyle } from "../theme";
 
 const HOME_STRIP_SIZE = 4;
 const baseImgUrl = "http://localhost:5000/images";
@@ -40,8 +41,7 @@ const categoryImages: Record<string, string> = {
   "kazak ve hırka": "jumper.jpg"
 };
 
-const sectionTitleStyle = { fontFamily: "'Georgia', serif", fontWeight: 300, letterSpacing: "4px", textTransform: "uppercase" as const, lineHeight: 1.05 };
-const smallLabelStyle = { fontSize: 10, letterSpacing: "4px", textTransform: "uppercase" as const };
+
 
 const BackgroundParticleCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -151,7 +151,7 @@ const StatsSection = () => {
         <Box style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "rgba(255,255,255,0.07)" }}>
           {statsData.map((item, idx) => (
             <motion.div key={item.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: idx * 0.1 }} viewport={{ once: true }} style={{ background: "#0a0a0a", padding: "22px 0", textAlign: "center" }}>
-              <Text c="white" mb={6} style={{ fontSize: "clamp(32px, 4vw, 42px)", fontWeight: 200, letterSpacing: 2, lineHeight: 1, fontFamily: "'Georgia', serif" }}>{counts[idx]}</Text>
+              <Text c="white" mb={6} ff='"Playfair Display", serif' style={{ fontSize: "clamp(32px, 4vw, 42px)", fontWeight: 200, letterSpacing: 2, lineHeight: 1 }}>{counts[idx]}</Text>
               <Text c="rgba(255,255,255,0.35)" style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase" }}>{item.label}</Text>
             </motion.div>
           ))}
@@ -205,7 +205,7 @@ const EditorialSection = () => {
                 <Box style={{ position: "absolute", inset: 0, backgroundImage: `url('${baseImgUrl}/jacket.jpg')`, backgroundSize: "cover", backgroundPosition: "center" }} />
                 <Box style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.82) 100%)" }} />
                 <Box p="40px 36px" style={{ position: "relative", zIndex: 1, minHeight: 260, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <Text style={{ position: "absolute", bottom: -20, right: 16, fontSize: 140, fontWeight: 200, color: "rgba(255,255,255,0.04)", fontFamily: "'Georgia', serif", lineHeight: 1, pointerEvents: "none", userSelect: "none", letterSpacing: -4 }}>26</Text>
+                  <Text ff='"Playfair Display", serif' style={{ position: "absolute", bottom: -20, right: 16, fontSize: 140, fontWeight: 200, color: "rgba(255,255,255,0.04)", lineHeight: 1, pointerEvents: "none", userSelect: "none", letterSpacing: -4 }}>26</Text>
                   <Text c="rgba(255,255,255,0.3)" style={smallLabelStyle}>2026 Koleksiyonu</Text>
                   <Box>
                     <Text mb={20} c="rgba(255,255,255,0.45)" style={{ fontSize: 13, lineHeight: 1.9 }}>Yeni sezonda stili yeniden tanımlayan parçalar seçilmeyi bekliyor.</Text>
@@ -239,7 +239,7 @@ const CategoriesSection = ({ categories, loading }: { categories: Category[]; lo
         </Box>
 
         {loading ? <Center py={48}> <Loader color="black" /> </Center> : (
-          <Carousel slideSize={{ base: "72%", sm: "48%", md: "32%", lg: "22%" }} slideGap={2} withControls align="start" controlSize={36} styles={{ control: { background: "#111", color: "#fff", border: "none", opacity: 0.9 }, controls: { gap: 8 } }}>
+          <Carousel slideSize={{ base: "72%", sm: "48%", md: "32%", lg: "22%" }} slideGap={2} withControls controlSize={36} styles={{ control: { background: "#111", color: "#fff", border: "none", opacity: 0.9 }, controls: { gap: 8 } }}>
             {[...categories].sort((a, b) => b.product_count - a.product_count).map((category, idx) => (
               <Carousel.Slide key={category.name}>
                 <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: idx * 0.04 }} viewport={{ once: true }}>

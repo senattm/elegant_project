@@ -2,9 +2,9 @@ import type { MantineThemeOverride } from "@mantine/core";
 
 export const theme: MantineThemeOverride = {
   defaultRadius: 0,
-  fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+  fontFamily: '"Montserrat", sans-serif',
   headings: {
-    fontFamily: "Playfair Display, serif",
+    fontFamily: '"Playfair Display", serif',
     fontWeight: "300",
   },
   components: {
@@ -36,4 +36,18 @@ export const theme: MantineThemeOverride = {
       },
     },
   },
+};
+
+export const sectionTitleStyle = {
+  fontFamily: '"Playfair Display", serif',
+  fontWeight: 300,
+  letterSpacing: "4px",
+  textTransform: "uppercase" as const,
+  lineHeight: 1.05,
+};
+
+export const smallLabelStyle = {
+  fontSize: 10,
+  letterSpacing: "4px",
+  textTransform: "uppercase" as const,
 };

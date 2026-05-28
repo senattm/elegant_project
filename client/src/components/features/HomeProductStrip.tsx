@@ -3,14 +3,7 @@ import { Box, Container, SimpleGrid, Text, Title } from "@mantine/core";
 import { motion } from "framer-motion";
 import type { Product } from "../../types";
 import ProductCard from "./ProductCard";
-
-const sectionTitleStyle = {
-  fontFamily: "'Georgia', serif",
-  fontWeight: 300,
-  letterSpacing: "4px",
-  textTransform: "uppercase" as const,
-  lineHeight: 1.05,
-};
+import { sectionTitleStyle } from "../../theme";
 
 type HomeProductStripProps = {
   eyebrow: string;

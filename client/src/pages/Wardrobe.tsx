@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { Container, Title, Text, Grid, Image, Paper, Box, Button, Group, Stack, Center, Loader, Modal, Badge, SimpleGrid, UnstyledButton } from "@mantine/core";
-import { IconSparkles, IconArrowLeft, IconShoppingBag, IconClothesRack, IconHeart, IconChevronRight } from "@tabler/icons-react";
+import { IconArrowLeft, IconShoppingBag, IconClothesRack } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { useOrders } from "../store/hooks/useOrders";
 import { getImageUrl } from "../utils/imageUrl";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../store/atoms";
 import { productsApi } from "../api/client";
@@ -82,10 +82,8 @@ const Wardrobe = () => {
     const [loading, setLoading] = useState(true);
     const [recLoading, setRecLoading] = useState(false);
     const [heroOutfit, setHeroOutfit] = useState<Record<string, any>>({});
-    const [alternatives, setAlternatives] = useState<Record<string, any[]>>({});
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [opened, { open, close }] = useDisclosure(false);
-    const [cohesionScore, setCohesionScore] = useState<number>(0);
 
     const roleLabels: Record<string, string> = {
         upper: "ÜST PARÇA",
@@ -150,8 +148,6 @@ const Wardrobe = () => {
         try {
             const response = await productsApi.getRecommendations(product.id);
             setHeroOutfit(response.data.heroOutfit || {});
-            setAlternatives(response.data.alternatives || {});
-            setCohesionScore(response.data.cohesionScore || 0);
         } catch (error) {
             console.error("Öneriler yüklenemedi:", error);
         } finally {
@@ -168,7 +164,7 @@ const Wardrobe = () => {
     }
 
     return (
-        <Box py={60} bg="white" mih="100vh" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+        <Box py={60} bg="white" mih="100vh">
             <Container size="xl">
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -181,12 +177,12 @@ const Wardrobe = () => {
                     </Group>
 
                     <Group justify="space-between" align="flex-end" mb="xl">
-                        <Title order={1} fw={400} style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 5vw, 3.5rem)' }}>
+                        <Title order={1} fw={400} style={{ fontSize: 'clamp(2.5rem, 5vw, 3.5rem)' }}>
                             Dolabım <Text component="span" c="dimmed" fs="italic" fw={300}>/ koleksiyon</Text>
                         </Title>
                         <Group gap="xl" align="center" style={{ paddingBottom: '8px' }}>
                             <Stack gap={0} align="center">
-                                <Text fz={28} fw={500} style={{ fontFamily: 'Playfair Display, serif' }}>{products.length}</Text>
+                                <Text fz={28} fw={500} ff='"Playfair Display", serif'>{products.length}</Text>
                                 <Text fz={10} c="dimmed" tt="uppercase" fw={600} style={{ letterSpacing: '2px' }}>PARÇA</Text>
                             </Stack>
                         </Group>
@@ -227,7 +223,7 @@ const Wardrobe = () => {
                                     <IconClothesRack size={60} stroke={1} color="#999" />
                                 </Box>
                                 <Box>
-                                    <Title order={2} fz={28} fw={400} mb="xs" style={{ fontFamily: 'Playfair Display, serif' }}>Dolabınızda henüz parça yok</Title>
+                                    <Title order={2} fz={28} fw={400} mb="xs">Dolabınızda henüz parça yok</Title>
                                     <Text c="dimmed" size="md" mb="xl">Koleksiyonumuzdaki zarif parçalarla dolabınızı oluşturmaya başlayın.</Text>
                                 </Box>
                                 <Button
@@ -278,7 +274,7 @@ const Wardrobe = () => {
             >
                 <Box p={50}>
                     <Group justify="space-between" mb={50}>
-                        <Title order={2} fz={32} fw={400} style={{ fontFamily: 'Playfair Display, serif' }}>Sizin İçin Seçtiklerimiz</Title>
+                        <Title order={2} fz={32} fw={400}>Sizin İçin Seçtiklerimiz</Title>
                         <UnstyledButton onClick={close} style={{ opacity: 0.5 }}>
                             <Text size="sm" fw={600} style={{ letterSpacing: "1px" }}>KAPAT</Text>
                         </UnstyledButton>

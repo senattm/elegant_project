@@ -8,20 +8,7 @@ import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../../store/atoms";
 import { getImageUrl } from "../../utils/imageUrl";
 import { getServerUrl } from "../../utils/serverUrl";
-
-const sectionTitleStyle = {
-  fontFamily: "'Georgia', serif",
-  fontWeight: 300,
-  letterSpacing: "4px",
-  textTransform: "uppercase" as const,
-  lineHeight: 1.05,
-};
-
-const smallLabelStyle = {
-  fontSize: 10,
-  letterSpacing: "4px",
-  textTransform: "uppercase" as const,
-};
+import { sectionTitleStyle, smallLabelStyle } from "../../theme";
 
 type WardrobeItem = { id: number; image: string; name: string };
 
@@ -155,7 +142,7 @@ const MyWardrobe = () => {
           }))
         );
 
-        const unique = Array.from(new Map(products.map((p) => [p.id, p])).values());
+        const unique = Array.from(new Map(products.map((p: WardrobeItem) => [p.id, p])).values()) as WardrobeItem[];
         if (unique.length > 0) {
           setDisplayItems(unique.slice(0, 3));
           setItemCount(unique.length);

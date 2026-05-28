@@ -24,7 +24,6 @@ export default function Footer() {
             maxWidth: 1100,
             margin: "0 auto",
           }}
-          styles={{ root: { "@media (max-width: 900px)": { gridTemplateColumns: "1fr", gap: 48 } } }}
         >
           <Box>
             <Text mb={24} style={labelStyle}>Adres</Text>
@@ -42,7 +41,7 @@ export default function Footer() {
             </Box>
           </Box>
 
-          <Box style={{ paddingLeft: "10%" }} styles={{ root: { "@media (max-width: 900px)": { paddingLeft: 0 } } }}>
+          <Box pl={{ base: 0, md: "10%" }}>
             <Text mb={24} style={labelStyle}>Yardım</Text>
             <Stack gap={12} align="flex-start">
               {["İade ve Değişim", "Sıkça Sorulan Sorular", "Bize Ulaşın"].map(item => <FooterLink key={item}>{item}</FooterLink>)}

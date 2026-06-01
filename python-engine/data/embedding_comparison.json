@@ -14,7 +14,7 @@
       "chic",
       "formal"
     ],
-    "train_outfit_count": 13,
+    "train_outfit_count": 14,
     "test_outfit_count": 4,
     "test_product_ids": [
       113,
@@ -41,14 +41,14 @@
   },
   "baseline": {
     "positive_pair_similarity": {
-      "train_outfits": 0.6603,
-      "test_outfits_holdout": 0.6143,
-      "all_ground_truth": 0.6523
+      "train_outfits": 0.6576,
+      "test_outfits_holdout": 0.6138,
+      "all_ground_truth": 0.6506
     },
-    "negative_pair_similarity": 0.6613,
+    "negative_pair_similarity": 0.6561,
     "positive_minus_negative_margin": {
-      "train": -0.001,
-      "test_holdout": -0.047
+      "train": 0.0015,
+      "test_holdout": -0.0423
     },
     "recall_on_test_outfits": {
       "recall@5": 0.0,
@@ -57,14 +57,14 @@
   },
   "finetuned": {
     "positive_pair_similarity": {
-      "train_outfits": 0.687,
-      "test_outfits_holdout": 0.66,
-      "all_ground_truth": 0.6823
+      "train_outfits": 0.6942,
+      "test_outfits_holdout": 0.659,
+      "all_ground_truth": 0.6885
     },
-    "negative_pair_similarity": 0.4613,
+    "negative_pair_similarity": 0.4484,
     "positive_minus_negative_margin": {
-      "train": 0.2257,
-      "test_holdout": 0.1987
+      "train": 0.2457,
+      "test_holdout": 0.2106
     },
     "recall_on_test_outfits": {
       "recall@5": 0.0,
@@ -73,11 +73,11 @@
   },
   "outfit_engine_hit_rate": {
     "baseline": {
-      "train": 0.9846,
+      "train": 0.9571,
       "test_holdout": 1.0
     },
     "finetuned": {
-      "train": 0.9846,
+      "train": 0.9571,
       "test_holdout": 1.0
     },
     "delta_test_holdout": 0.0,
@@ -110,6 +110,7 @@
           812
         ],
         "generated": [
+          340,
           566,
           638,
           683,
@@ -148,7 +149,7 @@
           523,
           603,
           710,
-          806
+          814
         ],
         "hits": 3,
         "hit_rate": 1.0
@@ -156,18 +157,117 @@
     ]
   },
   "delta_finetuned_minus_baseline": {
-    "positive_test_holdout": 0.0457,
-    "negative_pair_similarity": -0.2,
-    "margin_test_holdout": 0.2457,
+    "positive_test_holdout": 0.0452,
+    "negative_pair_similarity": -0.2077,
+    "margin_test_holdout": 0.2529,
     "recall_on_test": {
       "recall@5": 0.0,
       "recall@10": 0.0625
     }
   },
-  "interpretation_for_report": "Ana metrikler: hold-out test margin (embedding ayrimi) ve outfit engine hit rate (gercek generate_outfit ciktisi). Recall@K saf embedding siralamasidir; kullaniciya gorunen sonuc kural tabanli outfit motorundan gelir.",
+  "visual_clip": {
+    "model": "sentence-transformers/clip-ViT-B-32",
+    "build_stats": {
+      "from_cache": 0,
+      "encoded_images": 419,
+      "missing_images": 2,
+      "text_fallback_rows": 0
+    },
+    "positive_pair_similarity": {
+      "train_outfits": 0.7139,
+      "test_outfits_holdout": 0.6959
+    },
+    "negative_pair_similarity": 0.7181,
+    "recall_on_test_outfits": {
+      "recall@5": 0.0,
+      "recall@10": 0.0
+    },
+    "outfit_engine_hit_rate": {
+      "train": 0.9571,
+      "test_holdout": 1.0,
+      "test_details": [
+        {
+          "style": "casual",
+          "seed_id": 546,
+          "expected": [
+            537,
+            656,
+            678,
+            766
+          ],
+          "generated": [
+            537,
+            656,
+            678,
+            766
+          ],
+          "hits": 4,
+          "hit_rate": 1.0
+        },
+        {
+          "style": "office",
+          "seed_id": 113,
+          "expected": [
+            566,
+            638,
+            683,
+            812
+          ],
+          "generated": [
+            332,
+            566,
+            638,
+            683,
+            812
+          ],
+          "hits": 4,
+          "hit_rate": 1.0
+        },
+        {
+          "style": "chic",
+          "seed_id": 148,
+          "expected": [
+            601,
+            708,
+            754
+          ],
+          "generated": [
+            427,
+            601,
+            708,
+            754
+          ],
+          "hits": 3,
+          "hit_rate": 1.0
+        },
+        {
+          "style": "formal",
+          "seed_id": 526,
+          "expected": [
+            523,
+            603,
+            710
+          ],
+          "generated": [
+            427,
+            523,
+            603,
+            710,
+            814
+          ],
+          "hits": 3,
+          "hit_rate": 1.0
+        }
+      ]
+    },
+    "positive_minus_negative_margin": {
+      "test_holdout": -0.0222
+    }
+  },
+  "interpretation_for_report": "Ana metrikler: hold-out test margin (embedding ayrimi) ve outfit engine hit rate (gercek generate_outfit ciktisi). Recall@K saf embedding siralamasidir; kullaniciya gorunen sonuc kural tabanli outfit motorundan gelir. visual_clip: CLIP gorsel embedding (metin fine-tune ile kiyaslanabilir).",
   "legacy_metric_all_gt_pairs": {
-    "baseline": 0.6523,
-    "finetuned": 0.6823,
-    "delta": 0.03
+    "baseline": 0.6506,
+    "finetuned": 0.6885,
+    "delta": 0.0379
   }
 }

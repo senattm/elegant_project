@@ -49,7 +49,7 @@ const Chatbot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Merhaba! Renk, stil (parti, ofis, günlük), sezon (yaz, kış) veya kategori ile ürün arayabilirsiniz.",
+      text: "Merhaba! Size yardımcı olmak için buradayım.",
       sender: "bot",
       timestamp: new Date(),
     },
@@ -295,7 +295,7 @@ const Chatbot = () => {
               style={{ borderTop: "1px solid #000", backgroundColor: "#fff" }}
             >
               <TextInput
-                placeholder="Örn: parti elbisesi, ofis giyimi, yazlık elbise"
+                placeholder=""
                 flex={1}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.currentTarget.value)}

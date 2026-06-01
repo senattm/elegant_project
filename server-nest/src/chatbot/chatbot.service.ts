@@ -46,7 +46,7 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
 /** Ürün tags alanındaki stil değerleri */
 const STYLE_ALIASES: Record<string, string[]> = {
   party: ['parti', 'party', 'gece', 'davet', 'kokteyl', 'eglence', 'eğlence'],
-  office: ['ofis', 'office', 'is', 'iş', 'kurumsal', 'business', 'calisma', 'çalışma'],
+  office: ['ofis', 'office', 'kurumsal', 'business', 'calisma', 'çalışma'],
   casual: ['casual', 'gunluk', 'günlük', 'rahat', 'sokak'],
   formal: ['formal', 'resmi', 'gala', 'tören', 'toren', 'smokin'],
   chic: ['chic', 'sik', 'şık', 'zarif', 'elegant'],
@@ -104,11 +104,20 @@ export class ChatbotService {
       .replace(/[\u0300-\u036f]/g, '');
   }
 
-  private parseColors(message: string): string[] {
+  /** Kisa alias'larin kelime icinde yanlis eslesmesini onler (or. "is" -> elbise). */
+  private messageContainsAlias(message: string, alias: string): boolean {
     const normalized = this.normalizeText(message);
+    const term = this.normalizeText(alias);
+    if (term.length <= 3) {
+      return normalized.split(/\W+/).some((word) => word === term);
+    }
+    return normalized.includes(term);
+  }
+
+  private parseColors(message: string): string[] {
     const found: string[] = [];
     for (const aliases of Object.values(COLOR_ALIASES)) {
-      if (aliases.some((a) => normalized.includes(this.normalizeText(a)))) {
+      if (aliases.some((a) => this.messageContainsAlias(message, a))) {
         found.push(...aliases);
       }
     }
@@ -116,10 +125,9 @@ export class ChatbotService {
   }
 
   private parseCategories(message: string): string[] {
-    const normalized = this.normalizeText(message);
     const found: string[] = [];
     for (const [category, aliases] of Object.entries(CATEGORY_ALIASES)) {
-      if (aliases.some((a) => normalized.includes(this.normalizeText(a)))) {
+      if (aliases.some((a) => this.messageContainsAlias(message, a))) {
         found.push(category);
       }
     }
@@ -127,10 +135,9 @@ export class ChatbotService {
   }
 
   private parseStyles(message: string): string[] {
-    const normalized = this.normalizeText(message);
     const found: string[] = [];
     for (const [style, aliases] of Object.entries(STYLE_ALIASES)) {
-      if (aliases.some((a) => normalized.includes(this.normalizeText(a)))) {
+      if (aliases.some((a) => this.messageContainsAlias(message, a))) {
         found.push(style);
       }
     }
@@ -138,14 +145,48 @@ export class ChatbotService {
   }
 
   private parseSeasons(message: string): string[] {
-    const normalized = this.normalizeText(message);
     const found: string[] = [];
     for (const [season, aliases] of Object.entries(SEASON_ALIASES)) {
-      if (aliases.some((a) => normalized.includes(this.normalizeText(a)))) {
+      if (aliases.some((a) => this.messageContainsAlias(message, a))) {
         found.push(season);
       }
     }
     return found;
+  }
+
+  private productMatchesRequestedCategory(
+    categoryName: string,
+    nameStr: string,
+    tagStr: string,
+    requestedCategories: string[],
+  ): boolean {
+    if (requestedCategories.length === 0) return true;
+
+    const nameNorm = this.normalizeText(nameStr);
+
+    for (const cat of requestedCategories) {
+      if (this.categoryMatches(categoryName, cat)) return true;
+
+      const aliases = CATEGORY_ALIASES[cat] ?? [];
+      if (aliases.some((a) => nameNorm.includes(this.normalizeText(a)))) {
+        const catNorm = this.normalizeText(categoryName);
+        const conflicts: Record<string, string[]> = {
+          Elbise: ['etek', 'pantolon', 'ayakkabi', 'canta', 'aksesuar'],
+          Etek: ['pantolon', 'elbise', 'ayakkabi'],
+          Pantolon: ['etek', 'elbise', 'ayakkabi'],
+        };
+        const blocked = conflicts[cat] ?? [];
+        if (!blocked.some((b) => catNorm.includes(b))) return true;
+      }
+
+      if (cat === 'Elbise' && (tagStr.includes('dress') || tagStr.includes('"elbise"'))) {
+        if (!this.categoryMatches(categoryName, 'Etek') && !this.categoryMatches(categoryName, 'Pantolon')) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   private categoryMatches(categoryName: string, targetCategory: string): boolean {
@@ -245,6 +286,11 @@ export class ChatbotService {
     });
 
     const scored = products
+      .filter((p) => {
+        const categoryName = p.categories?.name ?? '';
+        const tagStr = JSON.stringify(p.tags ?? []).toLowerCase();
+        return this.productMatchesRequestedCategory(categoryName, p.name, tagStr, categories);
+      })
       .map((p) => {
         const colorStr = JSON.stringify(p.colors ?? []).toLowerCase();
         const seasonStr = JSON.stringify(p.season ?? []).toLowerCase();

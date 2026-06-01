@@ -56,6 +56,12 @@ export const productsApi = {
   getRecommendations: (id: number) => api.get(`/products/${id}/recommendations`),
 };
 
+export const outfitsApi = {
+  getMyOutfits: () => api.get("/outfits/my"),
+  submitFeedback: (outfitId: number, feedback: 1 | -1) =>
+    api.post(`/outfits/${outfitId}/feedback`, { feedback }),
+};
+
 export const ordersApi = {
   create: (
     items: Array<{

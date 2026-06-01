@@ -123,6 +123,7 @@ model products {
   favorites        favorites[]
   order_items      order_items[]
   outfit_items     outfit_items[]
+  seed_outfits     outfits[]          @relation("OutfitSeedProduct")
   product_images   product_images[]
   product_variants product_variants[]
   categories       categories?        @relation(fields: [category_id], references: [id], onUpdate: NoAction)
@@ -131,18 +132,28 @@ model products {
 }
 
 model outfits {
-  id           Int            @id @default(autoincrement())
-  title        String?        @db.VarChar(200)
-  occasion     String?        @db.VarChar(100)
-  season       String?        @db.VarChar(50)
-  gender       String?        @db.VarChar(10)
-  style        String?        @db.VarChar(100)
-  is_ai        Boolean?       @default(true)
-  created_at   DateTime?      @default(now()) @db.Timestamp(6)
-  outfit_items outfit_items[]
+  id              Int            @id @default(autoincrement())
+  title           String?        @db.VarChar(200)
+  occasion        String?        @db.VarChar(100)
+  season          String?        @db.VarChar(50)
+  gender          String?        @db.VarChar(10)
+  style           String?        @db.VarChar(100)
+  is_ai           Boolean?       @default(true)
+  user_id         Int?
+  seed_product_id Int?
+  cohesion_score  Float?
+  source          String?        @db.VarChar(50)
+  feedback        Int?
+  feedback_at     DateTime?      @db.Timestamp(6)
+  created_at      DateTime?      @default(now()) @db.Timestamp(6)
+  outfit_items    outfit_items[]
+  users           users?         @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  seed_product    products?      @relation("OutfitSeedProduct", fields: [seed_product_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([gender])
   @@index([occasion])
+  @@index([user_id])
+  @@index([seed_product_id])
 }
 
 model outfit_items {
@@ -188,4 +199,5 @@ model users {
   favorites                 favorites[]
   orders                    orders[]
   payment_methods           payment_methods[]
+  outfits                   outfits[]
 }

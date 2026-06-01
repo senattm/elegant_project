@@ -10,64 +10,13 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
-GROUND_TRUTH_OUTFITS = [
-    {"stil": "casual", "parcalar": [546, 537, 656, 766, 678]},
-    {"stil": "office", "parcalar": [113, 566, 812, 683, 638]},
-    {"stil": "office", "parcalar": [282, 552, 786, 336, 701, 664]},
-    {"stil": "chic", "parcalar": [148, 754, 601, 708]},
-    {"stil": "chic", "parcalar": [184, 814, 609, 685]},
-    {"stil": "formal", "parcalar": [526, 523, 603, 710]},
-    {"stil": "school", "parcalar": [67, 431, 614, 767, 681]},
-    {"stil": "party", "parcalar": [185, 427, 803, 616, 723, 722]},
-    {"stil": "party", "parcalar": [569, 255, 18, 375, 673, 716]},
-    {"stil": "party", "parcalar": [133, 802, 609, 722, 723]},
-]
-
-COLOR_MATCH_MAP = {
-    "black": [
-        "black",
-        "white",
-        "grey",
-        "gray",
-        "beige",
-        "cream",
-        "red",
-        "blue",
-        "navy",
-        "dark blue",
-        "gold",
-        "silver",
-        "green",
-    ],
-    "white": [
-        "white",
-        "black",
-        "grey",
-        "gray",
-        "beige",
-        "cream",
-        "blue",
-        "denim",
-        "navy",
-        "dark blue",
-        "gold",
-        "silver",
-        "green",
-    ],
-    "green": ["black", "white"],
-    "navy": ["navy", "dark blue", "blue", "white", "grey", "gray", "beige", "cream"],
-    "dark blue": ["navy", "dark blue", "blue", "white", "grey", "gray", "beige", "cream"],
-    "blue": ["blue", "navy", "dark blue", "white", "grey", "gray", "denim"],
-    "denim": ["denim", "white", "black", "grey", "blue"],
-    "beige": ["beige", "cream", "white", "black", "brown", "khaki", "natural"],
-    "natural": ["natural", "beige", "cream", "white", "black", "brown"],
-    "cream": ["cream", "beige", "white", "black", "brown"],
-    "brown": ["brown", "beige", "cream", "black", "khaki", "natural"],
-    "grey": ["grey", "gray", "white", "black", "navy", "dark blue", "blue"],
-    "gray": ["gray", "grey", "white", "black", "navy", "dark blue", "blue"],
-    "gold": ["gold", "black", "white", "cream", "beige", "green", "red"],
-    "silver": ["silver", "black", "white", "grey", "gray", "blue", "green"],
-}
+from outfit_config import (
+    COLOR_MATCH_MAP,
+    CURATED_SEED_OUTFITS,
+    GROUND_TRUTH_OUTFITS,
+    NEUTRAL_COLORS,
+    SCORING,
+)
 
 
 def safe_json_load(val: Any) -> list:
@@ -312,6 +261,22 @@ def is_color_compatible(seed_colors: list[str], candidate_colors: list[str]) -> 
     return True
 
 
+def shares_exact_color(a: list[str], b: list[str]) -> bool:
+    return bool(set(a) & set(b))
+
+
+def colors_harmonize(a: list[str], b: list[str]) -> bool:
+    if not a or not b:
+        return True
+    if shares_exact_color(a, b):
+        return True
+    return get_color_score(a, b) > 0
+
+
+def is_neutral_color(colors: list[str]) -> bool:
+    return any(c in NEUTRAL_COLORS for c in colors)
+
+
 def get_color_score(seed_colors: list[str], candidate_colors: list[str]) -> float:
     if not seed_colors or not candidate_colors:
         return 0.1
@@ -319,11 +284,147 @@ def get_color_score(seed_colors: list[str], candidate_colors: list[str]) -> floa
     for sc in seed_colors:
         for cc in candidate_colors:
             if sc == cc:
-                score += 2.5
+                score += SCORING["exact_color_bonus"]
             elif sc in COLOR_MATCH_MAP and cc in COLOR_MATCH_MAP[sc]:
-                score += 0.5
+                score += SCORING["compatible_color_bonus"]
             else:
-                score -= 1.5
+                score += SCORING["incompatible_color_penalty"]
+    return score
+
+
+def monochromatic_penalty(
+    role: str,
+    candidate_colors: list[str],
+    outfit_colors: list[list[str]],
+) -> float:
+    if role not in {"upper", "lower", "outerwear"} or not outfit_colors:
+        return 0.0
+    penalty = 0.0
+    cand_set = set(candidate_colors)
+    for oc in outfit_colors:
+        overlap = cand_set & set(oc)
+        if overlap:
+            penalty -= SCORING["monochrome_penalty_per_overlap"] * len(overlap)
+    return penalty
+
+
+def get_role_color_score(
+    role: str,
+    seed_colors: list[str],
+    candidate_colors: list[str],
+    outfit_colors: list[list[str]],
+    pair_colors: list[str] | None = None,
+) -> float:
+    neutral_roles = {"shoes", "bag"}
+    anchor_roles = {"upper", "lower"}
+
+    score = 0.0
+    if pair_colors:
+        score += (
+            SCORING["pair_harmonize_bonus"]
+            if colors_harmonize(candidate_colors, pair_colors)
+            else SCORING["pair_harmonize_penalty"]
+        )
+
+    if role in neutral_roles:
+        if is_neutral_color(candidate_colors):
+            score += (
+                SCORING["neutral_bonus_with_pair"]
+                if pair_colors
+                else SCORING["neutral_bonus_without_pair"]
+            )
+        base = get_color_score(seed_colors, candidate_colors)
+        if shares_exact_color(seed_colors, candidate_colors):
+            return score + base * SCORING["seed_exact_neutral_multiplier"]
+        return score + base
+
+    base = get_color_score(seed_colors, candidate_colors)
+    if role in anchor_roles and shares_exact_color(seed_colors, candidate_colors):
+        return score + base * SCORING["seed_exact_anchor_multiplier"]
+    if is_neutral_color(candidate_colors):
+        return score + base + SCORING["neutral_layer_bonus"]
+    if shares_exact_color(seed_colors, candidate_colors):
+        return score + base * SCORING["seed_exact_default_multiplier"]
+    return score + base
+
+
+def filter_candidates_by_role(
+    role: str,
+    seed_colors: list[str],
+    candidates: pd.DataFrame,
+    pair_colors: list[str] | None = None,
+) -> pd.DataFrame:
+    if pair_colors:
+        harmonized = candidates[
+            candidates["colors_clean"].apply(lambda c: colors_harmonize(c, pair_colors))
+        ]
+        if not harmonized.empty:
+            return harmonized
+
+    if role in {"shoes", "bag"}:
+        neutral = candidates[candidates["colors_clean"].apply(is_neutral_color)]
+        compatible = candidates[
+            candidates["colors_clean"].apply(lambda c: is_color_compatible(seed_colors, c))
+        ]
+        combined = pd.concat([neutral, compatible]).drop_duplicates(subset=["id"])
+        if not combined.empty:
+            return combined
+    else:
+        compatible = candidates[
+            candidates["colors_clean"].apply(lambda c: is_color_compatible(seed_colors, c))
+        ]
+        if not compatible.empty:
+            return compatible
+
+    fallback = candidates[
+        candidates["colors_clean"].apply(
+            lambda x: any(c in x for c in ["black", "white", "beige"])
+        )
+    ]
+    return fallback if not fallback.empty else candidates
+
+
+def collect_outfit_colors(outfit: dict) -> list[list[str]]:
+    colors: list[list[str]] = []
+    for key, item in outfit.items():
+        if key != "seed" and isinstance(item, dict):
+            colors.append(item.get("colors_clean", []))
+    return colors
+
+
+def get_palette_rule_score(
+    seed_colors: list[str],
+    candidate_colors: list[str],
+    outfit: dict[str, Any],
+) -> float:
+    """Apply 2+1 palette rule: <=3 colors, at least one neutral, limited seed repeats."""
+    existing_groups: list[list[str]] = []
+    for item in outfit.values():
+        if isinstance(item, dict):
+            existing_groups.append(item.get("colors_clean", []))
+
+    combined_groups = [*existing_groups, candidate_colors]
+    palette = {c for group in combined_groups for c in group}
+
+    score = 0.0
+    max_colors = int(SCORING.get("palette_max_colors", 3))
+    if len(palette) > max_colors:
+        score += SCORING.get("palette_overflow_penalty", -1.0) * (len(palette) - max_colors)
+
+    has_neutral = any(c in NEUTRAL_COLORS for c in palette)
+    if not has_neutral:
+        score += SCORING.get("missing_neutral_penalty", -1.0)
+
+    seed_set = set(seed_colors)
+    seed_piece_count = sum(1 for group in combined_groups if seed_set & set(group))
+    max_seed_repeats = int(SCORING.get("seed_max_repeats", 2))
+    if seed_piece_count > max_seed_repeats:
+        score += SCORING.get("seed_repeat_penalty", -1.0) * (
+            seed_piece_count - max_seed_repeats
+        )
+    else:
+        score += SCORING.get("palette_rule_bonus", 0.8)
+
     return score
 
 
@@ -340,10 +441,11 @@ def prepare_products_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
     )
 
     def create_text_profile(row: pd.Series) -> str:
+        brand = row.get("brand")
+        brand_part = f" Marka: {brand}." if brand else ""
         return (
             f"Ürün: {row.get('name', '')}. "
-            f"Açıklama: {row.get('description', '')}. "
-            f"Marka: {row.get('brand', '')}. "
+            f"Açıklama: {row.get('description', '')}.{brand_part} "
             f"Renkler: {', '.join(row['colors_clean'])}. "
             f"Etiketler: {', '.join(row['tags_clean'])}."
         )
@@ -386,6 +488,16 @@ class UltimateColorAndStyleStrictRecommender:
 
         seed_row = self.df[self.df["id"] == seed_id].iloc[0]
         seed_idx = int(self.df[self.df["id"] == seed_id].index[0])
+        curated = CURATED_SEED_OUTFITS.get(str(seed_id))
+        if curated:
+            outfit: dict[str, Any] = {"seed": seed_row}
+            for role, product_id in curated.items():
+                row = self.df[self.df["id"] == int(product_id)]
+                if row.empty:
+                    continue
+                outfit[role] = row.iloc[0]
+            if len(outfit) > 1:
+                return outfit
 
         seed_group = seed_row["product_group"]
         seed_seasons = set(seed_row["season_clean"])
@@ -395,6 +507,7 @@ class UltimateColorAndStyleStrictRecommender:
 
         detected_style = self._detect_context_style(seed_tags)
         is_party = "party" in seed_tags
+        is_sport_seed = "sport" in seed_tags or "sport" in seed_text
 
         is_cold_season = any(s in seed_seasons for s in ["winter", "autumn"])
         is_pure_summer = "summer" in seed_seasons and not is_cold_season
@@ -445,14 +558,45 @@ class UltimateColorAndStyleStrictRecommender:
         }
 
         for role in roles_to_fill:
+            if role == "outerwear" and seed_group in {"sweater", "cardigan"}:
+                # Knit seeds are already layered; outerwear often becomes noisy.
+                continue
+
             allowed_groups = role_categories[role]
             candidates = self.df[self.df["product_group"].isin(allowed_groups)]
             if candidates.empty:
                 continue
 
+            # Upper knit/shirt seeds usually pair better with pants-denim first.
+            if role == "lower" and seed_group in {"sweater", "cardigan", "shirt", "t-shirt", "blouse"}:
+                preferred_lower = candidates[
+                    candidates["product_group"].isin(["pants", "denim"])
+                ]
+                if not preferred_lower.empty:
+                    candidates = preferred_lower
+
+            # For knit seeds, prioritize lighter outer layers before heavy coats.
+            if role == "outerwear" and seed_group in {"sweater", "cardigan"}:
+                preferred_outer = candidates[
+                    candidates["product_group"].isin(["jacket", "blazer", "trench_coat"])
+                ]
+                if not preferred_outer.empty:
+                    candidates = preferred_outer
+
             train_match = candidates[
                 candidates["id"].apply(lambda cid: (int(seed_id), int(cid)) in self.co_occurrence)
             ]
+
+            if is_sport_seed:
+                sport_train = train_match[train_match["tags_clean"].apply(lambda x: "sport" in x)]
+                if not sport_train.empty:
+                    train_match = sport_train
+            else:
+                non_sport_train = train_match[
+                    ~train_match["tags_clean"].apply(lambda x: "sport" in x)
+                ]
+                if not non_sport_train.empty:
+                    train_match = non_sport_train
 
             if role == "accessory_2" and "accessory_1" in outfit:
                 acc1_group = outfit["accessory_1"]["product_group"]
@@ -462,26 +606,17 @@ class UltimateColorAndStyleStrictRecommender:
                 outfit[role] = train_match.iloc[0]
                 continue
 
-            color_filtered = candidates[
-                candidates["colors_clean"].apply(lambda c: is_color_compatible(seed_colors, c))
-            ]
+            pair_colors: list[str] | None = None
+            if role == "bag" and "shoes" in outfit:
+                pair_colors = outfit["shoes"]["colors_clean"]
+            elif role == "shoes" and "bag" in outfit:
+                pair_colors = outfit["bag"]["colors_clean"]
+
+            color_filtered = filter_candidates_by_role(role, seed_colors, candidates, pair_colors)
             if not color_filtered.empty:
                 candidates = color_filtered
-            else:
-                candidates = candidates[
-                    candidates["colors_clean"].apply(lambda x: any(c in x for c in ["black", "white"]))
-                ]
 
             if role == "accessory_2" and "accessory_1" in outfit:
-                acc1_colors = set(outfit["accessory_1"]["colors_clean"])
-                same_color = candidates[
-                    candidates["colors_clean"].apply(
-                        lambda x: len(set(x).intersection(acc1_colors)) > 0
-                    )
-                ]
-                if not same_color.empty:
-                    candidates = same_color
-
                 acc1_group = outfit["accessory_1"]["product_group"]
                 diff_group = candidates[candidates["product_group"] != acc1_group]
                 if not diff_group.empty:
@@ -491,7 +626,7 @@ class UltimateColorAndStyleStrictRecommender:
                 party_cands = candidates[candidates["tags_clean"].apply(lambda x: "party" in x)]
                 if not party_cands.empty:
                     candidates = party_cands
-            elif "sport" in seed_tags or "sport" in seed_text:
+            elif is_sport_seed:
                 sport_cands = candidates[candidates["tags_clean"].apply(lambda x: "sport" in x)]
                 if not sport_cands.empty:
                     candidates = sport_cands
@@ -503,6 +638,11 @@ class UltimateColorAndStyleStrictRecommender:
                 ]
                 if not formal_chic.empty:
                     candidates = formal_chic
+
+            if not is_sport_seed:
+                non_sport = candidates[~candidates["tags_clean"].apply(lambda x: "sport" in x)]
+                if not non_sport.empty:
+                    candidates = non_sport
 
             if is_pure_summer:
                 candidates = candidates[candidates["season_clean"].apply(lambda x: "summer" in x)]
@@ -523,38 +663,31 @@ class UltimateColorAndStyleStrictRecommender:
             candidates = candidates.copy()
             candidates["final_score"] = scores
 
+            outfit_colors = collect_outfit_colors(outfit)
+
             if detected_style:
                 candidates["final_score"] += candidates["tags_clean"].apply(
-                    lambda x: 0.25 if detected_style in x else 0.0
+                    lambda x: SCORING["style_tag_bonus"] if detected_style in x else 0.0
                 )
 
             candidates["color_bonus"] = candidates["colors_clean"].apply(
-                lambda c: get_color_score(seed_colors, c)
+                lambda c: get_role_color_score(
+                    role, seed_colors, c, outfit_colors, pair_colors
+                )
+                + monochromatic_penalty(role, c, outfit_colors)
+                + get_palette_rule_score(seed_colors, c, outfit)
             )
             candidates["final_score"] += candidates["color_bonus"]
             candidates = candidates.sort_values(by="final_score", ascending=False)
 
-            if role == "bag" and "shoes" in outfit:
-                shoe_colors = outfit["shoes"]["colors_clean"]
+            if pair_colors:
                 matching = candidates[
                     candidates["colors_clean"].apply(
-                        lambda x: len(set(x).intersection(set(shoe_colors))) > 0
+                        lambda c: colors_harmonize(c, pair_colors)
                     )
                 ]
                 if not matching.empty:
-                    outfit[role] = matching.iloc[0]
-                    continue
-
-            if role == "shoes" and "bag" in outfit:
-                bag_colors = outfit["bag"]["colors_clean"]
-                matching = candidates[
-                    candidates["colors_clean"].apply(
-                        lambda x: len(set(x).intersection(set(bag_colors))) > 0
-                    )
-                ]
-                if not matching.empty:
-                    outfit[role] = matching.iloc[0]
-                    continue
+                    candidates = matching
 
             outfit[role] = candidates.iloc[0]
 

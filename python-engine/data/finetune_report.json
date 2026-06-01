@@ -1,0 +1,71 @@
+{
+  "trained_at": "2026-06-01T01:02:14.740480+00:00",
+  "base_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "output_dir": "C:\\Users\\SENA\\Desktop\\elegant\\python-engine\\models\\elegant-minilm-finetuned",
+  "product_count": 421,
+  "ground_truth_outfit_count": 17,
+  "triplet_count": 446,
+  "triplet_stats": {
+    "outfit": 246,
+    "style": 200,
+    "easy_neg": 275,
+    "hard_neg": 171,
+    "skipped_no_neg": 8
+  },
+  "positive_pair_count": 719,
+  "finetune_mode": "both",
+  "phases": [
+    "MNRL x1",
+    "TripletLoss x1 margin=0.2"
+  ],
+  "mnrl_epochs": 1,
+  "triplet_epochs": 1,
+  "batch_size": 16,
+  "triplet_margin": 0.2,
+  "method": "MNRL x1 + TripletLoss x1 margin=0.2",
+  "holdout_split": {
+    "test_outfit_indices": [
+      0,
+      1,
+      3,
+      5
+    ],
+    "test_outfit_styles": [
+      "casual",
+      "office",
+      "chic",
+      "formal"
+    ],
+    "train_outfit_count": 13,
+    "test_outfit_count": 4,
+    "test_product_ids": [
+      113,
+      148,
+      523,
+      526,
+      537,
+      546,
+      566,
+      601,
+      603,
+      638,
+      656,
+      678,
+      683,
+      708,
+      710,
+      754,
+      766,
+      812
+    ]
+  },
+  "negative_strategy": {
+    "easy": "Farkli stil tag'i veya ayni urun grubu catismasi",
+    "hard": "Ayni stil ama urun grubu veya sezon catismasi (GT kombininde degil)"
+  },
+  "data_sources": [
+    "GROUND_TRUTH_OUTFITS (17 kombin, hold-out haric egitim)",
+    "Ayni stil tag'ine sahip uyumlu urunler (hold-out haric)",
+    "Kontrollu easy/hard negatif tripletler"
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "ground_truth_outfits": [
+    { "stil": "casual", "parcalar": [546, 537, 656, 766, 678] },
+    { "stil": "office", "parcalar": [113, 566, 812, 683, 638] },
+    { "stil": "office", "parcalar": [282, 552, 786, 336, 701, 664] },
+    { "stil": "chic", "parcalar": [148, 754, 601, 708] },
+    { "stil": "chic", "parcalar": [184, 814, 609, 685] },
+    { "stil": "formal", "parcalar": [526, 523, 603, 710] },
+    { "stil": "school", "parcalar": [67, 431, 614, 767, 681] },
+    { "stil": "party", "parcalar": [185, 427, 803, 616, 723, 722] },
+    { "stil": "party", "parcalar": [569, 255, 18, 375, 673, 716] },
+    { "stil": "party", "parcalar": [133, 802, 609, 722, 723] },
+    { "stil": "school", "parcalar": [331, 25, 445, 761, 595, 706] },
+    { "stil": "school", "parcalar": [345, 22, 451, 766, 649, 727] },
+    { "stil": "office", "parcalar": [99, 564, 808, 650, 686] },
+    { "stil": "casual", "parcalar": [140, 643, 757, 696] },
+    { "stil": "sport", "parcalar": [63, 544, 656, 766, 678] },
+    { "stil": "office", "parcalar": [243, 39, 748, 670, 681] },
+    { "stil": "casual", "parcalar": [62, 253, 411, 639, 804, 728] },
+    { "stil": "casual", "parcalar": [237, 68, 361, 762, 625, 680] }
+  ],
+  "color_match_map": {
+    "black": ["black", "white", "grey", "gray", "beige", "cream", "red", "blue", "navy", "dark blue", "gold", "silver", "green"],
+    "white": ["white", "black", "grey", "gray", "beige", "cream", "blue", "denim", "navy", "dark blue", "gold", "silver", "green"],
+    "green": ["black", "white"],
+    "navy": ["navy", "dark blue", "blue", "white", "grey", "gray", "beige", "cream"],
+    "dark blue": ["navy", "dark blue", "blue", "white", "grey", "gray", "beige", "cream"],
+    "blue": ["blue", "navy", "dark blue", "white", "grey", "gray", "denim"],
+    "denim": ["denim", "white", "black", "grey", "blue"],
+    "beige": ["beige", "cream", "white", "black", "brown", "khaki", "natural"],
+    "natural": ["natural", "beige", "cream", "white", "black", "brown"],
+    "cream": ["cream", "beige", "white", "black", "brown"],
+    "brown": ["brown", "beige", "cream", "black", "khaki", "natural"],
+    "grey": ["grey", "gray", "white", "black", "navy", "dark blue", "blue"],
+    "gray": ["gray", "grey", "white", "black", "navy", "dark blue", "blue"],
+    "gold": ["gold", "black", "white", "cream", "beige", "green", "red"],
+    "silver": ["silver", "black", "white", "grey", "gray", "blue", "green"]
+  },
+  "neutral_colors": ["black", "white", "grey", "gray", "beige", "cream", "natural", "khaki", "silver"],
+  "curated_seed_outfits": {
+    "237": {
+      "upper": 68,
+      "outerwear": 361,
+      "shoes": 762,
+      "bag": 625,
+      "accessory": 680
+    }
+  },
+  "scoring": {
+    "exact_color_bonus": 1.0,
+    "compatible_color_bonus": 1.2,
+    "incompatible_color_penalty": -1.0,
+    "style_tag_bonus": 0.25,
+    "pair_harmonize_bonus": 2.5,
+    "pair_harmonize_penalty": -2.0,
+    "neutral_bonus_with_pair": 0.8,
+    "neutral_bonus_without_pair": 1.0,
+    "seed_exact_neutral_multiplier": 0.55,
+    "seed_exact_anchor_multiplier": 0.65,
+    "seed_exact_default_multiplier": 0.8,
+    "neutral_layer_bonus": 0.4,
+    "monochrome_penalty_per_overlap": 0.45,
+    "color_score_weight": 0.1,
+    "palette_max_colors": 3,
+    "seed_max_repeats": 2,
+    "palette_overflow_penalty": -0.2,
+    "seed_repeat_penalty": -0.25,
+    "missing_neutral_penalty": -0.2,
+    "palette_rule_bonus": 0.15
+  }
+}

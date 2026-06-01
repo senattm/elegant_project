@@ -13,7 +13,7 @@ import { PaymentModule } from './payment/payment.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
-import { OutfitModule } from './outfit/outfit.module';
+import { OutfitsModule } from './outfits/outfits.module';
 
 @Module({
   imports: [
@@ -21,7 +21,7 @@ import { OutfitModule } from './outfit/outfit.module';
       isGlobal: true,
     }),
     PrismaModule,
-    OutfitModule,
+    OutfitsModule,
     DatabaseModule,
     ProductsModule,
     AuthModule,

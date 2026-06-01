@@ -13,8 +13,8 @@ from sentence_transformers import SentenceTransformer
 from outfit_engine import (
     GROUND_TRUTH_OUTFITS,
     UltimateColorAndStyleStrictRecommender,
-    prepare_products_dataframe,
 )
+from product_loader import load_products
 
 app = FastAPI()
 
@@ -25,8 +25,10 @@ embedding_model: SentenceTransformer | None = None
 last_loaded_at: datetime | None = None
 last_db_updated_at: datetime | None = None
 
-EMBEDDING_MODEL_NAME = os.environ.get(
-    "EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL") or (
+    os.path.join(os.path.dirname(__file__), "models", "elegant-minilm-finetuned")
+    if os.path.isdir(os.path.join(os.path.dirname(__file__), "models", "elegant-minilm-finetuned"))
+    else "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
 EMBEDDINGS_CACHE_PATH = os.environ.get(
     "EMBEDDINGS_CACHE_PATH",
@@ -130,15 +132,8 @@ def load_data() -> None:
 
     try:
         print("Loading products from database...")
-        conn = psycopg2.connect(_database_url())
-        query = """
-            SELECT id, name, description, brand, colors, gender, season, tags, updated_at
-            FROM products
-        """
-        raw_df = pd.read_sql(query, conn)
-        conn.close()
-
-        df = prepare_products_dataframe(raw_df)
+        raw_df = load_products(include_updated_at=True)
+        df = raw_df
 
         db_max_updated = None
         if "updated_at" in df.columns and not df["updated_at"].isna().all():
@@ -182,6 +177,7 @@ def health() -> dict:
     return {
         "status": "ok" if recommender is not None else "loading",
         "products": len(df) if df is not None else 0,
+        "embedding_model": EMBEDDING_MODEL_NAME,
         "last_loaded_at": last_loaded_at.isoformat() if last_loaded_at else None,
     }
 

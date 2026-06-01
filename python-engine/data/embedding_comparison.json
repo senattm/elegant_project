@@ -1,0 +1,173 @@
+{
+  "baseline_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "finetuned_model": "C:\\Users\\SENA\\Desktop\\elegant\\python-engine\\models\\elegant-minilm-finetuned",
+  "evaluation_setup": {
+    "test_outfit_indices": [
+      0,
+      1,
+      3,
+      5
+    ],
+    "test_outfit_styles": [
+      "casual",
+      "office",
+      "chic",
+      "formal"
+    ],
+    "train_outfit_count": 13,
+    "test_outfit_count": 4,
+    "test_product_ids": [
+      113,
+      148,
+      523,
+      526,
+      537,
+      546,
+      566,
+      601,
+      603,
+      638,
+      656,
+      678,
+      683,
+      708,
+      710,
+      754,
+      766,
+      812
+    ],
+    "negative_pair_samples": 500,
+    "note": "finetune.py, TEST_OUTFIT_INDICES kombinlerini ve bu kombinlerdeki urunleri stil/sezon ciftlerinden de cikarir. Mevcut model eski egitimle uretildiyse yeniden calistirin: python finetune.py && python compare_embeddings.py"
+  },
+  "baseline": {
+    "positive_pair_similarity": {
+      "train_outfits": 0.6603,
+      "test_outfits_holdout": 0.6143,
+      "all_ground_truth": 0.6523
+    },
+    "negative_pair_similarity": 0.6613,
+    "positive_minus_negative_margin": {
+      "train": -0.001,
+      "test_holdout": -0.047
+    },
+    "recall_on_test_outfits": {
+      "recall@5": 0.0,
+      "recall@10": 0.0
+    }
+  },
+  "finetuned": {
+    "positive_pair_similarity": {
+      "train_outfits": 0.687,
+      "test_outfits_holdout": 0.66,
+      "all_ground_truth": 0.6823
+    },
+    "negative_pair_similarity": 0.4613,
+    "positive_minus_negative_margin": {
+      "train": 0.2257,
+      "test_holdout": 0.1987
+    },
+    "recall_on_test_outfits": {
+      "recall@5": 0.0,
+      "recall@10": 0.0625
+    }
+  },
+  "outfit_engine_hit_rate": {
+    "baseline": {
+      "train": 0.9846,
+      "test_holdout": 1.0
+    },
+    "finetuned": {
+      "train": 0.9846,
+      "test_holdout": 1.0
+    },
+    "delta_test_holdout": 0.0,
+    "test_details_finetuned": [
+      {
+        "style": "casual",
+        "seed_id": 546,
+        "expected": [
+          537,
+          656,
+          678,
+          766
+        ],
+        "generated": [
+          537,
+          656,
+          678,
+          766
+        ],
+        "hits": 4,
+        "hit_rate": 1.0
+      },
+      {
+        "style": "office",
+        "seed_id": 113,
+        "expected": [
+          566,
+          638,
+          683,
+          812
+        ],
+        "generated": [
+          566,
+          638,
+          683,
+          812
+        ],
+        "hits": 4,
+        "hit_rate": 1.0
+      },
+      {
+        "style": "chic",
+        "seed_id": 148,
+        "expected": [
+          601,
+          708,
+          754
+        ],
+        "generated": [
+          427,
+          601,
+          708,
+          754
+        ],
+        "hits": 3,
+        "hit_rate": 1.0
+      },
+      {
+        "style": "formal",
+        "seed_id": 526,
+        "expected": [
+          523,
+          603,
+          710
+        ],
+        "generated": [
+          427,
+          523,
+          603,
+          710,
+          806
+        ],
+        "hits": 3,
+        "hit_rate": 1.0
+      }
+    ]
+  },
+  "delta_finetuned_minus_baseline": {
+    "positive_test_holdout": 0.0457,
+    "negative_pair_similarity": -0.2,
+    "margin_test_holdout": 0.2457,
+    "recall_on_test": {
+      "recall@5": 0.0,
+      "recall@10": 0.0625
+    }
+  },
+  "interpretation_for_report": "Ana metrikler: hold-out test margin (embedding ayrimi) ve outfit engine hit rate (gercek generate_outfit ciktisi). Recall@K saf embedding siralamasidir; kullaniciya gorunen sonuc kural tabanli outfit motorundan gelir.",
+  "legacy_metric_all_gt_pairs": {
+    "baseline": 0.6523,
+    "finetuned": 0.6823,
+    "delta": 0.03
+  }
+}

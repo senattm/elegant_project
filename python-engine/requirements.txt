@@ -6,3 +6,5 @@ scikit-learn
 psycopg2-binary
 sentence-transformers
 torch
+datasets
+accelerate>=1.1.0

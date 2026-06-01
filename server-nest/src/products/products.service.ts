@@ -1,13 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OutfitService } from '../outfit/outfit.service';
+import { OutfitsService } from '../outfits/outfits.service';
 import { CreateVariantDto, UpdateVariantDto } from './dto';
 
 @Injectable()
 export class ProductsService {
+  private readonly pythonEngineUrl =
+    process.env.PYTHON_ENGINE_URL ?? 'http://127.0.0.1:8001';
+
   constructor(
     private prisma: PrismaService,
-    private outfitService: OutfitService,
+    private outfitsService: OutfitsService,
   ) {}
 
   private productInclude = {
@@ -206,14 +209,27 @@ export class ProductsService {
 
 
 
-  private async buildHeroOutfitFromRoles(
+  private async buildOutfitResponse(
     roleEntries: [string, number][],
-  ): Promise<{ heroOutfit: Record<string, any>; alternatives: Record<string, any[]> } | null> {
-    const idsToLoad = [...new Set(roleEntries.map(([, id]) => id))];
-    if (!idsToLoad.length) return null;
+    alternativesMap: Record<string, number[]> = {},
+    meta: {
+      cohesionScore: number;
+      source: string;
+      cohesionBreakdown?: object;
+      seedProductId: number;
+      userId?: number;
+    },
+  ) {
+    const allIds = [
+      ...new Set([
+        ...roleEntries.map(([, id]) => id),
+        ...Object.values(alternativesMap).flat(),
+      ]),
+    ];
+    if (!allIds.length) return null;
 
     const products = await this.prisma.products.findMany({
-      where: { id: { in: idsToLoad } },
+      where: { id: { in: allIds } },
       include: this.productInclude,
     });
 
@@ -225,52 +241,73 @@ export class ProductsService {
       const product = byId.get(id);
       if (!product) continue;
       heroOutfit[role] = this.mapProductResponse(product);
-      alternatives[role] = [];
+      alternatives[role] = (alternativesMap[role] ?? [])
+        .map((altId) => byId.get(altId))
+        .filter(Boolean)
+        .map((p) => this.mapProductResponse(p!));
     }
 
-    return Object.keys(heroOutfit).length > 0 ? { heroOutfit, alternatives } : null;
+    if (!Object.keys(heroOutfit).length) return null;
+
+    const savedOutfit = await this.outfitsService.saveRecommendation({
+      userId: meta.userId,
+      seedProductId: meta.seedProductId,
+      roleEntries: roleEntries.map(([role, productId], idx) => ({
+        role,
+        productId,
+        sortOrder: idx,
+      })),
+      cohesionScore: meta.cohesionScore,
+      source: meta.source,
+    });
+
+    return {
+      heroOutfit,
+      alternatives,
+      cohesionScore: meta.cohesionScore,
+      cohesionBreakdown: meta.cohesionBreakdown,
+      source: meta.source,
+      outfitId: savedOutfit.id,
+    };
   }
 
-  async getRecommendations(productId: number, _limit: number = 3) {
+  private async tryPythonEngine(productId: number, userId?: number) {
     try {
-      // 1. Yerleşik kombin motoru (Colab algoritması — Nest içinde, Python gerekmez)
-      const outfitRoles = this.outfitService.generateOutfitRoles(productId);
-      if (outfitRoles) {
-        const roleEntries = Object.entries(outfitRoles) as [string, number][];
-        const built = await this.buildHeroOutfitFromRoles(roleEntries);
-        if (built) {
-          return {
-            ...built,
-            cohesionScore: 92,
-            source: 'outfit-engine',
-          };
-        }
-      }
+      const response = await fetch(
+        `${this.pythonEngineUrl}/recommend?product_id=${productId}`,
+        { signal: AbortSignal.timeout(8000) },
+      );
+      if (!response.ok) return null;
 
-      // 2. İsteğe bağlı: harici Python servisi (8001) açıksa onu dene
-      try {
-        const response = await fetch(
-          `http://127.0.0.1:8001/recommend?product_id=${productId}`,
-          { signal: AbortSignal.timeout(3000) },
-        );
-        if (response.ok) {
-          const data = await response.json();
-          const pyRoles = data.outfit_roles as Record<string, number> | undefined;
-          if (pyRoles) {
-            const roleEntries = Object.entries(pyRoles).filter(
-              ([role]) => role !== 'seed',
-            ) as [string, number][];
-            const built = await this.buildHeroOutfitFromRoles(roleEntries);
-            if (built) {
-              return { ...built, cohesionScore: 92, source: 'python-engine' };
-            }
-          }
-        }
-      } catch {
-        /* Python kapalıysa sorun değil */
-      }
+      const data = await response.json();
+      const pyRoles = data.outfit_roles as Record<string, number> | undefined;
+      if (!pyRoles) return null;
 
-      // 3. Son çare: aynı kategoriden benzer ürünler (eski davranış)
+      const roleEntries = Object.entries(pyRoles).filter(
+        ([role]) => role !== 'seed',
+      ) as [string, number][];
+
+      return this.buildOutfitResponse(roleEntries, {}, {
+        cohesionScore: 85,
+        source: 'python-engine',
+        seedProductId: productId,
+        userId,
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async getRecommendations(
+    productId: number,
+    limit: number = 3,
+    userId?: number,
+    _engine: 'python' | 'nest' | 'auto' = 'python',
+  ) {
+    try {
+      const built = await this.tryPythonEngine(productId, userId);
+      if (built) return built;
+
       const product = await this.prisma.products.findUnique({ where: { id: productId } });
       if (product) {
         const fallback = await this.prisma.products.findMany({
@@ -278,11 +315,11 @@ export class ProductsService {
           take: 4,
           include: this.productInclude,
         });
-        const mapped = fallback.map(p => this.mapProductResponse(p));
-        
+        const mapped = fallback.map((p) => this.mapProductResponse(p));
+
         const heroOutfit: Record<string, any> = {};
         const alternatives: Record<string, any[]> = {};
-        
+
         for (const p of mapped) {
           const role = p.category || 'Öneri';
           if (!heroOutfit[role]) {
@@ -292,7 +329,7 @@ export class ProductsService {
             alternatives[role].push(p);
           }
         }
-        
+
         return {
           heroOutfit,
           alternatives,
@@ -300,7 +337,9 @@ export class ProductsService {
           source: 'category-fallback',
         };
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     return { heroOutfit: {}, alternatives: {}, cohesionScore: 0, source: 'none' };
   }

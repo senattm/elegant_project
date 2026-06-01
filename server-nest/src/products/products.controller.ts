@@ -1,5 +1,6 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, Request, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { ProductsService } from './products.service';
 
 @ApiTags('products')
@@ -32,10 +33,16 @@ export class ProductsController {
     return this.productsService.getVariantsByProduct(+id);
   }
   @Get(':id/recommendations')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Ürün için AI destekli öneriler/kombinler getir' })
   @ApiParam({ name: 'id', type: 'number', description: 'Ürün ID' })
   @ApiResponse({ status: 200, description: 'Öneriler başarıyla getirildi' })
-  getRecommendations(@Param('id') id: string) {
-    return this.productsService.getRecommendations(+id);
+  getRecommendations(
+    @Param('id') id: string,
+    @Query('engine') engine: 'python' | 'nest' | 'auto' | undefined,
+    @Request() req,
+  ) {
+    return this.productsService.getRecommendations(+id, 3, req.user?.id, engine ?? 'python');
   }
 }

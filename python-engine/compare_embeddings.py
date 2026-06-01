@@ -27,7 +27,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from evaluation_split import split_outfits, split_summary
-from outfit_engine_metrics import evaluate_outfit_engine
+from outfit_engine_metrics import evaluate_outfit_engine, evaluate_outfit_engine_embeddings
 from product_loader import load_products
 
 BASE_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
@@ -173,6 +173,54 @@ def main() -> None:
     print("Outfit motoru hit rate hesaplaniyor (fine-tuned)...")
     finetuned_outfit = evaluate_outfit_engine(finetuned, df, train_outfits, test_outfits)
 
+    visual_section: dict | None = None
+    if os.environ.get("SKIP_VISUAL_COMPARE", "").lower() not in ("1", "true", "yes"):
+        try:
+            from visual_embeddings import VISUAL_MODEL_NAME, build_visual_embeddings
+
+            print("Gorsel CLIP embedding degerlendiriliyor...")
+            df_img = load_products(include_image=True)
+            visual_matrix, visual_stats = build_visual_embeddings(df_img, None)
+            id_to_idx = {int(row["id"]): i for i, row in df_img.iterrows()}
+            emb_by_id = {
+                pid: visual_matrix[idx] for pid, idx in id_to_idx.items()
+            }
+            by_id = {int(r["id"]): str(r.get("image_url") or "") for _, r in df_img.iterrows()}
+
+            visual_outfit = evaluate_outfit_engine_embeddings(
+                df_img, visual_matrix, train_outfits, test_outfits
+            )
+            visual_section = {
+                "model": VISUAL_MODEL_NAME,
+                "build_stats": visual_stats,
+                "positive_pair_similarity": {
+                    "train_outfits": round(
+                        positive_pair_similarity(emb_by_id, by_id, train_outfits), 4
+                    ),
+                    "test_outfits_holdout": round(
+                        positive_pair_similarity(emb_by_id, by_id, test_outfits), 4
+                    ),
+                },
+                "negative_pair_similarity": round(
+                    negative_pair_similarity(emb_by_id, train_outfits + test_outfits), 4
+                ),
+                "recall_on_test_outfits": recall_at_k(emb_by_id, by_id, test_outfits),
+                "outfit_engine_hit_rate": {
+                    "train": visual_outfit["train_outfits"]["avg_hit_rate"],
+                    "test_holdout": visual_outfit["test_outfits_holdout"]["avg_hit_rate"],
+                    "test_details": visual_outfit["test_outfits_holdout"]["details"],
+                },
+            }
+            visual_section["positive_minus_negative_margin"] = {
+                "test_holdout": round(
+                    visual_section["positive_pair_similarity"]["test_outfits_holdout"]
+                    - visual_section["negative_pair_similarity"],
+                    4,
+                ),
+            }
+        except Exception as exc:
+            visual_section = {"error": str(exc)}
+
     def delta(a: dict, b: dict, key: str) -> float | dict:
         va, vb = a.get(key), b.get(key)
         if isinstance(va, dict) and isinstance(vb, dict):
@@ -232,10 +280,12 @@ def main() -> None:
                 for k in finetuned_metrics["recall_on_test_outfits"]
             },
         },
+        "visual_clip": visual_section,
         "interpretation_for_report": (
             "Ana metrikler: hold-out test margin (embedding ayrimi) ve outfit engine hit rate "
             "(gercek generate_outfit ciktisi). Recall@K saf embedding siralamasidir; "
-            "kullaniciya gorunen sonuc kural tabanli outfit motorundan gelir."
+            "kullaniciya gorunen sonuc kural tabanli outfit motorundan gelir. "
+            "visual_clip: CLIP gorsel embedding (metin fine-tune ile kiyaslanabilir)."
         ),
         "legacy_metric_all_gt_pairs": {
             "baseline": baseline_metrics["positive_pair_similarity"]["all_ground_truth"],

@@ -275,7 +275,7 @@ export class ProductsService {
     try {
       const response = await fetch(
         `${this.pythonEngineUrl}/recommend?product_id=${productId}`,
-        { signal: AbortSignal.timeout(8000) },
+        { signal: AbortSignal.timeout(120000) },
       );
       if (!response.ok) return null;
 
@@ -289,7 +289,7 @@ export class ProductsService {
 
       return this.buildOutfitResponse(roleEntries, {}, {
         cohesionScore: 85,
-        source: 'python-engine',
+        source: 'python-engine-clip',
         seedProductId: productId,
         userId,
       });
@@ -306,7 +306,7 @@ export class ProductsService {
   ) {
     try {
       const built = await this.tryPythonEngine(productId, userId);
-      if (built) return built;
+      if (built) return { ...built, embedding: 'visual' as const };
 
       const product = await this.prisma.products.findUnique({ where: { id: productId } });
       if (product) {

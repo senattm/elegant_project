@@ -145,16 +145,99 @@ const Wardrobe = () => {
     const handleGetRecommendations = async (product: any) => {
         setSelectedProduct(product);
         setRecLoading(true);
+        setHeroOutfit({});
         open();
         try {
             const response = await productsApi.getRecommendations(product.id);
-            setHeroOutfit(response.data.heroOutfit || {});
+            const data = response.data;
+            setHeroOutfit(data.heroOutfit || {});
         } catch (error) {
             console.error("Öneriler yüklenemedi:", error);
         } finally {
             setRecLoading(false);
         }
     };
+
+    const renderOutfitGrid = (outfit: Record<string, any>, keyPrefix: string) => (
+        <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="xl">
+            {Object.entries(outfit).map(([role, item]) => {
+                const isOwned = products.some((p: any) => p.id === item.id);
+                return (
+                    <Stack key={`${keyPrefix}-${role}`} align="flex-start" gap="sm">
+                        <Paper
+                            radius={0}
+                            p={0}
+                            bg="white"
+                            style={{
+                                width: "100%",
+                                aspectRatio: "3/4",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                                overflow: "hidden",
+                                position: "relative",
+                            }}
+                            onClick={() => {
+                                close();
+                                navigate(`/product/${item.id}`);
+                            }}
+                        >
+                            {isOwned && (
+                                <Badge
+                                    bg="rgba(0,0,0,0.8)"
+                                    c="white"
+                                    radius={0}
+                                    size="xs"
+                                    style={{
+                                        position: "absolute",
+                                        top: 10,
+                                        left: 10,
+                                        zIndex: 10,
+                                        letterSpacing: "1px",
+                                        fontSize: "9px",
+                                    }}
+                                >
+                                    DOLABINIZDA
+                                </Badge>
+                            )}
+                            <Image src={getImageUrl(item.images?.[0])} fit="cover" h="100%" w="100%" />
+                        </Paper>
+                        <Box w="100%">
+                            <Text size="10px" c="dimmed" tt="uppercase" fw={600} mb={2} style={{ letterSpacing: "1px" }}>
+                                {roleLabels[role] || role}
+                            </Text>
+                            <Text size="sm" c="gray.7" mb={4} truncate="end">
+                                {item.name}
+                            </Text>
+                            <Group justify="space-between" align="center" mt={4}>
+                                <Text size="md" fw={600} c="black">
+                                    {typeof item.price === "number"
+                                        ? item.price.toFixed(2)
+                                        : parseFloat(item.price || "0").toFixed(2)}{" "}
+                                    TL
+                                </Text>
+                                {!isOwned && (
+                                    <Text
+                                        size="11px"
+                                        fw={600}
+                                        c="black"
+                                        style={{ textDecoration: "underline", cursor: "pointer", letterSpacing: "1px" }}
+                                        onClick={() => {
+                                            close();
+                                            navigate(`/product/${item.id}`);
+                                        }}
+                                    >
+                                        SATIN AL
+                                    </Text>
+                                )}
+                            </Group>
+                        </Box>
+                    </Stack>
+                );
+            })}
+        </SimpleGrid>
+    );
 
     if (loading) {
         return (
@@ -274,8 +357,13 @@ const Wardrobe = () => {
                 }}
             >
                 <Box p={50}>
-                    <Group justify="space-between" mb={50}>
-                        <Title order={2} fz={32} fw={400}>Sizin İçin Seçtiklerimiz</Title>
+                    <Group justify="space-between" mb={50} align="flex-end" wrap="wrap" gap="md">
+                        <Stack gap="md">
+                            <Title order={2} fz={32} fw={400}>Sizin İçin Seçtiklerimiz</Title>
+                            <Text size="xs" c="dimmed" tt="uppercase" style={{ letterSpacing: "1px" }}>
+                                CLIP · yalnızca ürün fotoğrafı (-1)
+                            </Text>
+                        </Stack>
                         <UnstyledButton onClick={close} style={{ opacity: 0.5 }}>
                             <Text size="sm" fw={600} style={{ letterSpacing: "1px" }}>KAPAT</Text>
                         </UnstyledButton>
@@ -290,7 +378,6 @@ const Wardrobe = () => {
                         </Center>
                     ) : (
                         <Grid gutter={60} align="flex-start">
-                            {/* SOL: KULLANICININ ÜRÜNÜ */}
                             <Grid.Col span={{ base: 12, md: 4, lg: 3 }}>
                                 <Stack align="flex-start" gap="md">
                                     <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>SEÇİLEN PARÇA</Text>
@@ -313,65 +400,13 @@ const Wardrobe = () => {
                                 </Stack>
                             </Grid.Col>
 
-                            {/* SAĞ: ÖNERİLER */}
                             <Grid.Col span={{ base: 12, md: 8, lg: 9 }}>
                                 <Stack gap="xl">
-                                    <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>TAM KOMBİN PLANI</Text>
-                                    
+                                    <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>
+                                        TAM KOMBİN PLANI · CLIP
+                                    </Text>
                                     {Object.keys(heroOutfit).length > 0 ? (
-                                        <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="xl">
-                                            {Object.entries(heroOutfit).map(([role, item]) => {
-                                                const isOwned = products.some((p: any) => p.id === item.id);
-                                                return (
-                                                <Stack key={role} align="flex-start" gap="sm">
-                                                    <Paper radius={0} p={0} bg="white"
-                                                        style={{
-                                                            width: "100%",
-                                                            aspectRatio: "3/4",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            cursor: "pointer",
-                                                            overflow: "hidden",
-                                                            position: "relative"
-                                                        }}
-                                                        onClick={() => { close(); navigate(`/product/${item.id}`); }}
-                                                    >
-                                                        {isOwned && (
-                                                            <Badge 
-                                                                bg="rgba(0,0,0,0.8)" 
-                                                                c="white" 
-                                                                radius={0} 
-                                                                size="xs" 
-                                                                style={{ position: "absolute", top: 10, left: 10, zIndex: 10, letterSpacing: "1px", fontSize: "9px" }}
-                                                            >
-                                                                DOLABINIZDA
-                                                            </Badge>
-                                                        )}
-                                                        <Image src={getImageUrl(item.images?.[0])} fit="cover" h="100%" w="100%" />
-                                                    </Paper>
-                                                    <Box w="100%">
-                                                        <Text size="10px" c="dimmed" tt="uppercase" fw={600} mb={2} style={{ letterSpacing: "1px" }}>{roleLabels[role] || role}</Text>
-                                                        <Text size="sm" c="gray.7" mb={4} truncate="end">{item.name}</Text>
-                                                        
-                                                        <Group justify="space-between" align="center" mt={4}>
-                                                            <Text size="md" fw={600} c="black">{typeof item.price === 'number' ? item.price.toFixed(2) : parseFloat(item.price || '0').toFixed(2)} TL</Text>
-                                                            {!isOwned && (
-                                                                <Text 
-                                                                    size="11px" 
-                                                                    fw={600} 
-                                                                    c="black" 
-                                                                    style={{ textDecoration: "underline", cursor: "pointer", letterSpacing: "1px" }}
-                                                                    onClick={() => { close(); navigate(`/product/${item.id}`); }}
-                                                                >
-                                                                    SATIN AL
-                                                                </Text>
-                                                            )}
-                                                        </Group>
-                                                    </Box>
-                                                </Stack>
-                                            )})}
-                                        </SimpleGrid>
+                                        renderOutfitGrid(heroOutfit, "single")
                                     ) : (
                                         <Box py={40}>
                                             <Text c="dimmed">Bu parça için henüz tamamlayıcı bir öneri bulunamadı.</Text>

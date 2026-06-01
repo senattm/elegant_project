@@ -73,6 +73,16 @@ def evaluate_outfit_engine(model: SentenceTransformer, df, train_outfits: list[d
     }
 
 
+def evaluate_outfit_engine_embeddings(
+    df, embeddings: np.ndarray, train_outfits: list[dict], test_outfits: list[dict]
+) -> dict:
+    recommender = UltimateColorAndStyleStrictRecommender(df, embeddings, GROUND_TRUTH_OUTFITS)
+    return {
+        "train_outfits": outfit_hit_rate(recommender, train_outfits),
+        "test_outfits_holdout": outfit_hit_rate(recommender, test_outfits),
+    }
+
+
 def embedding_cohesion_pct(recommender: UltimateColorAndStyleStrictRecommender, outfits: list[dict]) -> float:
     """Uretilen kombin parcalari arasi ortalama embedding benzerligi (0-100)."""
     id_to_idx = {int(row["id"]): i for i, row in recommender.df.iterrows()}

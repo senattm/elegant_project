@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import psycopg2
 from fastapi import FastAPI, HTTPException
-from sentence_transformers import SentenceTransformer
 
+from outfit_config import EMBEDDING_SIMILARITY_WEIGHT
 from outfit_engine import (
     GROUND_TRUTH_OUTFITS,
     UltimateColorAndStyleStrictRecommender,
@@ -21,22 +21,15 @@ app = FastAPI()
 df: pd.DataFrame | None = None
 embeddings: np.ndarray | None = None
 recommender: UltimateColorAndStyleStrictRecommender | None = None
-embedding_model: SentenceTransformer | None = None
+visual_build_stats: dict | None = None
 last_loaded_at: datetime | None = None
 last_db_updated_at: datetime | None = None
 
-EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL") or (
-    os.path.join(os.path.dirname(__file__), "models", "elegant-minilm-finetuned")
-    if os.path.isdir(os.path.join(os.path.dirname(__file__), "models", "elegant-minilm-finetuned"))
-    else "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-)
-EMBEDDINGS_CACHE_PATH = os.environ.get(
-    "EMBEDDINGS_CACHE_PATH",
-    os.path.join(os.path.dirname(__file__), "data", "product_embeddings.npy"),
-)
-EMBEDDINGS_META_PATH = os.environ.get(
-    "EMBEDDINGS_META_PATH",
-    os.path.join(os.path.dirname(__file__), "data", "embeddings_meta.txt"),
+SKIP_VISUAL_EMBEDDINGS = os.environ.get("SKIP_VISUAL_EMBEDDINGS", "").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
 )
 
 
@@ -52,60 +45,12 @@ def _database_url() -> str:
     return database_url
 
 
-def _load_embedding_model() -> SentenceTransformer:
-    global embedding_model
-    if embedding_model is None:
-        print(f"Loading embedding model: {EMBEDDING_MODEL_NAME}")
-        embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-    return embedding_model
+def _build_clip_embeddings(prepared_df: pd.DataFrame, db_max_updated: datetime | None) -> np.ndarray:
+    from visual_embeddings import VISUAL_MODEL_NAME, build_visual_embeddings
 
-
-def _read_embeddings_cache(product_count: int, db_max_updated: datetime | None) -> np.ndarray | None:
-    if not os.path.isfile(EMBEDDINGS_CACHE_PATH) or not os.path.isfile(EMBEDDINGS_META_PATH):
-        return None
-    try:
-        with open(EMBEDDINGS_META_PATH, encoding="utf-8") as f:
-            meta = f.read().strip().split("|")
-        cached_count = int(meta[0])
-        cached_updated = meta[1] if len(meta) > 1 and meta[1] != "none" else None
-        current_updated = (
-            db_max_updated.isoformat() if db_max_updated is not None else "none"
-        )
-        if cached_count != product_count or cached_updated != current_updated:
-            return None
-        arr = np.load(EMBEDDINGS_CACHE_PATH)
-        if arr.shape[0] != product_count:
-            return None
-        print(f"Loaded cached embeddings ({arr.shape})")
-        return arr
-    except Exception as exc:
-        print(f"Embedding cache read failed: {exc}")
-        return None
-
-
-def _write_embeddings_cache(
-    matrix: np.ndarray, product_count: int, db_max_updated: datetime | None
-) -> None:
-    os.makedirs(os.path.dirname(EMBEDDINGS_CACHE_PATH), exist_ok=True)
-    np.save(EMBEDDINGS_CACHE_PATH, matrix)
-    updated = db_max_updated.isoformat() if db_max_updated is not None else "none"
-    with open(EMBEDDINGS_META_PATH, "w", encoding="utf-8") as f:
-        f.write(f"{product_count}|{updated}")
-
-
-def _build_embeddings(prepared_df: pd.DataFrame, db_max_updated: datetime | None) -> np.ndarray:
-    cached = _read_embeddings_cache(len(prepared_df), db_max_updated)
-    if cached is not None:
-        return cached
-
-    model = _load_embedding_model()
-    print("Encoding product text profiles...")
-    matrix = model.encode(
-        prepared_df["text_profile"].tolist(),
-        show_progress_bar=False,
-        convert_to_numpy=True,
-    )
-    _write_embeddings_cache(matrix, len(prepared_df), db_max_updated)
+    global visual_build_stats
+    matrix, visual_build_stats = build_visual_embeddings(prepared_df, db_max_updated)
+    print(f"CLIP embeddings ready (model={VISUAL_MODEL_NAME}, stats={visual_build_stats})")
     return matrix
 
 
@@ -121,6 +66,7 @@ def _outfit_to_response(product_id: int, outfit: dict) -> dict:
 
     return {
         "product_id": product_id,
+        "embedding": "visual",
         "outfit_roles": outfit_roles,
         "recommendations": recommendations,
     }
@@ -128,11 +74,12 @@ def _outfit_to_response(product_id: int, outfit: dict) -> dict:
 
 @app.on_event("startup")
 def load_data() -> None:
-    global df, embeddings, recommender, last_loaded_at, last_db_updated_at
+    global df, embeddings, recommender, visual_build_stats
+    global last_loaded_at, last_db_updated_at
 
     try:
         print("Loading products from database...")
-        raw_df = load_products(include_updated_at=True)
+        raw_df = load_products(include_updated_at=True, include_image=True)
         df = raw_df
 
         db_max_updated = None
@@ -142,13 +89,22 @@ def load_data() -> None:
             except Exception:
                 db_max_updated = None
 
-        embeddings = _build_embeddings(df, db_max_updated)
-        recommender = UltimateColorAndStyleStrictRecommender(
-            df, embeddings, GROUND_TRUTH_OUTFITS
-        )
+        recommender = None
+        embeddings = None
+        visual_build_stats = None
+
+        if not SKIP_VISUAL_EMBEDDINGS:
+            embeddings = _build_clip_embeddings(df, db_max_updated)
+            recommender = UltimateColorAndStyleStrictRecommender(
+                df,
+                embeddings,
+                GROUND_TRUTH_OUTFITS,
+                similarity_weight=EMBEDDING_SIMILARITY_WEIGHT,
+            )
+
         last_loaded_at = datetime.utcnow()
         last_db_updated_at = db_max_updated
-        print(f"Outfit engine ready — {len(df)} products loaded.")
+        print(f"Outfit engine ready — {len(df)} products (CLIP, -1 product images).")
     except Exception as exc:
         print(f"Error loading outfit engine: {exc}")
 
@@ -174,10 +130,16 @@ def _maybe_refresh_from_db() -> None:
 
 @app.get("/health")
 def health() -> dict:
+    from visual_embeddings import VISUAL_MODEL_NAME
+
     return {
         "status": "ok" if recommender is not None else "loading",
         "products": len(df) if df is not None else 0,
-        "embedding_model": EMBEDDING_MODEL_NAME,
+        "embedding_model": VISUAL_MODEL_NAME,
+        "embeddings_loaded": recommender is not None,
+        "image_variant": "primary-1",
+        "visual_build_stats": visual_build_stats,
+        "similarity_weight": EMBEDDING_SIMILARITY_WEIGHT,
         "last_loaded_at": last_loaded_at.isoformat() if last_loaded_at else None,
     }
 
@@ -185,12 +147,16 @@ def health() -> dict:
 @app.post("/sync")
 def sync_data() -> dict:
     load_data()
-    return {"message": "Data synchronized from database", "count": len(df) if df is not None else 0}
+    return {
+        "message": "Data synchronized from database",
+        "count": len(df) if df is not None else 0,
+        "embeddings_loaded": recommender is not None,
+    }
 
 
 @app.get("/recommend")
 def recommend(product_id: int, limit: int | None = None) -> dict:
-    if recommender is None or df is None:
+    if df is None or recommender is None:
         raise HTTPException(status_code=500, detail="Outfit engine not loaded")
 
     _maybe_refresh_from_db()

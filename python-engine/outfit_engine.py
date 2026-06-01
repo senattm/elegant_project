@@ -13,6 +13,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from outfit_config import (
     COLOR_MATCH_MAP,
     CURATED_SEED_OUTFITS,
+    EMBEDDING_SIMILARITY_WEIGHT,
     GROUND_TRUTH_OUTFITS,
     NEUTRAL_COLORS,
     SCORING,
@@ -455,9 +456,17 @@ def prepare_products_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
 
 
 class UltimateColorAndStyleStrictRecommender:
-    def __init__(self, dataframe: pd.DataFrame, embeddings: np.ndarray, ground_truth: list[dict]):
+    def __init__(
+        self,
+        dataframe: pd.DataFrame,
+        embeddings: np.ndarray,
+        ground_truth: list[dict],
+        *,
+        similarity_weight: float = 1.0,
+    ):
         self.df = dataframe.copy()
         self.embeddings = embeddings
+        self.similarity_weight = float(similarity_weight)
         self.ground_truth = ground_truth
         self.df["id"] = self.df["id"].astype(int)
 
@@ -603,7 +612,10 @@ class UltimateColorAndStyleStrictRecommender:
                 train_match = train_match[train_match["product_group"] != acc1_group]
 
             if not train_match.empty:
-                outfit[role] = train_match.iloc[0]
+                tm_indices = train_match.index.tolist()
+                tm_scores = self._get_similarity(seed_idx, tm_indices) * self.similarity_weight
+                best_idx = tm_indices[int(np.argmax(tm_scores))]
+                outfit[role] = train_match.loc[best_idx]
                 continue
 
             pair_colors: list[str] | None = None
@@ -659,7 +671,7 @@ class UltimateColorAndStyleStrictRecommender:
                 candidates = self.df[self.df["product_group"].isin(allowed_groups)]
 
             cand_indices = candidates.index.tolist()
-            scores = self._get_similarity(seed_idx, cand_indices)
+            scores = self._get_similarity(seed_idx, cand_indices) * self.similarity_weight
             candidates = candidates.copy()
             candidates["final_score"] = scores
 

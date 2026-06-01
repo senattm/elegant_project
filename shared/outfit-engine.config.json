@@ -46,6 +46,7 @@
       "accessory": 680
     }
   },
+  "embedding_similarity_weight": 1.0,
   "scoring": {
     "exact_color_bonus": 1.0,
     "compatible_color_bonus": 1.2,

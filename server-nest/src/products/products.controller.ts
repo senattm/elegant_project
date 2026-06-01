@@ -43,6 +43,11 @@ export class ProductsController {
     @Query('engine') engine: 'python' | 'nest' | 'auto' | undefined,
     @Request() req,
   ) {
-    return this.productsService.getRecommendations(+id, 3, req.user?.id, engine ?? 'python');
+    return this.productsService.getRecommendations(
+      +id,
+      3,
+      req.user?.id,
+      engine ?? 'python',
+    );
   }
 }

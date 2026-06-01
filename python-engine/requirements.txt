@@ -6,5 +6,7 @@ scikit-learn
 psycopg2-binary
 sentence-transformers
 torch
+Pillow
+requests
 datasets
 accelerate>=1.1.0

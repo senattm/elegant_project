@@ -1,3 +1,10 @@
+#root {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #ffffff;
+  font-family: "Montserrat", sans-serif;
+}
+
 :root {
   font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -103,12 +110,6 @@ img {
   outline: none !important;
   box-shadow: none !important;
   border-color: inherit !important;
-}
-
-.no-outline {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
 }
 
 ::-webkit-scrollbar {

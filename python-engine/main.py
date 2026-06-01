@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from urllib.parse import parse_qs, urlparse
 
 import numpy as np
 import pandas as pd
@@ -14,12 +13,11 @@ from outfit_engine import (
     GROUND_TRUTH_OUTFITS,
     UltimateColorAndStyleStrictRecommender,
 )
-from product_loader import load_products
+from product_loader import database_url, load_products
 
 app = FastAPI()
 
 df: pd.DataFrame | None = None
-embeddings: np.ndarray | None = None
 recommender: UltimateColorAndStyleStrictRecommender | None = None
 visual_build_stats: dict | None = None
 last_loaded_at: datetime | None = None
@@ -31,18 +29,6 @@ SKIP_VISUAL_EMBEDDINGS = os.environ.get("SKIP_VISUAL_EMBEDDINGS", "").lower() in
     "yes",
     "on",
 )
-
-
-def _database_url() -> str:
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        return "postgresql://postgres:123456@localhost:5432/elegant_db"
-    parsed = urlparse(database_url)
-    if parsed.query:
-        params = parse_qs(parsed.query)
-        if "schema" in params and len(params) == 1:
-            return database_url.split("?")[0]
-    return database_url
 
 
 def _build_clip_embeddings(prepared_df: pd.DataFrame, db_max_updated: datetime | None) -> np.ndarray:
@@ -74,7 +60,7 @@ def _outfit_to_response(product_id: int, outfit: dict) -> dict:
 
 @app.on_event("startup")
 def load_data() -> None:
-    global df, embeddings, recommender, visual_build_stats
+    global df, recommender, visual_build_stats
     global last_loaded_at, last_db_updated_at
 
     try:
@@ -90,14 +76,13 @@ def load_data() -> None:
                 db_max_updated = None
 
         recommender = None
-        embeddings = None
         visual_build_stats = None
 
         if not SKIP_VISUAL_EMBEDDINGS:
-            embeddings = _build_clip_embeddings(df, db_max_updated)
+            clip_matrix = _build_clip_embeddings(df, db_max_updated)
             recommender = UltimateColorAndStyleStrictRecommender(
                 df,
-                embeddings,
+                clip_matrix,
                 GROUND_TRUTH_OUTFITS,
                 similarity_weight=EMBEDDING_SIMILARITY_WEIGHT,
             )
@@ -114,7 +99,7 @@ def _maybe_refresh_from_db() -> None:
         return
 
     try:
-        conn = psycopg2.connect(_database_url())
+        conn = psycopg2.connect(database_url())
         cur = conn.cursor()
         cur.execute("SELECT MAX(updated_at) FROM products")
         row = cur.fetchone()

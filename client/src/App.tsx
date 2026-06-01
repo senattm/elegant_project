@@ -19,8 +19,6 @@ import Layout from "./components/layout/Layout";
 import Chatbot from "./components/ui/Chatbot";
 import { useCart } from "./store/hooks/useCart";
 import { useAuth } from "./store/hooks";
-import "./App.css";
-
 function App() {
   const { fetchCart } = useCart();
   const { isAuthenticated } = useAuth();

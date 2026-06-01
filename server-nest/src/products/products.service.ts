@@ -271,10 +271,14 @@ export class ProductsService {
     };
   }
 
-  private async tryPythonEngine(productId: number, userId?: number) {
+  private async tryPythonEngine(
+    productId: number,
+    userId?: number,
+    limit = 3,
+  ) {
     try {
       const response = await fetch(
-        `${this.pythonEngineUrl}/recommend?product_id=${productId}`,
+        `${this.pythonEngineUrl}/recommend?product_id=${productId}&limit=${limit}`,
         { signal: AbortSignal.timeout(120000) },
       );
       if (!response.ok) return null;
@@ -298,14 +302,9 @@ export class ProductsService {
     }
   }
 
-  async getRecommendations(
-    productId: number,
-    limit: number = 3,
-    userId?: number,
-    _engine: 'python' | 'nest' | 'auto' = 'python',
-  ) {
+  async getRecommendations(productId: number, limit: number = 3, userId?: number) {
     try {
-      const built = await this.tryPythonEngine(productId, userId);
+      const built = await this.tryPythonEngine(productId, userId, limit);
       if (built) return { ...built, embedding: 'visual' as const };
 
       const product = await this.prisma.products.findUnique({ where: { id: productId } });

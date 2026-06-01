@@ -13,7 +13,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from outfit_config import (
     COLOR_MATCH_MAP,
     CURATED_SEED_OUTFITS,
-    EMBEDDING_SIMILARITY_WEIGHT,
     GROUND_TRUTH_OUTFITS,
     NEUTRAL_COLORS,
     SCORING,

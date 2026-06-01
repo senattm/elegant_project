@@ -5,7 +5,6 @@ import ProductCard from "../components/features/ProductCard";
 import FilterPanel from "../components/store/FilterPanel";
 import { useProducts } from "../store/hooks";
 import { productsApi } from "../api/client";
-import type { Product } from "../types";
 import { useAtom } from "jotai";
 import { searchQueryAtom } from "../store/atoms";
 import PageLayout from "../components/layout/PageLayout";
@@ -13,6 +12,7 @@ import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
 import { useStoreFilters } from "../hooks/useStoreFilters";
 import { calculatePriceRange } from "../utils/priceUtils";
+import { categoriesFromProducts } from "../utils/categoryUtils";
 
 interface Category {
   name: string;
@@ -62,19 +62,7 @@ const Store = () => {
   const fetchCategories = async () => {
     try {
       const response = await productsApi.getAll();
-      const categoriesMap = new Map<string, number>();
-
-      response.data.forEach((product: Product) => {
-        if (product.category) {
-          const count = categoriesMap.get(product.category) || 0;
-          categoriesMap.set(product.category, count + 1);
-        }
-      });
-
-      const categoriesArray = Array.from(categoriesMap.entries()).map(
-        ([name, product_count]) => ({ name, product_count })
-      );
-      setCategories(categoriesArray);
+      setCategories(categoriesFromProducts(response.data));
 
       if (response.data.length > 0) {
         const [min, max] = calculatePriceRange(response.data);

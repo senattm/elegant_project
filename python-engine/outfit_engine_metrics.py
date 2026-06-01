@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from outfit_engine import GROUND_TRUTH_OUTFITS, UltimateColorAndStyleStrictRecommender
 
@@ -81,27 +80,3 @@ def evaluate_outfit_engine_embeddings(
         "train_outfits": outfit_hit_rate(recommender, train_outfits),
         "test_outfits_holdout": outfit_hit_rate(recommender, test_outfits),
     }
-
-
-def embedding_cohesion_pct(recommender: UltimateColorAndStyleStrictRecommender, outfits: list[dict]) -> float:
-    """Uretilen kombin parcalari arasi ortalama embedding benzerligi (0-100)."""
-    id_to_idx = {int(row["id"]): i for i, row in recommender.df.iterrows()}
-    scores: list[float] = []
-
-    for gt in outfits:
-        parcalar = [int(p) for p in gt["parcalar"]]
-        if len(parcalar) < 2:
-            continue
-        outfit = recommender.generate_outfit(parcalar[0])
-        if isinstance(outfit, str):
-            continue
-        indices = [id_to_idx[int(v["id"])] for v in outfit.values() if int(v["id"]) in id_to_idx]
-        if len(indices) < 2:
-            continue
-        sub = recommender.embeddings[indices]
-        sim = cosine_similarity(sub)
-        upper = sim[np.triu_indices(len(indices), k=1)]
-        if len(upper):
-            scores.append(float(np.mean(upper)))
-
-    return round(float(np.mean(scores)) * 100, 1) if scores else 0.0

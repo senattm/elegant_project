@@ -8,9 +8,10 @@ import HomeProductStrip from "../components/features/HomeProductStrip";
 import MyWardrobe from "../components/features/MyWardrobe";
 import { productsApi } from "../api/client";
 import type { Product } from "../types";
-import { getImageUrl } from "../utils/imageUrl";
 import { getServerUrl } from "../utils/serverUrl";
 import { sectionTitleStyle, smallLabelStyle } from "../theme";
+import { aggregateCategoryCounts } from "../utils/categoryUtils";
+import { navigateToStore } from "../utils/navigation";
 
 const HOME_STRIP_SIZE = 4;
 const baseImgUrl = `${getServerUrl()}/images`;
@@ -209,7 +210,7 @@ const EditorialSection = () => {
                   <Text c="rgba(255,255,255,0.3)" style={smallLabelStyle}>2026 Koleksiyonu</Text>
                   <Box>
                     <Text mb={20} c="rgba(255,255,255,0.45)" style={{ fontSize: 13, lineHeight: 1.9 }}>Yeni sezonda stili yeniden tanımlayan parçalar seçilmeyi bekliyor.</Text>
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { navigate("/store"); window.scrollTo({ top: 0, behavior: "smooth" }); }} style={{ display: "inline-block", border: "1px solid rgba(255,255,255,0.2)", padding: "12px 28px", cursor: "pointer", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#fff" }}>Tümünü İncele</motion.div>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => navigateToStore(navigate)} style={{ display: "inline-block", border: "1px solid rgba(255,255,255,0.2)", padding: "12px 28px", cursor: "pointer", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#fff" }}>Tümünü İncele</motion.div>
                   </Box>
                 </Box>
               </Box>
@@ -333,7 +334,7 @@ const StorySection = () => {
             <Box mb={28} style={{ width: 48, height: 1, background: "linear-gradient(90deg, #111, transparent)" }} />
             <Text mb={32} c="rgba(0,0,0,0.5)" style={{ fontSize: 15, lineHeight: 1.9, maxWidth: 480, letterSpacing: 0.2 }}>Modanın geçici akımları yerine stilin kalıcılığına odaklanıyoruz. Nitelikli dokuları modern bir disiplinle buluşturuyor; stilinizi bir duruş ifadesine dönüştürmeniz için zamansız çizgiler sunuyoruz.</Text>
             <motion.div whileHover={{ x: 6 }} transition={{ type: "spring", stiffness: 300 }}>
-              <Box component="button" type="button" onClick={() => { navigate("/store"); window.scrollTo({ top: 0, behavior: "smooth" }); }} style={{ display: "inline-flex", alignItems: "center", gap: 12, padding: "14px 32px", background: "transparent", border: "1px solid rgba(0,0,0,0.2)", color: "#111", cursor: "pointer", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", fontFamily: "inherit" }}>
+              <Box component="button" type="button" onClick={() => navigateToStore(navigate)} style={{ display: "inline-flex", alignItems: "center", gap: 12, padding: "14px 32px", background: "transparent", border: "1px solid rgba(0,0,0,0.2)", color: "#111", cursor: "pointer", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", fontFamily: "inherit" }}>
                 Koleksiyonu İncele <span>→</span>
               </Box>
             </motion.div>
@@ -355,20 +356,16 @@ const Home = () => {
         const { data } = await productsApi.getAll();
         setProducts(data);
 
-        const countsMap: Record<string, { count: number; img: string }> = {};
-        data.forEach((p: Product) => {
-          if (!p.category) return;
-          countsMap[p.category] = {
-            count: (countsMap[p.category]?.count || 0) + 1,
-            img: countsMap[p.category]?.img || getImageUrl(p.images?.[0])
-          };
-        });
-
-        setCategories(Object.entries(countsMap).map(([name, res]) => ({
-          name,
-          image: `${baseImgUrl}/${categoryImages[name.toLowerCase()] || "deneme.jpg"}`,
-          product_count: res.count
-        })).filter(c => c.product_count > 0));
+        const counts = aggregateCategoryCounts(data);
+        setCategories(
+          Array.from(counts.entries())
+            .map(([name, product_count]) => ({
+              name,
+              image: `${baseImgUrl}/${categoryImages[name.toLowerCase()] || "deneme.jpg"}`,
+              product_count,
+            }))
+            .filter((c) => c.product_count > 0),
+        );
       } catch (err) {
         console.error("Kategoriler yüklenemedi:", err);
       } finally {

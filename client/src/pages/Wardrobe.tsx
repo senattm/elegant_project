@@ -9,6 +9,10 @@ import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../store/atoms";
 import { productsApi } from "../api/client";
 import { useDisclosure } from "@mantine/hooks";
+import { productActionButtonStyles, roleLabelStyle, smallLabelStyle } from "../theme";
+import { navigateToStore } from "../utils/navigation";
+import { outfitRoleLabel } from "../utils/outfitRoleLabels";
+import { uniqueWardrobeItemsFromOrders } from "../utils/wardrobeItems";
 
 const WardrobeCard = ({ product, handleGetRecommendations }: any) => {
     const [isHovered, setIsHovered] = useState(false);
@@ -47,14 +51,7 @@ const WardrobeCard = ({ product, handleGetRecommendations }: any) => {
                         bg="black"
                         radius={0}
                         onClick={(e) => { e.stopPropagation(); handleGetRecommendations(product); }}
-                        styles={{
-                            root: {
-                                height: 42,
-                                fontSize: 12,
-                                letterSpacing: 1,
-                                fontWeight: 600,
-                            },
-                        }}
+                        styles={productActionButtonStyles}
                     >
                         KOMBİNLE
                     </Button>
@@ -85,23 +82,6 @@ const Wardrobe = () => {
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [opened, { open, close }] = useDisclosure(false);
 
-    const roleLabels: Record<string, string> = {
-        upper: "ÜST PARÇA",
-        lower: "ALT PARÇA",
-        shoes: "AYAKKABI",
-        outerwear: "DIŞ GİYİM",
-        accessory: "AKSESUAR",
-        accessory_1: "AKSESUAR 1",
-        accessory_2: "AKSESUAR 2",
-        dress: "ELBİSE",
-        mid_layer: "ÜST PARÇA",
-        lower_body: "ALT PARÇA",
-        footwear: "AYAKKABI",
-        outer_layer: "DIŞ GİYİM",
-        full_body: "TEK PARÇA / ELBİSE",
-        bag: "ÇANTA"
-    };
-
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
@@ -111,16 +91,7 @@ const Wardrobe = () => {
             if (isAuthenticated) {
                 try {
                     const orders = await getUserOrders();
-                    const items = orders.flatMap((o: any) => o.items).map((i: any) => ({
-                        id: i.productId,
-                        name: i.productName,
-                        image: getImageUrl(i.productImages?.[0]),
-                        category: i.category || 'Zamansız Parça',
-                        price: i.unitPrice || i.price || 0
-                    }));
-
-                    const unique = Array.from(new Map(items.map((p: any) => [p.id, p])).values());
-                    setProducts(unique);
+                    setProducts(uniqueWardrobeItemsFromOrders(orders));
                 } catch (error) {
                     console.error("Dolap verileri yüklenemedi:", error);
                 }
@@ -204,8 +175,8 @@ const Wardrobe = () => {
                             <Image src={getImageUrl(item.images?.[0])} fit="cover" h="100%" w="100%" />
                         </Paper>
                         <Box w="100%">
-                            <Text size="10px" c="dimmed" tt="uppercase" fw={600} mb={2} style={{ letterSpacing: "1px" }}>
-                                {roleLabels[role] || role}
+                            <Text size="10px" c="dimmed" mb={2} style={roleLabelStyle}>
+                                {outfitRoleLabel(role)}
                             </Text>
                             <Text size="sm" c="gray.7" mb={4} truncate="end">
                                 {item.name}
@@ -316,7 +287,7 @@ const Wardrobe = () => {
                                     bg="black"
                                     color="white"
                                     px={40}
-                                    onClick={() => navigate("/store")}
+                                    onClick={() => navigateToStore(navigate)}
                                     leftSection={<IconShoppingBag size={18} />}
                                     style={{ letterSpacing: "1px" }}
                                 >
@@ -360,8 +331,8 @@ const Wardrobe = () => {
                     <Group justify="space-between" mb={50} align="flex-end" wrap="wrap" gap="md">
                         <Stack gap="md">
                             <Title order={2} fz={32} fw={400}>Sizin İçin Seçtiklerimiz</Title>
-                            <Text size="xs" c="dimmed" tt="uppercase" style={{ letterSpacing: "1px" }}>
-                                CLIP · yalnızca ürün fotoğrafı (-1)
+                            <Text size="xs" c="dimmed" style={smallLabelStyle}>
+                                CLIP · ürün fotoğrafı (-1)
                             </Text>
                         </Stack>
                         <UnstyledButton onClick={close} style={{ opacity: 0.5 }}>
@@ -380,7 +351,7 @@ const Wardrobe = () => {
                         <Grid gutter={60} align="flex-start">
                             <Grid.Col span={{ base: 12, md: 4, lg: 3 }}>
                                 <Stack align="flex-start" gap="md">
-                                    <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>SEÇİLEN PARÇA</Text>
+                                    <Text c="dimmed" style={roleLabelStyle}>SEÇİLEN PARÇA</Text>
                                     <Paper radius={0} p={0} bg="white"
                                         style={{
                                             width: "100%",
@@ -402,7 +373,7 @@ const Wardrobe = () => {
 
                             <Grid.Col span={{ base: 12, md: 8, lg: 9 }}>
                                 <Stack gap="xl">
-                                    <Text fw={600} fz={10} tt="uppercase" c="dimmed" style={{ letterSpacing: "2px" }}>
+                                    <Text c="dimmed" style={roleLabelStyle}>
                                         TAM KOMBİN PLANI · CLIP
                                     </Text>
                                     {Object.keys(heroOutfit).length > 0 ? (

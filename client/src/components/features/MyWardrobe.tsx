@@ -7,6 +7,7 @@ import { useOrders } from "../../store/hooks/useOrders";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../../store/atoms";
 import { getImageUrl } from "../../utils/imageUrl";
+import { uniqueWardrobeItemsFromOrders } from "../../utils/wardrobeItems";
 import { getServerUrl } from "../../utils/serverUrl";
 import { sectionTitleStyle, smallLabelStyle } from "../../theme";
 
@@ -134,15 +135,7 @@ const MyWardrobe = () => {
         const orders = await getUserOrders();
         if (!orders?.length) return;
 
-        const products = orders.flatMap((order: { items: { productId: number; productName: string; productImages?: string[] }[] }) =>
-          order.items.map((item) => ({
-            id: item.productId,
-            name: item.productName,
-            image: getImageUrl(item.productImages?.[0] || "deneme.jpg"),
-          }))
-        );
-
-        const unique = Array.from(new Map(products.map((p: WardrobeItem) => [p.id, p])).values()) as WardrobeItem[];
+        const unique = uniqueWardrobeItemsFromOrders(orders) as WardrobeItem[];
         if (unique.length > 0) {
           setDisplayItems(unique.slice(0, 3));
           setItemCount(unique.length);

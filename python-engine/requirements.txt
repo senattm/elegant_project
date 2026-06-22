@@ -2,13 +2,11 @@ fastapi
 uvicorn
 pandas
 numpy
-scikit-learn
 psycopg2-binary
 sentence-transformers
 torch
 Pillow
 requests
-tqdm
 transformers
 torchvision
-opencv-python-headless
+pydantic

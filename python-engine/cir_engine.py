@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import importlib
 import json
-import sys
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -10,29 +9,67 @@ import numpy as np
 import torch
 
 from outfit_config import OUTFIT_COMPLEMENT_CFG
+from outfit_model.datatypes import (
+    FashionCompatibilityQuery,
+    FashionComplementaryQuery,
+    FashionItem,
+)
+from paths import CIR_DATA_DIR, POLYVORE_IMAGES_DIR, PUBLIC_DIR
 
-ENGINE_DIR = Path(__file__).resolve().parent
-REPO_DIR = Path(r"C:\Users\SENA\Desktop\outfit-transformer-main")
-
-CIR_CLIP_EMB_PATH = ENGINE_DIR / "data" / "catalog_cir_clip.npy"
-CIR_ITEM_EMB_PATH = ENGINE_DIR / "data" / "catalog_cir_items.npy"
-CIR_IDS_PATH = ENGINE_DIR / "data" / "catalog_cir_ids.json"
-CIR_FAILED_IDS_PATH = ENGINE_DIR / "data" / "catalog_cir_failed_ids.json"
+CIR_CLIP_EMB_PATH = CIR_DATA_DIR / "catalog_cir_clip.npy"
+CIR_ITEM_EMB_PATH = CIR_DATA_DIR / "catalog_cir_items.npy"
+CIR_IDS_PATH = CIR_DATA_DIR / "catalog_cir_ids.json"
+CIR_FAILED_IDS_PATH = CIR_DATA_DIR / "catalog_cir_failed_ids.json"
 
 _cache: dict = {}
-
-
-def _ensure_repo() -> bool:
-    if not REPO_DIR.is_dir():
-        return False
-    repo_path = str(REPO_DIR)
-    if repo_path not in sys.path:
-        sys.path.insert(0, repo_path)
-    return True
-
-
-_POLYVORE_LOCAL_DIR = Path(r"C:\Users\SENA\Desktop\elegant\server-nest\public\polyvore-images")
 _FAILED_URLS: set[str] = set()
+_BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:5000").rstrip("/")
+
+
+def _normalize_source(raw: str | None) -> str:
+    if raw is None:
+        return "elegant"
+    text = str(raw).strip().lower()
+    if not text or text == "nan":
+        return "elegant"
+    if text == "polyvore":
+        return "polyvore"
+    return "elegant"
+
+
+def _build_id_to_source(df) -> dict[int, str]:
+    id_to_source: dict[int, str] = {}
+    has_source_col = "source" in df.columns
+    for _, row in df.iterrows():
+        pid = int(row["id"])
+        if has_source_col:
+            id_to_source[pid] = _normalize_source(row.get("source"))
+        else:
+            url = str(row.get("image_url", "") or "")
+            id_to_source[pid] = "polyvore" if "polyvore-images" in url else "elegant"
+    return id_to_source
+
+
+def _resolve_seed_source(
+    pid: int,
+    id_to_source: dict[int, str],
+    seed_rows: dict[int, dict],
+) -> str | None:
+    if pid in id_to_source:
+        return id_to_source[pid]
+    row = seed_rows.get(pid)
+    if row and row.get("source"):
+        return _normalize_source(row["source"])
+    return None
+
+
+def _resolve_image_url(url: str) -> str:
+    if not url:
+        return ""
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    normalized = url.lstrip("/")
+    return f"{_BACKEND_URL}/{normalized}"
 
 
 def _load_image(url: str):
@@ -46,13 +83,21 @@ def _load_image(url: str):
 
         if "polyvore-images" in url:
             fname = url.rsplit("/", 1)[-1]
-            local = _POLYVORE_LOCAL_DIR / fname
+            local = POLYVORE_IMAGES_DIR / fname
             if local.is_file():
                 return Image.open(local).convert("RGB")
+
+        normalized = url.lstrip("/")
+        if normalized.startswith("images/"):
+            local = PUBLIC_DIR / normalized
+            if local.is_file():
+                return Image.open(local).convert("RGB")
+
         import io
         import requests
 
-        response = requests.get(url, timeout=8)
+        fetch_url = _resolve_image_url(url)
+        response = requests.get(fetch_url, timeout=8)
         response.raise_for_status()
         return Image.open(io.BytesIO(response.content)).convert("RGB")
     except Exception:
@@ -61,7 +106,6 @@ def _load_image(url: str):
 
 
 def _embed_items(fashion_items: list, model) -> tuple[np.ndarray, np.ndarray]:
-    FashionItem = importlib.import_module("src.data.datatypes").FashionItem
     batch_size = 16
     all_clip: list[np.ndarray] = []
     all_item: list[np.ndarray] = []
@@ -83,16 +127,34 @@ def _embed_items(fashion_items: list, model) -> tuple[np.ndarray, np.ndarray]:
     )
 
 
+def reset_elegant_failed_ids() -> int:
+    """Elegant urunler icin eski basarisiz index kayitlarini temizle."""
+    if not CIR_FAILED_IDS_PATH.is_file():
+        return 0
+    failed = set(json.loads(CIR_FAILED_IDS_PATH.read_text()))
+    if not failed:
+        return 0
+
+    import psycopg2
+    from product_loader import database_url
+
+    conn = psycopg2.connect(database_url())
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM products WHERE COALESCE(source, '') != 'polyvore'")
+    elegant_ids = {row[0] for row in cur.fetchall()}
+    conn.close()
+
+    removed = failed & elegant_ids
+    if removed:
+        CIR_FAILED_IDS_PATH.write_text(json.dumps(sorted(failed - removed)))
+    return len(removed)
+
+
 def precompute_catalog(df, model, *, force: bool = False):
     global _cache
 
     if not force and _cache.get("ids") and _cache.get("clip_embs") is not None:
         return _cache["ids"], _cache["clip_embs"], _cache["item_embs"]
-
-    if not _ensure_repo():
-        raise RuntimeError(f"outfit-transformer-main bulunamadi: {REPO_DIR}")
-
-    FashionItem = importlib.import_module("src.data.datatypes").FashionItem
 
     db_rows: dict[int, dict] = {}
     for _, row in df.iterrows():
@@ -190,13 +252,11 @@ def find_complementary(
     outfit_mode: bool = True,
     seed_df=None,
 ) -> list[dict]:
-    if not _ensure_repo():
-        return []
-
     ids, clip_embs, item_embs = precompute_catalog(df, model)
     id_to_idx = {pid: i for i, pid in enumerate(ids)}
 
     id_to_cat: dict[int, str] = {}
+    id_to_source = _build_id_to_source(df)
     cat_col = "category" if "category" in df.columns else "category_name"
     for _, row in df.iterrows():
         pid = int(row["id"])
@@ -211,10 +271,18 @@ def find_complementary(
                 "name": str(row.get("name", "") or ""),
                 "category": str(row.get(seed_cat_col, "") or "").strip(),
                 "image_url": str(row.get("image_url", "") or ""),
+                "source": _normalize_source(row.get("source")),
             }
 
-    FashionItem = importlib.import_module("src.data.datatypes").FashionItem
-    FashionComplementaryQuery = importlib.import_module("src.data.datatypes").FashionComplementaryQuery
+    seed_source: str | None = None
+    for pid in seed_product_ids:
+        resolved = _resolve_seed_source(int(pid), id_to_source, seed_rows)
+        if resolved:
+            seed_source = resolved
+            break
+
+    if seed_source is None:
+        return []
 
     seed_outfit_items = []
     seed_categories: set[str] = set()
@@ -251,7 +319,6 @@ def find_complementary(
 
     cp_min_threshold = float(OUTFIT_COMPLEMENT_CFG["cp_min_threshold"])
     cp_soft_threshold = float(OUTFIT_COMPLEMENT_CFG["cp_soft_threshold"])
-    FashionCompatibilityQuery = importlib.import_module("src.data.datatypes").FashionCompatibilityQuery
 
     results: list[dict] = []
     seen_categories: set[str] = set(seed_categories)
@@ -259,6 +326,9 @@ def find_complementary(
     for idx in np.argsort(dists):
         pid = ids[idx]
         if pid in seed_set:
+            continue
+
+        if id_to_source.get(pid, "elegant") != seed_source:
             continue
 
         item_cat = id_to_cat.get(pid, "")

@@ -40,7 +40,7 @@ coverage/
 .nyc_output/
 
 # Vite cache
-client/.vite/
+frontend/.vite/
 .vite/
 
 # Database
@@ -61,6 +61,8 @@ __pycache__/
 
 # Generated ML / CIR artifacts
 python-engine/data/*.npy
+python-engine/data/catalog_cir_ids.json
+python-engine/data/catalog_cir_failed_ids.json
 python-engine/data/checkpoints/
 python-engine/data/checkpoints.zip
 python-engine/data/similarity_projection.pt
@@ -68,4 +70,4 @@ python-engine/data/product_fashion_clip_meta.txt
 python-engine/data/demo_output/
 
 # Polyvore product images (local static assets)
-server-nest/public/polyvore-images/
+backend/public/polyvore-images/

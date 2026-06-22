@@ -7,6 +7,10 @@ import pandas as pd
 import psycopg2
 
 
+def catalog_polyvore_only() -> bool:
+    return os.environ.get("CATALOG_POLYVORE_ONLY", "false").lower() in ("1", "true", "yes", "on")
+
+
 def database_url() -> str:
     url = os.environ.get(
         "DATABASE_URL", "postgresql://postgres:123456@localhost:5432/elegant_db"
@@ -27,11 +31,12 @@ def load_products(
     polyvore_only: bool = False,
 ) -> pd.DataFrame:
     extra = ", p.updated_at" if include_updated_at else ""
+    source_extra = ", p.source" if not polyvore_only else ""
     source_filter = "WHERE p.source = 'polyvore'" if polyvore_only else ""
     conn = psycopg2.connect(database_url())
     raw_df = pd.read_sql(
         f"""
-        SELECT p.id, p.name, p.description, p.colors, p.season, p.tags{extra},
+        SELECT p.id, p.name, p.description, p.colors, p.season, p.tags{extra}{source_extra},
                c.name AS category
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
@@ -68,7 +73,8 @@ def load_seed_products(product_ids: list[int]) -> pd.DataFrame:
     placeholders = ",".join(str(i) for i in product_ids)
     raw_df = pd.read_sql(
         f"""
-        SELECT p.id, p.name, c.name AS category, pi.image_url
+        SELECT p.id, p.name, c.name AS category, pi.image_url,
+               COALESCE(p.source, 'elegant') AS source
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN LATERAL (

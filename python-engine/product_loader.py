@@ -1,5 +1,3 @@
-"""Urunleri veritabanindan yukler (brand/gender kolonu olmasa da calisir)."""
-
 from __future__ import annotations
 
 import os
@@ -24,13 +22,25 @@ def database_url() -> str:
     return url.split("?")[0]
 
 
-def load_products(*, include_updated_at: bool = False, include_image: bool = False) -> pd.DataFrame:
-    columns = "id, name, description, colors, season, tags"
-    if include_updated_at:
-        columns += ", updated_at"
-
+def load_products(
+    *,
+    include_updated_at: bool = False,
+    include_image: bool = False,
+    polyvore_only: bool = False,
+) -> pd.DataFrame:
+    extra = ", p.updated_at" if include_updated_at else ""
+    source_filter = "WHERE p.source = 'polyvore'" if polyvore_only else ""
     conn = psycopg2.connect(database_url())
-    raw_df = pd.read_sql(f"SELECT {columns} FROM products", conn)
+    raw_df = pd.read_sql(
+        f"""
+        SELECT p.id, p.name, p.description, p.colors, p.season, p.tags{extra},
+               c.name AS category
+        FROM products p
+        LEFT JOIN categories c ON c.id = p.category_id
+        {source_filter}
+        """,
+        conn,
+    )
 
     if include_image:
         images_df = pd.read_sql(

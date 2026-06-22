@@ -12,7 +12,7 @@ export class OutfitsController {
   @Get('my')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Kullanıcının kaydedilmiş AI kombinlerini listele' })
+  @ApiOperation({ summary: 'Kullanıcının kaydedilmiş kombinlerini listele' })
   getMyOutfits(@Request() req) {
     return this.outfitsService.getUserOutfits(req.user.id);
   }
@@ -20,7 +20,7 @@ export class OutfitsController {
   @Post(':id/feedback')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'AI kombin geri bildirimi (beğen / beğenme)' })
+  @ApiOperation({ summary: 'Kombin geri bildirimi (beğen / beğenme)' })
   submitFeedback(
     @Request() req,
     @Param('id', ParseIntPipe) id: number,

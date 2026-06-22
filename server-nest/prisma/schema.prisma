@@ -141,7 +141,6 @@ model outfits {
   is_ai           Boolean?       @default(true)
   user_id         Int?
   seed_product_id Int?
-  cohesion_score  Float?
   source          String?        @db.VarChar(50)
   feedback        Int?
   feedback_at     DateTime?      @db.Timestamp(6)

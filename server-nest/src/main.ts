@@ -25,6 +25,10 @@ async function bootstrap() {
     prefix: '/videos',
   });
 
+  app.useStaticAssets(join(process.cwd(), 'public', 'polyvore-images'), {
+    prefix: '/polyvore-images',
+  });
+
   app.setGlobalPrefix('api');
 
   const config = new DocumentBuilder()

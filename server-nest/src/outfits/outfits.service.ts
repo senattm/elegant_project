@@ -5,7 +5,6 @@ export interface SaveOutfitInput {
   userId?: number;
   seedProductId: number;
   roleEntries: Array<{ role: string; productId: number; sortOrder?: number }>;
-  cohesionScore: number;
   source: string;
   occasion?: string;
   style?: string;
@@ -20,12 +19,11 @@ export class OutfitsService {
       data: {
         user_id: input.userId ?? null,
         seed_product_id: input.seedProductId,
-        cohesion_score: input.cohesionScore,
         source: input.source,
         occasion: input.occasion ?? null,
         style: input.style ?? null,
         is_ai: true,
-        title: `AI Kombin — Ürün #${input.seedProductId}`,
+        title: `Kombin — Ürün #${input.seedProductId}`,
         outfit_items: {
           create: input.roleEntries.map((entry, idx) => ({
             product_id: entry.productId,
@@ -81,15 +79,4 @@ export class OutfitsService {
     });
   }
 
-  async getFeedbackStats() {
-    const [total, liked, disliked] = await Promise.all([
-      this.prisma.outfits.count({ where: { feedback: { not: null } } }),
-      this.prisma.outfits.count({ where: { feedback: 1 } }),
-      this.prisma.outfits.count({ where: { feedback: -1 } }),
-    ]);
-
-    const satisfactionRate = total ? Math.round((liked / total) * 100) : 0;
-
-    return { totalFeedback: total, liked, disliked, satisfactionRate };
-  }
 }

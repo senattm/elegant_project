@@ -32,10 +32,11 @@ export class ProductsController {
   getVariantsByProduct(@Param('id') id: string) {
     return this.productsService.getVariantsByProduct(+id);
   }
+
   @Get(':id/recommendations')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Ürün için AI destekli öneriler/kombinler getir' })
+  @ApiOperation({ summary: 'Ürün için kombin önerileri getir' })
   @ApiParam({ name: 'id', type: 'number', description: 'Ürün ID' })
   @ApiResponse({ status: 200, description: 'Öneriler başarıyla getirildi' })
   getRecommendations(@Param('id') id: string, @Request() req) {

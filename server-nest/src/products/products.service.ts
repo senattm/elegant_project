@@ -213,9 +213,7 @@ export class ProductsService {
     roleEntries: [string, number][],
     alternativesMap: Record<string, number[]> = {},
     meta: {
-      cohesionScore: number;
       source: string;
-      cohesionBreakdown?: object;
       seedProductId: number;
       userId?: number;
     },
@@ -249,23 +247,25 @@ export class ProductsService {
 
     if (!Object.keys(heroOutfit).length) return null;
 
+    const persistenceEntries = roleEntries.filter(
+      ([, productId], idx, arr) =>
+        arr.findIndex(([, pid]) => pid === productId) === idx,
+    );
+
     const savedOutfit = await this.outfitsService.saveRecommendation({
       userId: meta.userId,
       seedProductId: meta.seedProductId,
-      roleEntries: roleEntries.map(([role, productId], idx) => ({
+      roleEntries: persistenceEntries.map(([role, productId], idx) => ({
         role,
         productId,
         sortOrder: idx,
       })),
-      cohesionScore: meta.cohesionScore,
       source: meta.source,
     });
 
     return {
       heroOutfit,
       alternatives,
-      cohesionScore: meta.cohesionScore,
-      cohesionBreakdown: meta.cohesionBreakdown,
       source: meta.source,
       outfitId: savedOutfit.id,
     };
@@ -283,17 +283,21 @@ export class ProductsService {
       );
       if (!response.ok) return null;
 
-      const data = await response.json();
-      const pyRoles = data.outfit_roles as Record<string, number> | undefined;
+      const data = (await response.json()) as {
+        outfit_roles?: Record<string, number>;
+        engine?: string;
+      };
+      const pyRoles = data.outfit_roles;
       if (!pyRoles) return null;
 
       const roleEntries = Object.entries(pyRoles).filter(
         ([role]) => role !== 'seed',
       ) as [string, number][];
 
+      const engine = data.engine === 'rule_based' ? 'rule_based' : 'python-engine';
+
       return this.buildOutfitResponse(roleEntries, {}, {
-        cohesionScore: 85,
-        source: 'python-engine-clip',
+        source: engine,
         seedProductId: productId,
         userId,
       });
@@ -305,7 +309,9 @@ export class ProductsService {
   async getRecommendations(productId: number, limit: number = 3, userId?: number) {
     try {
       const built = await this.tryPythonEngine(productId, userId, limit);
-      if (built) return { ...built, embedding: 'visual' as const };
+      if (built) {
+        return built;
+      }
 
       const product = await this.prisma.products.findUnique({ where: { id: productId } });
       if (product) {
@@ -332,14 +338,13 @@ export class ProductsService {
         return {
           heroOutfit,
           alternatives,
-          cohesionScore: 50,
           source: 'category-fallback',
         };
       }
     } catch {
-      /* ignore */
+      return { heroOutfit: {}, alternatives: {}, source: 'none' };
     }
 
-    return { heroOutfit: {}, alternatives: {}, cohesionScore: 0, source: 'none' };
+    return { heroOutfit: {}, alternatives: {}, source: 'none' };
   }
 }

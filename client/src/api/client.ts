@@ -50,16 +50,7 @@ export const favoritesApi = {
 export const productsApi = {
   getAll: () => api.get("/products"),
   getById: (id: number) => api.get(`/products/${id}`),
-  getByCategory: (categoryName: string) =>
-    api.get(`/products/category/${categoryName}`),
-  getCategories: () => api.get("/products/categories"),
   getRecommendations: (id: number) => api.get(`/products/${id}/recommendations`),
-};
-
-export const outfitsApi = {
-  getMyOutfits: () => api.get("/outfits/my"),
-  submitFeedback: (outfitId: number, feedback: 1 | -1) =>
-    api.post(`/outfits/${outfitId}/feedback`, { feedback }),
 };
 
 export const ordersApi = {
@@ -129,4 +120,26 @@ export const paymentMethodsApi = {
 
 export const chatbotApi = {
   sendMessage: (message: string) => api.post("/chatbot/message", { message }),
+};
+
+const PYTHON_URL =
+  import.meta.env.VITE_PYTHON_URL || "http://127.0.0.1:8001";
+
+const pythonHttp = axios.create({ baseURL: PYTHON_URL });
+
+export const pythonApi = {
+  getComplement: (productIds: number[], k = 8, category = "") =>
+    pythonHttp.get<{
+      items: Array<{
+        id: number;
+        name: string;
+        category: string;
+        image_url: string;
+      }>;
+      seed_ids: number[];
+      engine: string;
+    }>("/complement", {
+      params: { product_ids: productIds.join(","), k, category },
+      timeout: 120_000,
+    }),
 };

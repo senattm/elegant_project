@@ -21,7 +21,7 @@ const defaultItems: WardrobeItem[] = [
 
 const highlights = [
   { label: "Parçanı seç", desc: "Dolabından bir ürünle başla" },
-  { label: "Tam kombin", desc: "Üst, alt ve ayakkabı bir arada" },
+  { label: "Stilini tamamla", desc: "Üst, alt ve ayakkabı bir arada" },
 ];
 
 const WardrobePiecesPanel = ({
@@ -239,7 +239,7 @@ const MyWardrobe = () => {
             />
 
             <Text mb={32} c="rgba(0,0,0,0.5)" style={{ fontSize: 16, lineHeight: 1.9, maxWidth: 460, letterSpacing: 0.2 }}>
-              Satın aldığınız parçalar dolabınızda toplanır. Birini seçtiğinizde size uygun üst, alt ve ayakkabıdan oluşan bir kombin önerelim.
+              Satın aldığınız parçalar dolabınızda toplanır. Birini seçtiğinizde size uygun parçaları bir araya getirelim.
             </Text>
 
             <Box

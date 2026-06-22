@@ -1,4 +1,4 @@
-"""Colab outfit recommender: tag-based grouping, color rules, co-occurrence memory."""
+"""Kural tabanli kombin onerisi: rol, renk, stil, sezon ve palet kurallari."""
 
 from __future__ import annotations
 
@@ -6,16 +6,14 @@ import ast
 import json
 from typing import Any
 
-import numpy as np
 import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
 
 from outfit_config import (
     COLOR_MATCH_MAP,
-    CURATED_SEED_OUTFITS,
-    GROUND_TRUTH_OUTFITS,
     NEUTRAL_COLORS,
+    REFERENCE_OUTFITS,
     SCORING,
+    USE_REFERENCE_IN_INFERENCE,
 )
 
 
@@ -454,33 +452,65 @@ def prepare_products_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-class UltimateColorAndStyleStrictRecommender:
+class RuleBasedOutfitRecommender:
+    """Kural tabanli kombin onerisi (rol, renk, stil, sezon, palet)."""
+
     def __init__(
         self,
         dataframe: pd.DataFrame,
-        embeddings: np.ndarray,
-        ground_truth: list[dict],
+        reference_outfits: list[dict] | None = None,
         *,
-        similarity_weight: float = 1.0,
+        use_reference_in_inference: bool | None = None,
     ):
         self.df = dataframe.copy()
-        self.embeddings = embeddings
-        self.similarity_weight = float(similarity_weight)
-        self.ground_truth = ground_truth
         self.df["id"] = self.df["id"].astype(int)
+        self.reference_outfits: list[dict] = reference_outfits or REFERENCE_OUTFITS
+        self.use_reference_in_inference = (
+            USE_REFERENCE_IN_INFERENCE
+            if use_reference_in_inference is None
+            else bool(use_reference_in_inference)
+        )
 
-        self.co_occurrence: set[tuple[int, int]] = set()
-        for outfit in ground_truth:
-            parcalar = outfit["parcalar"]
-            for p1 in parcalar:
-                for p2 in parcalar:
-                    if p1 != p2:
-                        self.co_occurrence.add((int(p1), int(p2)))
+    def _rank_role_candidates(
+        self,
+        *,
+        seed_colors: list[str],
+        role: str,
+        outfit: dict[str, Any],
+        candidates: pd.DataFrame,
+        pair_colors: list[str] | None,
+        detected_style: str | None,
+    ) -> pd.DataFrame:
+        if candidates.empty:
+            return candidates
 
-    def _get_similarity(self, seed_idx: int, candidate_indices: list[int]) -> np.ndarray:
-        seed_emb = self.embeddings[seed_idx].reshape(1, -1)
-        cand_embs = self.embeddings[candidate_indices]
-        return cosine_similarity(seed_emb, cand_embs)[0]
+        ranked = candidates.copy()
+        outfit_colors = collect_outfit_colors(outfit)
+
+        ranked["color_bonus"] = ranked["colors_clean"].apply(
+            lambda c: get_role_color_score(role, seed_colors, c, outfit_colors, pair_colors)
+            + monochromatic_penalty(role, c, outfit_colors)
+            + get_palette_rule_score(seed_colors, c, outfit)
+        )
+
+        if detected_style:
+            ranked["style_bonus"] = ranked["tags_clean"].apply(
+                lambda x: SCORING["style_tag_bonus"] if detected_style in x else 0.0
+            )
+        else:
+            ranked["style_bonus"] = 0.0
+
+        ranked["final_score"] = ranked["color_bonus"] + ranked["style_bonus"]
+        ranked = ranked.sort_values(by="final_score", ascending=False)
+
+        if pair_colors:
+            matching = ranked[
+                ranked["colors_clean"].apply(lambda c: colors_harmonize(c, pair_colors))
+            ]
+            if not matching.empty:
+                ranked = matching
+
+        return ranked
 
     def _detect_context_style(self, seed_tags: set[str]) -> str | None:
         styles = ["casual", "office", "school", "chic", "party", "formal", "sport"]
@@ -495,18 +525,6 @@ class UltimateColorAndStyleStrictRecommender:
             return "Ürün bulunamadı."
 
         seed_row = self.df[self.df["id"] == seed_id].iloc[0]
-        seed_idx = int(self.df[self.df["id"] == seed_id].index[0])
-        curated = CURATED_SEED_OUTFITS.get(str(seed_id))
-        if curated:
-            outfit: dict[str, Any] = {"seed": seed_row}
-            for role, product_id in curated.items():
-                row = self.df[self.df["id"] == int(product_id)]
-                if row.empty:
-                    continue
-                outfit[role] = row.iloc[0]
-            if len(outfit) > 1:
-                return outfit
-
         seed_group = seed_row["product_group"]
         seed_seasons = set(seed_row["season_clean"])
         seed_tags = set(seed_row["tags_clean"])
@@ -517,7 +535,13 @@ class UltimateColorAndStyleStrictRecommender:
         is_party = "party" in seed_tags
         is_sport_seed = "sport" in seed_tags or "sport" in seed_text
 
-        is_cold_season = any(s in seed_seasons for s in ["winter", "autumn"])
+        seed_is_knit = seed_group in {"sweater", "cardigan"} or bool(
+            seed_tags.intersection({"kazak", "sweater", "cardigan"})
+        )
+        is_winter_outfit = "winter" in seed_seasons
+        is_cold_season = seed_is_knit or any(
+            s in seed_seasons for s in ["winter", "autumn"]
+        )
         is_pure_summer = "summer" in seed_seasons and not is_cold_season
 
         outfit: dict[str, Any] = {"seed": seed_row}
@@ -527,6 +551,45 @@ class UltimateColorAndStyleStrictRecommender:
         shoes_groups = ["sandal", "boots", "sneakers", "heels"]
         accessory_groups = ["earrings", "bracelet", "necklace", "sunglasses", "ring"]
         outerwear_groups = ["jacket", "coats", "trench_coat", "blazer"]
+
+        # Referans kombin ezberi yalnizca degerlendirme/ablation icin (uretimde kapali).
+        for gt in self.reference_outfits if self.use_reference_in_inference else []:
+            pieces = gt.get("parcalar", []) if isinstance(gt, dict) else []
+            if seed_id not in pieces:
+                continue
+            prioritized: dict[str, Any] = {"seed": seed_row}
+            acc_count = 0
+            for pid in pieces:
+                pid = int(pid)
+                if pid == seed_id:
+                    continue
+                row = self.df[self.df["id"] == pid]
+                if row.empty:
+                    continue
+                item = row.iloc[0]
+                group = str(item["product_group"])
+                role: str | None = None
+                if group in upper_groups:
+                    role = "upper"
+                elif group in lower_groups:
+                    role = "lower"
+                elif group in shoes_groups:
+                    role = "shoes"
+                elif group == "bags":
+                    role = "bag"
+                elif group in outerwear_groups:
+                    if group == "coats" and not is_winter_outfit:
+                        continue
+                    role = "outerwear"
+                elif group in accessory_groups:
+                    acc_count += 1
+                    role = "accessory" if acc_count == 1 else f"accessory_{acc_count - 1}"
+
+                if role and role not in prioritized:
+                    prioritized[role] = item
+
+            if len(prioritized) > 1:
+                return prioritized
 
         roles_to_fill: list[str] = []
         if seed_group == "dress":
@@ -566,10 +629,6 @@ class UltimateColorAndStyleStrictRecommender:
         }
 
         for role in roles_to_fill:
-            if role == "outerwear" and seed_group in {"sweater", "cardigan"}:
-                # Knit seeds are already layered; outerwear often becomes noisy.
-                continue
-
             allowed_groups = role_categories[role]
             candidates = self.df[self.df["product_group"].isin(allowed_groups)]
             if candidates.empty:
@@ -583,39 +642,16 @@ class UltimateColorAndStyleStrictRecommender:
                 if not preferred_lower.empty:
                     candidates = preferred_lower
 
-            # For knit seeds, prioritize lighter outer layers before heavy coats.
-            if role == "outerwear" and seed_group in {"sweater", "cardigan"}:
-                preferred_outer = candidates[
-                    candidates["product_group"].isin(["jacket", "blazer", "trench_coat"])
-                ]
-                if not preferred_outer.empty:
-                    candidates = preferred_outer
-
-            train_match = candidates[
-                candidates["id"].apply(lambda cid: (int(seed_id), int(cid)) in self.co_occurrence)
-            ]
-
-            if is_sport_seed:
-                sport_train = train_match[train_match["tags_clean"].apply(lambda x: "sport" in x)]
-                if not sport_train.empty:
-                    train_match = sport_train
-            else:
-                non_sport_train = train_match[
-                    ~train_match["tags_clean"].apply(lambda x: "sport" in x)
-                ]
-                if not non_sport_train.empty:
-                    train_match = non_sport_train
-
-            if role == "accessory_2" and "accessory_1" in outfit:
-                acc1_group = outfit["accessory_1"]["product_group"]
-                train_match = train_match[train_match["product_group"] != acc1_group]
-
-            if not train_match.empty:
-                tm_indices = train_match.index.tolist()
-                tm_scores = self._get_similarity(seed_idx, tm_indices) * self.similarity_weight
-                best_idx = tm_indices[int(np.argmax(tm_scores))]
-                outfit[role] = train_match.loc[best_idx]
-                continue
+            # Coat yalnizca winter kombinlerinde; kazak seed + winter -> once coat.
+            if role == "outerwear":
+                if not is_winter_outfit:
+                    candidates = candidates[candidates["product_group"] != "coats"]
+                elif seed_group in {"sweater", "cardigan"}:
+                    preferred_outer = candidates[
+                        candidates["product_group"].isin(["coats"])
+                    ]
+                    if not preferred_outer.empty:
+                        candidates = preferred_outer
 
             pair_colors: list[str] | None = None
             if role == "bag" and "shoes" in outfit:
@@ -655,7 +691,10 @@ class UltimateColorAndStyleStrictRecommender:
                 if not non_sport.empty:
                     candidates = non_sport
 
-            if is_pure_summer:
+            if role == "outerwear" and seed_is_knit:
+                # Knit/kazak seedlerinde mevsim etiketleri eksik olsa bile dis katman korunsun.
+                pass
+            elif is_pure_summer:
                 candidates = candidates[candidates["season_clean"].apply(lambda x: "summer" in x)]
                 candidates = candidates[~candidates["product_group"].isin(["boots", "coats"])]
             else:
@@ -668,39 +707,27 @@ class UltimateColorAndStyleStrictRecommender:
 
             if candidates.empty:
                 candidates = self.df[self.df["product_group"].isin(allowed_groups)]
+                if role == "outerwear" and not is_winter_outfit:
+                    candidates = candidates[candidates["product_group"] != "coats"]
 
-            cand_indices = candidates.index.tolist()
-            scores = self._get_similarity(seed_idx, cand_indices) * self.similarity_weight
-            candidates = candidates.copy()
-            candidates["final_score"] = scores
-
-            outfit_colors = collect_outfit_colors(outfit)
-
-            if detected_style:
-                candidates["final_score"] += candidates["tags_clean"].apply(
-                    lambda x: SCORING["style_tag_bonus"] if detected_style in x else 0.0
-                )
-
-            candidates["color_bonus"] = candidates["colors_clean"].apply(
-                lambda c: get_role_color_score(
-                    role, seed_colors, c, outfit_colors, pair_colors
-                )
-                + monochromatic_penalty(role, c, outfit_colors)
-                + get_palette_rule_score(seed_colors, c, outfit)
+            ranked = self._rank_role_candidates(
+                seed_colors=seed_colors,
+                role=role,
+                outfit=outfit,
+                candidates=candidates,
+                pair_colors=pair_colors,
+                detected_style=detected_style,
             )
-            candidates["final_score"] += candidates["color_bonus"]
-            candidates = candidates.sort_values(by="final_score", ascending=False)
-
-            if pair_colors:
-                matching = candidates[
-                    candidates["colors_clean"].apply(
-                        lambda c: colors_harmonize(c, pair_colors)
-                    )
-                ]
-                if not matching.empty:
-                    candidates = matching
-
-            outfit[role] = candidates.iloc[0]
+            if ranked.empty:
+                continue
+            picked = ranked.iloc[0]
+            if (
+                role == "outerwear"
+                and str(picked["product_group"]) == "coats"
+                and not is_winter_outfit
+            ):
+                continue
+            outfit[role] = picked
 
         if not is_cold_season and "outerwear" in outfit:
             del outfit["outerwear"]

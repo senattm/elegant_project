@@ -26,8 +26,6 @@ import { getImageUrl } from "../utils/imageUrl";
 import { sortSizes } from "../utils/productUtils";
 import { productsApi } from "../api/client";
 
-
-
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -79,8 +77,12 @@ const ProductDetail = () => {
     : null;
 
   const availableSizes = variants
-    ? sortSizes(variants.map(v => v.size).filter((s): s is string => s !== null))
-    : ["STANDART"];
+    ? sortSizes(
+        variants
+          .map((v) => v.size)
+          .filter((s): s is string => s !== null && s.trim() !== ""),
+      )
+    : [];
 
   const selectedVariant = variants?.find(v => v.size === selectedSize);
   const displayPrice = selectedVariant?.price ||
@@ -104,120 +106,126 @@ const ProductDetail = () => {
     <PageLayout pt={{ base: 120, md: 140 }}>
       <BackButton />
 
-      <Box className="flex-center">
-        <Grid align="flex-start" maw={1200} w="100%">
-          <Grid.Col span={{ base: 12, md: 7 }}>
-            <Box style={{ display: "flex", gap: 16, maxWidth: "100%" }}>
-              {images.length > 1 && (
-                <Stack gap="sm" style={{ width: 80, flexShrink: 0 }}>
-                  {images.map((img, index) => (
-                    <UnstyledButton
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      onMouseEnter={() => { }}
-                      className="cursor-pointer transition-all flex-center"
-                      style={{
-                        border:
-                          selectedImage === index
-                            ? "2px solid black"
-                            : "2px solid transparent",
-                        opacity: selectedImage === index ? 1 : 0.6,
-                        width: "80px",
-                        height: "80px",
-                        backgroundColor: "#f5f5f5",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <Image
-                        src={getImageUrl(img)}
-                        alt={`${product.name} ${index + 1}`}
-                        w={80}
-                        h={80}
-                        fit="contain"
-                        style={{ pointerEvents: "none" }}
-                      />
-                    </UnstyledButton>
-                  ))}
-                </Stack>
-              )}
-
-              <Box flex={1} pos="relative" className="flex-start">
-                <Box pos="relative" w="100%">
-                  <ImageSlider
-                    images={images}
-                    size="large"
-                    showDots={images.length > 1}
-                    selectedImage={selectedImage}
-                    onImageChange={setSelectedImage}
-                  />
-                  <ActionIcon
-                    variant="filled"
-                    radius="xl"
-                    size="xl"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(product.id);
-                    }}
-                    pos="absolute"
-                    top={20}
-                    right={20}
-                    bg="white"
+      <Grid align="flex-start" w="100%">
+        <Grid.Col span={{ base: 12, md: 7 }}>
+          <Box style={{ display: "flex", gap: 16, maxWidth: "100%" }}>
+            {images.length > 1 && (
+              <Stack gap="sm" style={{ width: 80, flexShrink: 0 }}>
+                {images.map((img, index) => (
+                  <UnstyledButton
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    onMouseEnter={() => { }}
+                    className="cursor-pointer transition-all flex-center"
                     style={{
-                      boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                      zIndex: 40,
+                      border:
+                        selectedImage === index
+                          ? "2px solid black"
+                          : "2px solid transparent",
+                      opacity: selectedImage === index ? 1 : 0.6,
+                      width: "80px",
+                      height: "80px",
+                      backgroundColor: "#f5f5f5",
+                      overflow: "hidden",
                     }}
                   >
-                    {isProductFavorite ? (
-                      <IconHeartFilled size={24} color="red" />
-                    ) : (
-                      <IconHeart size={24} color="red" />
-                    )}
-                  </ActionIcon>
-                </Box>
+                    <Image
+                      src={getImageUrl(img)}
+                      alt={`${product.name} ${index + 1}`}
+                      w={80}
+                      h={80}
+                      fit="contain"
+                      style={{ pointerEvents: "none" }}
+                    />
+                  </UnstyledButton>
+                ))}
+              </Stack>
+            )}
+
+            <Box flex={1} pos="relative" className="flex-start">
+              <Box pos="relative" w="100%">
+                <ImageSlider
+                  images={images}
+                  size="large"
+                  showDots={images.length > 1}
+                  selectedImage={selectedImage}
+                  onImageChange={setSelectedImage}
+                />
+                <ActionIcon
+                  variant="filled"
+                  radius="xl"
+                  size="xl"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(product.id);
+                  }}
+                  pos="absolute"
+                  top={20}
+                  right={20}
+                  bg="white"
+                  style={{
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                    zIndex: 40,
+                  }}
+                >
+                  {isProductFavorite ? (
+                    <IconHeartFilled size={24} color="red" />
+                  ) : (
+                    <IconHeart size={24} color="red" />
+                  )}
+                </ActionIcon>
               </Box>
             </Box>
-          </Grid.Col>
+          </Box>
+        </Grid.Col>
 
-          <Grid.Col span={{ base: 12, md: 5 }}>
-            <Stack gap="xl" pos="sticky" top={160}>
-              <Box>
+        <Grid.Col span={{ base: 12, md: 5 }}>
+          <Stack
+            gap="lg"
+            pos="sticky"
+            top={160}
+            align="stretch"
+            style={{ overflow: "visible" }}
+          >
+            <Stack gap="md" align="flex-start" w="100%">
+              <Box w="100%">
                 <Text
                   size="sm"
                   c="dimmed"
                   tt="uppercase"
-                  mb={8}
+                  mb={6}
                   style={{ letterSpacing: "0.1em" }}
                 >
                   {product.category}
                 </Text>
-                <Title order={1} fz={{ base: 28, md: 36 }}>
+                <Title order={1} fz={{ base: 26, md: 32 }} lh={1.2}>
                   {product.name}
                 </Title>
               </Box>
 
-              <Text fz={28} fw={600}>
+              <Text fz={{ base: 22, md: 26 }} fw={600}>
                 {displayPrice.toFixed(2)} TL
               </Text>
 
               {product.description && (
-                <Text c="dimmed" lh={1.8}>
+                <Text size="md" c="dimmed" lh={1.65}>
                   {product.description}
                 </Text>
               )}
 
-              <Box>
+              <Box w="100%">
                 <Text
                   size="sm"
                   fw={600}
                   tt="uppercase"
-                  mb={12}
+                  mb={10}
                   style={{ letterSpacing: "0.05em" }}
                 >
                   Beden
                 </Text>
-                <Group gap="sm">
+                <Group gap={6}>
                   {availableSizes.map((size) => {
-                    const variant = variants?.find(v => v.size === size);
+                    const variant = variants?.find((v) => v.size === size);
                     const isSelected = selectedSize === size;
                     const isOutOfStock = variant ? variant.stock === 0 : false;
 
@@ -228,11 +236,23 @@ const ProductDetail = () => {
                         disabled={isOutOfStock}
                         className="flex-center transition-all"
                         style={{
-                          width: 48,
-                          height: 48,
-                          border: isSelected ? "2px solid black" : "1px solid #ddd",
-                          backgroundColor: isSelected ? "black" : isOutOfStock ? "#f5f5f5" : "white",
-                          color: isSelected ? "white" : isOutOfStock ? "#ccc" : "black",
+                          minWidth: 40,
+                          height: 40,
+                          padding: "0 10px",
+                          border: isSelected
+                            ? "2px solid black"
+                            : "1px solid #ddd",
+                          backgroundColor: isSelected
+                            ? "black"
+                            : isOutOfStock
+                              ? "#f5f5f5"
+                              : "white",
+                          color: isSelected
+                            ? "white"
+                            : isOutOfStock
+                              ? "#ccc"
+                              : "black",
+                          fontSize: 14,
                           fontWeight: isSelected ? 600 : 400,
                           opacity: isOutOfStock ? 0.5 : 1,
                           cursor: isOutOfStock ? "not-allowed" : "pointer",
@@ -246,12 +266,12 @@ const ProductDetail = () => {
                 </Group>
               </Box>
 
-              <Box>
+              <Box w="100%">
                 <Text
                   size="sm"
                   fw={600}
                   tt="uppercase"
-                  mb={12}
+                  mb={10}
                   style={{ letterSpacing: "0.05em" }}
                 >
                   Adet
@@ -267,27 +287,33 @@ const ProductDetail = () => {
                 fullWidth
                 disabled={!selectedSize || displayStock === 0}
                 onClick={handleAddToCart}
-                style={{
-                  height: 56,
-                }}
+                size="md"
+                radius={0}
+                styles={{ root: { height: 52, fontSize: 14 } }}
               >
-                {!selectedSize ? "BEDEN SEÇİN" : displayStock === 0 ? "STOKTA YOK" : "SEPETE EKLE"}
+                {!selectedSize
+                  ? "BEDEN SEÇİN"
+                  : displayStock === 0
+                    ? "STOKTA YOK"
+                    : "SEPETE EKLE"}
               </Button>
 
-              {displayStock !== undefined && displayStock > 0 && displayStock < 10 && (
-                <Text size="sm" c="orange" ta="center">
-                  Son {displayStock} ürün!
-                </Text>
-              )}
+              {displayStock !== undefined &&
+                displayStock > 0 &&
+                displayStock < 10 && (
+                  <Text size="xs" c="orange">
+                    Son {displayStock} ürün!
+                  </Text>
+                )}
               {displayStock === 0 && (
-                <Text size="sm" c="red" ta="center">
+                <Text size="xs" c="red">
                   Stokta yok
                 </Text>
               )}
             </Stack>
-          </Grid.Col>
-        </Grid>
-      </Box>
+          </Stack>
+        </Grid.Col>
+      </Grid>
     </PageLayout>
   );
 };

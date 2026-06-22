@@ -8,5 +8,7 @@ sentence-transformers
 torch
 Pillow
 requests
-datasets
-accelerate>=1.1.0
+tqdm
+transformers
+torchvision
+opencv-python-headless

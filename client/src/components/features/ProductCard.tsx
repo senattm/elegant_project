@@ -20,8 +20,6 @@ interface ProductCardProps {
   product: Product;
 }
 
-
-
 const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
@@ -42,13 +40,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
   const availableSizes = useMemo(() => {
     const variants = product.variants;
-    if (variants && variants.length > 0) {
-      const sizes = variants
-        .map((v) => v.size)
-        .filter((s): s is string => !!s && s.trim() !== "");
-      return sizes.length > 0 ? sortSizes(sizes) : ["STD"];
-    }
-    return ["STD"];
+    if (!variants?.length) return [];
+    const sizes = variants
+      .map((v) => v.size)
+      .filter((s): s is string => !!s && s.trim() !== "");
+    return sizes.length > 0 ? sortSizes(sizes) : [];
   }, [product.variants]);
 
   const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {

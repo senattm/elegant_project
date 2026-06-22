@@ -12,6 +12,7 @@ import { getServerUrl } from "../utils/serverUrl";
 import { sectionTitleStyle, smallLabelStyle } from "../theme";
 import { aggregateCategoryCounts } from "../utils/categoryUtils";
 import { navigateToStore } from "../utils/navigation";
+import { shuffleArray } from "../utils/productUtils";
 
 const HOME_STRIP_SIZE = 4;
 const baseImgUrl = `${getServerUrl()}/images`;
@@ -354,7 +355,7 @@ const Home = () => {
     (async () => {
       try {
         const { data } = await productsApi.getAll();
-        setProducts(data);
+        setProducts(shuffleArray(data));
 
         const counts = aggregateCategoryCounts(data);
         setCategories(

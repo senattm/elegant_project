@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { VertexAI } from '@google-cloud/vertexai';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
 export interface ChatbotResponse {
   message: string;
@@ -30,18 +32,56 @@ const NAV_RULES: { keywords: string[]; path: string; reply: string }[] = [
   { keywords: ['odeme', 'ödeme', 'kart'], path: '/profile', reply: 'Ödeme yöntemleriniz profil sayfasında.' },
 ];
 
+const ALLOWED_PATH_PREFIXES = [
+  '/',
+  '/profile',
+  '/orders',
+  '/cart',
+  '/favorites',
+  '/wardrobe',
+  '/store',
+];
+
 @Injectable()
 export class ChatbotService {
   private readonly logger = new Logger(ChatbotService.name);
   private vertexAI: VertexAI | null = null;
+  private vertexEnabled = false;
 
   constructor() {
+    this.initVertex();
+  }
+
+  private initVertex(): void {
     try {
-      const project = process.env.GOOGLE_CLOUD_PROJECT || 'your-project-id';
+      const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      if (credentialsPath && !credentialsPath.startsWith('/') && !/^[A-Za-z]:/.test(credentialsPath)) {
+        const resolved = join(process.cwd(), credentialsPath.replace(/^\.\//, ''));
+        if (existsSync(resolved)) {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = resolved;
+        }
+      }
+
+      const project = process.env.GOOGLE_CLOUD_PROJECT;
       const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
+
+      if (!project || project === 'your-project-id') {
+        this.logger.warn('GOOGLE_CLOUD_PROJECT ayarli degil; Vertex AI kapali.');
+        return;
+      }
+
+      if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        this.logger.warn('GOOGLE_APPLICATION_CREDENTIALS ayarli degil; Vertex AI kapali.');
+        return;
+      }
+
       this.vertexAI = new VertexAI({ project, location });
+      this.vertexEnabled = true;
+      this.logger.log(`Vertex AI hazir (project=${project}, location=${location})`);
     } catch (error) {
-      this.logger.error('Failed to initialize Vertex AI.', error);
+      this.logger.error('Vertex AI baslatilamadi.', error);
+      this.vertexAI = null;
+      this.vertexEnabled = false;
     }
   }
 
@@ -122,7 +162,7 @@ export class ChatbotService {
     return null;
   }
 
-  async processMessage(message: string): Promise<ChatbotResponse> {
+  private answerWithRules(message: string): ChatbotResponse {
     const faq = this.answerFaq(message);
     if (faq) {
       return { message: faq, action: 'none' };
@@ -137,10 +177,6 @@ export class ChatbotService {
       };
     }
 
-    if (this.vertexAI) {
-      return this.processWithLlm(message);
-    }
-
     return {
       message:
         'Size site içinde yönlendirme ve kargo, iade, iletişim gibi konularda yardımcı olabilirim. Örneğin: "sepetim", "kargo kaç gün", "elbise kategorisi".',
@@ -148,15 +184,31 @@ export class ChatbotService {
     };
   }
 
+  private sanitizePath(path?: string): string | undefined {
+    if (!path || typeof path !== 'string') return undefined;
+    const trimmed = path.trim();
+    const allowed = ALLOWED_PATH_PREFIXES.some(
+      (prefix) => trimmed === prefix || trimmed.startsWith(`${prefix}?`) || trimmed.startsWith(`${prefix}/`),
+    );
+    return allowed ? trimmed : undefined;
+  }
+
+  async processMessage(message: string): Promise<ChatbotResponse> {
+    if (this.vertexEnabled && this.vertexAI) {
+      return this.processWithLlm(message);
+    }
+
+    return this.answerWithRules(message);
+  }
+
   private async processWithLlm(message: string): Promise<ChatbotResponse> {
     if (!this.vertexAI) {
-      return {
-        message: 'Asistan şu anda kullanılamıyor.',
-        action: 'none',
-      };
+      return this.answerWithRules(message);
     }
 
     try {
+      this.logger.debug(`Vertex AI istegi: "${message.slice(0, 80)}"`);
+
       const generativeModel = this.vertexAI.preview.getGenerativeModel({
         model: 'gemini-2.5-flash',
         generationConfig: { responseMimeType: 'application/json' },
@@ -182,9 +234,10 @@ export class ChatbotService {
         - Kategori: /store?category=KATEGORI_ADI (${categoryList})
 
         Kurallar:
-        - Ürün arama/öneri yapma, action asla "recommend" olmasın.
+        - Ürün arama/öneri yapma.
         - Sayfa yönlendirmesi gerekiyorsa action "redirect" ve path ver.
         - SSS sorusuysa action "none", message ile cevap ver.
+        - Türkçe, kısa ve nazik yanıt ver.
 
         JSON:
         { "message": "...", "action": "redirect" | "none", "path": "/yol" }
@@ -206,29 +259,25 @@ export class ChatbotService {
       }
 
       const parsed = JSON.parse(content) as ChatbotResponse;
+      const safePath = this.sanitizePath(parsed.path);
 
-      if (parsed.action === 'redirect' && parsed.path) {
-        return parsed;
+      if (parsed.action === 'redirect' && safePath) {
+        this.logger.debug(`Vertex AI yonlendirme: ${safePath}`);
+        return {
+          message: parsed.message || 'Sizi ilgili sayfaya yönlendiriyorum.',
+          action: 'redirect',
+          path: safePath,
+        };
       }
 
+      this.logger.debug('Vertex AI metin yaniti');
       return {
         message: parsed.message || 'Size nasıl yardımcı olabilirim?',
         action: 'none',
       };
     } catch (error) {
-      this.logger.error('Vertex AI generation error:', error);
-      const faq = this.answerFaq(message);
-      if (faq) return { message: faq, action: 'none' };
-
-      const redirect = this.detectRedirect(message);
-      if (redirect) {
-        return { message: redirect.reply, action: 'redirect', path: redirect.path };
-      }
-
-      return {
-        message: 'Üzgünüm, şu an isteğinizi işleyemiyorum. Kargo, iade veya site sayfaları hakkında sorabilirsiniz.',
-        action: 'none',
-      };
+      this.logger.error('Vertex AI hatasi, kural tabanli yedek kullaniliyor:', error);
+      return this.answerWithRules(message);
     }
   }
 }

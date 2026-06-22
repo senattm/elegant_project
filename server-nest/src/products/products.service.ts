@@ -1,17 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OutfitsService } from '../outfits/outfits.service';
 import { CreateVariantDto, UpdateVariantDto } from './dto';
 
 @Injectable()
 export class ProductsService {
-  private readonly pythonEngineUrl =
-    process.env.PYTHON_ENGINE_URL ?? 'http://127.0.0.1:8001';
-
-  constructor(
-    private prisma: PrismaService,
-    private outfitsService: OutfitsService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   private productInclude = {
     categories: {
@@ -48,6 +41,7 @@ export class ProductsService {
       category_id: product.category_id,
       parent_category_id: product.categories?.parent_id || null,
       category: product.categories?.name || null,
+      source: product.source ?? null,
       images: product.product_images.map((img) => img.image_url),
       variants: product.product_variants?.map((variant: any) => ({
         id: variant.id,
@@ -205,146 +199,5 @@ export class ProductsService {
       stock: variant.stock,
       sku: variant.sku,
     }));
-  }
-
-
-
-  private async buildOutfitResponse(
-    roleEntries: [string, number][],
-    alternativesMap: Record<string, number[]> = {},
-    meta: {
-      source: string;
-      seedProductId: number;
-      userId?: number;
-    },
-  ) {
-    const allIds = [
-      ...new Set([
-        ...roleEntries.map(([, id]) => id),
-        ...Object.values(alternativesMap).flat(),
-      ]),
-    ];
-    if (!allIds.length) return null;
-
-    const products = await this.prisma.products.findMany({
-      where: { id: { in: allIds } },
-      include: this.productInclude,
-    });
-
-    const byId = new Map(products.map((p) => [p.id, p]));
-    const heroOutfit: Record<string, any> = {};
-    const alternatives: Record<string, any[]> = {};
-
-    for (const [role, id] of roleEntries) {
-      const product = byId.get(id);
-      if (!product) continue;
-      heroOutfit[role] = this.mapProductResponse(product);
-      alternatives[role] = (alternativesMap[role] ?? [])
-        .map((altId) => byId.get(altId))
-        .filter(Boolean)
-        .map((p) => this.mapProductResponse(p!));
-    }
-
-    if (!Object.keys(heroOutfit).length) return null;
-
-    const persistenceEntries = roleEntries.filter(
-      ([, productId], idx, arr) =>
-        arr.findIndex(([, pid]) => pid === productId) === idx,
-    );
-
-    const savedOutfit = await this.outfitsService.saveRecommendation({
-      userId: meta.userId,
-      seedProductId: meta.seedProductId,
-      roleEntries: persistenceEntries.map(([role, productId], idx) => ({
-        role,
-        productId,
-        sortOrder: idx,
-      })),
-      source: meta.source,
-    });
-
-    return {
-      heroOutfit,
-      alternatives,
-      source: meta.source,
-      outfitId: savedOutfit.id,
-    };
-  }
-
-  private async tryPythonEngine(
-    productId: number,
-    userId?: number,
-    limit = 3,
-  ) {
-    try {
-      const response = await fetch(
-        `${this.pythonEngineUrl}/recommend?product_id=${productId}&limit=${limit}`,
-        { signal: AbortSignal.timeout(120000) },
-      );
-      if (!response.ok) return null;
-
-      const data = (await response.json()) as {
-        outfit_roles?: Record<string, number>;
-        engine?: string;
-      };
-      const pyRoles = data.outfit_roles;
-      if (!pyRoles) return null;
-
-      const roleEntries = Object.entries(pyRoles).filter(
-        ([role]) => role !== 'seed',
-      ) as [string, number][];
-
-      const engine = data.engine === 'rule_based' ? 'rule_based' : 'python-engine';
-
-      return this.buildOutfitResponse(roleEntries, {}, {
-        source: engine,
-        seedProductId: productId,
-        userId,
-      });
-    } catch {
-      return null;
-    }
-  }
-
-  async getRecommendations(productId: number, limit: number = 3, userId?: number) {
-    try {
-      const built = await this.tryPythonEngine(productId, userId, limit);
-      if (built) {
-        return built;
-      }
-
-      const product = await this.prisma.products.findUnique({ where: { id: productId } });
-      if (product) {
-        const fallback = await this.prisma.products.findMany({
-          where: { category_id: product.category_id, id: { not: productId } },
-          take: 4,
-          include: this.productInclude,
-        });
-        const mapped = fallback.map((p) => this.mapProductResponse(p));
-
-        const heroOutfit: Record<string, any> = {};
-        const alternatives: Record<string, any[]> = {};
-
-        for (const p of mapped) {
-          const role = p.category || 'Öneri';
-          if (!heroOutfit[role]) {
-            heroOutfit[role] = p;
-            alternatives[role] = [];
-          } else {
-            alternatives[role].push(p);
-          }
-        }
-
-        return {
-          heroOutfit,
-          alternatives,
-          source: 'category-fallback',
-        };
-      }
-    } catch {
-      return { heroOutfit: {}, alternatives: {}, source: 'none' };
-    }
-
-    return { heroOutfit: {}, alternatives: {}, source: 'none' };
   }
 }

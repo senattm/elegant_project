@@ -11,9 +11,8 @@ import psycopg2
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from outfit_config import RECOMMENDATION_ENGINE_MODE, USE_REFERENCE_IN_INFERENCE
-from outfit_engine import RuleBasedOutfitRecommender
-from product_loader import database_url, load_products
+from outfit_config import OUTFIT_COMPLEMENT_CFG
+from product_loader import database_url, load_products, load_seed_products
 
 app = FastAPI()
 
@@ -26,16 +25,11 @@ app.add_middleware(
 )
 
 df: pd.DataFrame | None = None
-recommender: RuleBasedOutfitRecommender | None = None
+engine_ready = False
 last_loaded_at: datetime | None = None
 last_db_updated_at: datetime | None = None
 
 REPO_DIR = Path(r"C:\Users\SENA\Desktop\outfit-transformer-main")
-NON_OUTFIT_KEYWORDS = [
-    "pajama", "pyjama", "pijama", "nightgown", "gecelik", "kimono robe",
-    "lingerie", "iç çamaşır", "underwear", "bra ", " bra", "panty",
-    "swimsuit", "swimwear", "bikini", "mayo", "sleep",
-]
 
 
 def _ensure_repo_on_path() -> None:
@@ -43,32 +37,13 @@ def _ensure_repo_on_path() -> None:
         sys.path.insert(0, str(REPO_DIR))
 
 
-def _outfit_to_response(product_id: int, outfit: dict) -> dict:
-    outfit_roles: dict[str, int] = {}
-    recommendations: list[int] = []
-
-    for role, item in outfit.items():
-        pid = int(item["id"])
-        outfit_roles[role] = pid
-        if role != "seed":
-            recommendations.append(pid)
-
-    return {
-        "product_id": product_id,
-        "engine": "rule_based",
-        "outfit_roles": outfit_roles,
-        "recommendations": recommendations,
-    }
-
-
 @app.on_event("startup")
 def load_data() -> None:
-    global df, recommender, last_loaded_at, last_db_updated_at
+    global df, engine_ready, last_loaded_at, last_db_updated_at
 
     try:
         print("Loading products from database...")
-        raw_df = load_products(include_updated_at=True, include_image=True)
-        df = raw_df
+        df = load_products(include_updated_at=True, include_image=True)
 
         db_max_updated = None
         if "updated_at" in df.columns and not df["updated_at"].isna().all():
@@ -77,9 +52,7 @@ def load_data() -> None:
             except Exception:
                 db_max_updated = None
 
-        recommender = RuleBasedOutfitRecommender(df)
-        print("Kural tabanli kombin motoru hazir.")
-
+        engine_ready = True
         last_loaded_at = datetime.utcnow()
         last_db_updated_at = db_max_updated
         print(f"Python engine ready — {len(df)} products.")
@@ -133,10 +106,10 @@ def _maybe_refresh_from_db() -> None:
 @app.get("/health")
 def health() -> dict:
     return {
-        "status": "ok" if recommender is not None else "loading",
+        "status": "ok" if engine_ready else "loading",
         "products": len(df) if df is not None else 0,
-        "recommendation_engine_mode": RECOMMENDATION_ENGINE_MODE,
-        "use_reference_in_inference": USE_REFERENCE_IN_INFERENCE,
+        "engine": "outfit_transformer_cir",
+        "outfit_complement": OUTFIT_COMPLEMENT_CFG,
         "last_loaded_at": last_loaded_at.isoformat() if last_loaded_at else None,
     }
 
@@ -150,25 +123,10 @@ def sync_data() -> dict:
     }
 
 
-@app.get("/recommend")
-def recommend(product_id: int, limit: int | None = None) -> dict:
-    if df is None or recommender is None:
-        raise HTTPException(status_code=500, detail="Outfit engine not loaded")
-
-    _maybe_refresh_from_db()
-
-    outfit = recommender.generate_outfit(product_id)
-    if isinstance(outfit, str):
-        raise HTTPException(status_code=404, detail=outfit)
-
-    payload = _outfit_to_response(product_id, outfit)
-    if limit is not None and limit > 0:
-        payload["recommendations"] = payload["recommendations"][:limit]
-    return payload
-
-
 @app.get("/complement")
 def complement_items(product_ids: str, category: str = "", k: int = 8):
+    _maybe_refresh_from_db()
+
     try:
         seed_ids = [int(x.strip()) for x in product_ids.split(",") if x.strip()]
     except ValueError:
@@ -176,25 +134,6 @@ def complement_items(product_ids: str, category: str = "", k: int = 8):
 
     if not seed_ids:
         raise HTTPException(status_code=400, detail="En az bir product_id gerekli")
-
-    try:
-        conn_check = psycopg2.connect(database_url())
-        ph_check = ",".join(str(i) for i in seed_ids)
-        names_df = pd.read_sql(
-            f"SELECT name FROM products WHERE id IN ({ph_check})",
-            conn_check,
-        )
-        conn_check.close()
-        seed_names = " ".join(str(n).lower() for n in names_df["name"].tolist())
-        if any(kw in seed_names for kw in NON_OUTFIT_KEYWORDS):
-            raise HTTPException(
-                status_code=422,
-                detail="__non_outfit__:Bu urun turu icin oneri yapilamiyor.",
-            )
-    except HTTPException:
-        raise
-    except Exception:
-        pass
 
     _ensure_repo_on_path()
 
@@ -232,6 +171,7 @@ def complement_items(product_ids: str, category: str = "", k: int = 8):
             category=category,
             k=k,
             outfit_mode=(category == ""),
+            seed_df=load_seed_products(seed_ids),
         )
     except HTTPException:
         raise

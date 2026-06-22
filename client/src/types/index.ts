@@ -21,6 +21,7 @@ export interface Product {
   category: string;
   category_id: number;
   parent_category_id?: number | null;
+  source?: string | null;
   images: string[];
   variants?: ProductVariant[];
 }

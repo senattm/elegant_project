@@ -247,6 +247,7 @@ export class OrdersService {
           price: parseFloat(item.price.toString()),
           productName: item.products?.name,
           category: item.products?.categories?.name,
+          source: item.products?.source,
           productImages:
             item.products?.product_images.map((img) => img.image_url) || [],
         })),
@@ -302,6 +303,7 @@ export class OrdersService {
           price: parseFloat(item.price.toString()),
           productName: item.products?.name,
           category: item.products?.categories?.name,
+          source: item.products?.source,
           productImages:
             item.products?.product_images.map((img) => img.image_url) || [],
         })),

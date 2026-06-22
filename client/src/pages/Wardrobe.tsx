@@ -1,17 +1,16 @@
 import { useEffect, useState, useMemo } from "react";
-import { Container, Title, Text, Grid, Image, Paper, Box, Button, Group, Stack, Center, Loader, Modal, Badge, SimpleGrid, UnstyledButton, Tabs, rem } from "@mantine/core";
-import { IconArrowLeft, IconShoppingBag, IconClothesRack, IconSparkles, IconLayoutGrid } from "@tabler/icons-react";
+import { Container, Title, Text, Grid, Image, Paper, Box, Button, Group, Stack, Center, Loader, Modal, SimpleGrid, UnstyledButton } from "@mantine/core";
+import { IconArrowLeft, IconShoppingBag, IconClothesRack } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { useOrders } from "../store/hooks/useOrders";
-import { getImageUrl } from "../utils/imageUrl";
 import { motion } from "framer-motion";
+import { getImageUrl, getProductImageBackground, getProductImageFit } from "../utils/imageUrl";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../store/atoms";
-import { productsApi, pythonApi } from "../api/client";
+import { pythonApi } from "../api/client";
 import { useDisclosure } from "@mantine/hooks";
 import { productActionButtonStyles, roleLabelStyle } from "../theme";
 import { navigateToStore } from "../utils/navigation";
-import { outfitRoleLabel } from "../utils/outfitRoleLabels";
 import { uniqueWardrobeItemsFromOrders } from "../utils/wardrobeItems";
 
 type CirItem = {
@@ -21,7 +20,7 @@ type CirItem = {
   image_url: string;
 };
 
-const WardrobeCard = ({ product, handleGetRecommendations }: any) => {
+const WardrobeCard = ({ product, handleOpenKombin }: any) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -33,10 +32,24 @@ const WardrobeCard = ({ product, handleGetRecommendations }: any) => {
     >
       <Box pos="relative" style={{ overflow: "hidden" }}>
         <Box
-          style={{ aspectRatio: "2/3", backgroundColor: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
-          onClick={() => handleGetRecommendations(product)}
+          style={{
+            aspectRatio: "2/3",
+            backgroundColor: getProductImageBackground(product.imagePath ?? product.image, product.source) ?? "white",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+          onClick={() => handleOpenKombin(product)}
         >
-          <Image src={product.image} fit="cover" h="100%" w="100%" />
+          <Image
+            src={product.image}
+            fit={getProductImageFit(product.imagePath ?? product.image, "cover", product.source)}
+            bg={getProductImageBackground(product.imagePath ?? product.image, product.source)}
+            h="100%"
+            w="100%"
+          />
         </Box>
 
         <motion.div
@@ -57,7 +70,7 @@ const WardrobeCard = ({ product, handleGetRecommendations }: any) => {
             size="sm"
             bg="black"
             radius={0}
-            onClick={(e) => { e.stopPropagation(); handleGetRecommendations(product); }}
+            onClick={(e) => { e.stopPropagation(); handleOpenKombin(product); }}
             styles={productActionButtonStyles}
           >
             KOMBİNLE
@@ -68,7 +81,7 @@ const WardrobeCard = ({ product, handleGetRecommendations }: any) => {
       <Box
         pt="xs"
         style={{ cursor: "pointer" }}
-        onClick={() => handleGetRecommendations(product)}
+        onClick={() => handleOpenKombin(product)}
       >
         <Text size="sm" c="gray.7" mb={4} truncate="end">
           {product.name}
@@ -84,8 +97,6 @@ const Wardrobe = () => {
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [recLoading, setRecLoading] = useState(false);
-  const [heroOutfit, setHeroOutfit] = useState<Record<string, any>>({});
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [opened, { open, close }] = useDisclosure(false);
   const [cirItems, setCirItems] = useState<CirItem[]>([]);
@@ -123,21 +134,12 @@ const Wardrobe = () => {
     return products.filter((p) => p.category === selectedCategory);
   }, [products, selectedCategory]);
 
-  const handleGetRecommendations = async (product: any) => {
+  const handleOpenKombin = async (product: any) => {
     setSelectedProduct(product);
-    setRecLoading(true);
     setCirLoading(true);
-    setHeroOutfit({});
     setCirItems([]);
     setCirError(null);
     open();
-
-    productsApi.getRecommendations(product.id)
-      .then((response) => {
-        setHeroOutfit(response.data.heroOutfit || {});
-      })
-      .catch((err) => console.error("Kural tabanlı öneri hatası:", err))
-      .finally(() => setRecLoading(false));
 
     pythonApi.getComplement([product.id], 8)
       .then((res) => {
@@ -156,99 +158,16 @@ const Wardrobe = () => {
         }
       })
       .catch((err) => {
-        console.error("Tamamlayıcı öneri hatası:", err);
+        console.error("Kombin önerisi hatası:", err);
         const msg: string = err?.response?.data?.detail ?? "";
         if (msg.startsWith("__loading__") || msg.includes("indeksleniyor") || msg.includes("yükleniyor")) {
           setCirError("__indexing__");
-        } else if (msg.startsWith("__non_outfit__")) {
-          setCirError("__non_outfit__");
         } else {
           setCirError("Öneriler yüklenemedi. Lütfen daha sonra tekrar deneyin.");
         }
       })
       .finally(() => setCirLoading(false));
   };
-
-  const renderOutfitGrid = (outfit: Record<string, any>, keyPrefix: string) => (
-    <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="xl">
-      {Object.entries(outfit).map(([role, item]) => {
-        const isOwned = products.some((p: any) => p.id === item.id);
-        return (
-          <Stack key={`${keyPrefix}-${role}`} align="flex-start" gap="sm">
-            <Paper
-              radius={0}
-              p={0}
-              bg="white"
-              style={{
-                width: "100%",
-                aspectRatio: "3/4",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                overflow: "hidden",
-                position: "relative",
-              }}
-              onClick={() => {
-                close();
-                navigate(`/product/${item.id}`);
-              }}
-            >
-              {isOwned && (
-                <Badge
-                  bg="rgba(0,0,0,0.8)"
-                  c="white"
-                  radius={0}
-                  size="xs"
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    left: 10,
-                    zIndex: 10,
-                    letterSpacing: "1px",
-                    fontSize: "9px",
-                  }}
-                >
-                  DOLABINIZDA
-                </Badge>
-              )}
-              <Image src={getImageUrl(item.images?.[0])} fit="cover" h="100%" w="100%" />
-            </Paper>
-            <Box w="100%">
-              <Text size="10px" c="dimmed" mb={2} style={roleLabelStyle}>
-                {outfitRoleLabel(role)}
-              </Text>
-              <Text size="sm" c="gray.7" mb={4} truncate="end">
-                {item.name}
-              </Text>
-              <Group justify="space-between" align="center" mt={4}>
-                <Text size="md" fw={600} c="black">
-                  {typeof item.price === "number"
-                    ? item.price.toFixed(2)
-                    : parseFloat(item.price || "0").toFixed(2)}{" "}
-                  TL
-                </Text>
-                {!isOwned && (
-                  <Text
-                    size="11px"
-                    fw={600}
-                    c="black"
-                    style={{ textDecoration: "underline", cursor: "pointer", letterSpacing: "1px" }}
-                    onClick={() => {
-                      close();
-                      navigate(`/product/${item.id}`);
-                    }}
-                  >
-                    SATIN AL
-                  </Text>
-                )}
-              </Group>
-            </Box>
-          </Stack>
-        );
-      })}
-    </SimpleGrid>
-  );
 
   if (loading) {
     return (
@@ -347,7 +266,7 @@ const Wardrobe = () => {
                     transition={{ duration: 0.4, delay: idx * 0.05 }}
                     style={{ height: "100%" }}
                   >
-                    <WardrobeCard product={product} handleGetRecommendations={handleGetRecommendations} />
+                    <WardrobeCard product={product} handleOpenKombin={handleOpenKombin} />
                   </motion.div>
                 </Grid.Col>
               ))}
@@ -392,7 +311,20 @@ const Wardrobe = () => {
                     overflow: "hidden",
                   }}
                 >
-                  <Image src={selectedProduct?.image} fit="cover" h="100%" w="100%" />
+                  <Image
+                    src={selectedProduct?.image}
+                    fit={getProductImageFit(
+                      selectedProduct?.imagePath ?? selectedProduct?.image,
+                      "cover",
+                      selectedProduct?.source,
+                    )}
+                    bg={getProductImageBackground(
+                      selectedProduct?.imagePath ?? selectedProduct?.image,
+                      selectedProduct?.source,
+                    )}
+                    h="100%"
+                    w="100%"
+                  />
                 </Paper>
                 <Box w="100%">
                   <Text size="sm" c="gray.7" mb={4} truncate="end">{selectedProduct?.name}</Text>
@@ -407,145 +339,80 @@ const Wardrobe = () => {
             </Grid.Col>
 
             <Grid.Col span={{ base: 12, md: 8, lg: 9 }}>
-              <Tabs
-                defaultValue="cir"
-                variant="unstyled"
-                styles={{
-                  tab: {
-                    padding: `${rem(8)} ${rem(16)}`,
-                    fontSize: rem(11),
-                    fontWeight: 600,
-                    letterSpacing: rem(1.5),
-                    color: "#999",
-                    borderBottom: "2px solid transparent",
-                    "&[dataSelected]": {
-                      color: "#111",
-                      borderBottomColor: "#111",
-                    },
-                  },
-                  list: { borderBottom: "1px solid #eee", marginBottom: rem(28) },
-                }}
-              >
-                <Tabs.List>
-                  <Tabs.Tab
-                    value="cir"
-                    leftSection={<IconSparkles size={13} />}
-                    style={{ fontSize: rem(11), letterSpacing: rem(1.5), fontWeight: 600 }}
-                  >
-                    TAMAMLAYICILAR
-                  </Tabs.Tab>
-                  <Tabs.Tab
-                    value="rule"
-                    leftSection={<IconLayoutGrid size={13} />}
-                    style={{ fontSize: rem(11), letterSpacing: rem(1.5), fontWeight: 600 }}
-                  >
-                    KOMBİN
-                  </Tabs.Tab>
-                </Tabs.List>
-
-                <Tabs.Panel value="cir">
-                  {cirLoading ? (
-                    <Center h={320}>
-                      <Stack align="center" gap="md">
-                        <Loader color="black" type="bars" />
-                        <Text size="sm" c="dimmed" ta="center">
-                          Tamamlayıcı parçalar hazırlanıyor…
+              {cirLoading ? (
+                <Center h={320}>
+                  <Stack align="center" gap="md">
+                    <Loader color="black" type="bars" />
+                    <Text size="sm" c="dimmed" ta="center">
+                      Kombin parçaları hazırlanıyor…
+                    </Text>
+                    <Text size="xs" c="dimmed">İlk açılışta biraz sürebilir.</Text>
+                  </Stack>
+                </Center>
+              ) : cirError === "__indexing__" ? (
+                <Box py={60} ta="center">
+                  <Loader color="gray" size="sm" mb="md" />
+                  <Text size="sm" fw={500} c="dimmed">Öneriler hazırlanıyor…</Text>
+                  <Text size="xs" c="dimmed" mt={4}>
+                    Birkaç saniye içinde hazır olacak. Tekrar tıklayın.
+                  </Text>
+                </Box>
+              ) : cirError ? (
+                <Box py={40}>
+                  <Text c="red" size="sm">{cirError}</Text>
+                </Box>
+              ) : cirItems.length === 0 ? (
+                <Box py={40}>
+                  <Text c="dimmed">Bu parça için kombin önerisi bulunamadı.</Text>
+                </Box>
+              ) : (
+                <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="xl">
+                  {cirItems.map((item) => (
+                    <Stack key={item.id} align="flex-start" gap="sm">
+                      <Paper
+                        radius={0}
+                        p={0}
+                        bg="white"
+                        style={{
+                          width: "100%",
+                          aspectRatio: "3/4",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          overflow: "hidden",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => { close(); navigate(`/product/${item.id}`); }}
+                      >
+                        <Image
+                          src={getImageUrl(item.image_url)}
+                          fit={getProductImageFit(item.image_url, "cover", "polyvore")}
+                          bg={getProductImageBackground(item.image_url, "polyvore")}
+                          h="100%"
+                          w="100%"
+                        />
+                      </Paper>
+                      <Box w="100%">
+                        <Text size="10px" c="dimmed" mb={2} style={roleLabelStyle}>
+                          {item.category}
                         </Text>
-                        <Text size="xs" c="dimmed">İlk açılışta biraz sürebilir.</Text>
-                      </Stack>
-                    </Center>
-                  ) : cirError === "__indexing__" ? (
-                    <Box py={60} ta="center">
-                      <Loader color="gray" size="sm" mb="md" />
-                      <Text size="sm" fw={500} c="dimmed">Öneriler hazırlanıyor…</Text>
-                      <Text size="xs" c="dimmed" mt={4}>
-                        Birkaç saniye içinde hazır olacak. Tekrar tıklayın.
-                      </Text>
-                    </Box>
-                  ) : cirError === "__non_outfit__" ? (
-                    <Box py={60} ta="center">
-                      <Text size="xl" mb="sm">🌙</Text>
-                      <Text size="sm" fw={500}>Bu ürün için öneri yapılamıyor.</Text>
-                      <Text size="xs" c="dimmed" mt={4}>
-                        İç giyim ve ev kıyafetleri bu kapsamda değerlendirilmiyor.
-                      </Text>
-                    </Box>
-                  ) : cirError ? (
-                    <Box py={40}>
-                      <Text c="red" size="sm">{cirError}</Text>
-                    </Box>
-                  ) : cirItems.length === 0 ? (
-                    <Box py={40}>
-                      <Text c="dimmed">Bu parça için tamamlayıcı ürün bulunamadı.</Text>
-                    </Box>
-                  ) : (
-                    <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="xl">
-                      {cirItems.map((item) => (
-                        <Stack key={item.id} align="flex-start" gap="sm">
-                          <Paper
-                            radius={0}
-                            p={0}
-                            bg="white"
-                            style={{
-                              width: "100%",
-                              aspectRatio: "3/4",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              overflow: "hidden",
-                              cursor: "pointer",
-                            }}
-                            onClick={() => { close(); navigate(`/product/${item.id}`); }}
-                          >
-                            <Image
-                              src={item.image_url || "/placeholder.jpg"}
-                              fit="cover"
-                              h="100%"
-                              w="100%"
-                            />
-                          </Paper>
-                          <Box w="100%">
-                            <Text size="10px" c="dimmed" mb={2} style={roleLabelStyle}>
-                              {item.category}
-                            </Text>
-                            <Text size="sm" c="gray.7" mb={4} truncate="end">
-                              {item.name}
-                            </Text>
-                            <Text
-                              size="11px"
-                              fw={600}
-                              c="black"
-                              style={{ textDecoration: "underline", cursor: "pointer", letterSpacing: "1px" }}
-                              onClick={() => { close(); navigate(`/product/${item.id}`); }}
-                            >
-                              SATIN AL
-                            </Text>
-                          </Box>
-                        </Stack>
-                      ))}
-                    </SimpleGrid>
-                  )}
-                </Tabs.Panel>
-
-                <Tabs.Panel value="rule">
-                  {recLoading ? (
-                    <Center h={320}>
-                      <Stack align="center" gap="lg">
-                        <Loader color="black" type="bars" />
-                        <Text size="sm" fw={500} c="dimmed" ta="center">
-                          Sizin için en uyumlu görünümü<br />tasarlıyoruz…
+                        <Text size="sm" c="gray.7" mb={4} truncate="end">
+                          {item.name}
                         </Text>
-                      </Stack>
-                    </Center>
-                  ) : Object.keys(heroOutfit).length > 0 ? (
-                    renderOutfitGrid(heroOutfit, "single")
-                  ) : (
-                    <Box py={40}>
-                      <Text c="dimmed">Bu parça için henüz tamamlayıcı bir öneri bulunamadı.</Text>
-                    </Box>
-                  )}
-                </Tabs.Panel>
-              </Tabs>
+                        <Text
+                          size="11px"
+                          fw={600}
+                          c="black"
+                          style={{ textDecoration: "underline", cursor: "pointer", letterSpacing: "1px" }}
+                          onClick={() => { close(); navigate(`/product/${item.id}`); }}
+                        >
+                          SATIN AL
+                        </Text>
+                      </Box>
+                    </Stack>
+                  ))}
+                </SimpleGrid>
+              )}
             </Grid.Col>
           </Grid>
         </Box>

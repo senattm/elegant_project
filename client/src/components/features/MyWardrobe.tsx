@@ -6,12 +6,18 @@ import { useNavigate } from "react-router-dom";
 import { useOrders } from "../../store/hooks/useOrders";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../../store/atoms";
-import { getImageUrl } from "../../utils/imageUrl";
+import { getImageUrl, getProductImageBackground, isPolyvoreProduct } from "../../utils/imageUrl";
 import { uniqueWardrobeItemsFromOrders } from "../../utils/wardrobeItems";
 import { getServerUrl } from "../../utils/serverUrl";
 import { sectionTitleStyle, smallLabelStyle } from "../../theme";
 
-type WardrobeItem = { id: number; image: string; name: string };
+type WardrobeItem = {
+  id: number;
+  image: string;
+  name: string;
+  imagePath?: string;
+  source?: string | null;
+};
 
 const defaultItems: WardrobeItem[] = [
   { id: 1, image: getImageUrl("101-0.jpg"), name: "Siyah Saten Elbise" },
@@ -62,7 +68,11 @@ const WardrobePiecesPanel = ({
         background: "rgba(0,0,0,0.06)",
       }}
     >
-      {items.map((item, index) => (
+      {items.map((item, index) => {
+        const imageRef = item.imagePath ?? item.image;
+        const polyvore = isPolyvoreProduct(item.source, imageRef);
+
+        return (
         <motion.div
           key={item.id}
           initial={{ opacity: 0, y: 20 }}
@@ -77,7 +87,7 @@ const WardrobePiecesPanel = ({
               position: "relative",
               aspectRatio: "3/4",
               overflow: "hidden",
-              background: "#fff",
+              background: getProductImageBackground(imageRef, item.source) ?? "#fff",
               border: "1px solid rgba(0,0,0,0.06)",
             }}
           >
@@ -86,8 +96,9 @@ const WardrobePiecesPanel = ({
                 position: "absolute",
                 inset: 0,
                 backgroundImage: `url('${item.image}')`,
-                backgroundSize: "cover",
-                backgroundPosition: "center top",
+                backgroundSize: polyvore ? "contain" : "cover",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center center",
               }}
             />
             <Box
@@ -111,7 +122,8 @@ const WardrobePiecesPanel = ({
             </Box>
           </Box>
         </motion.div>
-      ))}
+        );
+      })}
     </Box>
 
     <Text mt={16} ta="center" c="rgba(0,0,0,0.35)" style={{ ...smallLabelStyle, fontSize: 9 }}>

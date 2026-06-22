@@ -10,7 +10,7 @@ import {
 } from "@mantine/core";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getImageUrl } from "../../utils/imageUrl";
+import { getImageUrl, getProductImageBackground, getProductImageFit } from "../../utils/imageUrl";
 
 interface ImageSliderProps {
   images: string[];
@@ -20,6 +20,7 @@ interface ImageSliderProps {
   showButtonsOnHover?: boolean;
   selectedImage?: number;
   onImageChange?: (index: number) => void;
+  imageSource?: string | null;
 }
 
 const ImageSlider = ({
@@ -30,6 +31,7 @@ const ImageSlider = ({
   showButtonsOnHover = false,
   selectedImage: externalSelectedImage,
   onImageChange,
+  imageSource,
 }: ImageSliderProps) => {
   const [internalSelectedImage, setInternalSelectedImage] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -83,6 +85,9 @@ const ImageSlider = ({
   }
 
   const validIndex = Math.max(0, Math.min(selectedImage, images.length - 1));
+  const currentImageUrl = images[validIndex] || "";
+  const imageBackground = getProductImageBackground(currentImageUrl, imageSource);
+  const smallCardFit = getProductImageFit(currentImageUrl, "cover", imageSource);
   const buttonSize = size === "small" ? 32 : 40;
   const buttonPos = size === "small" ? 8 : 12;
 
@@ -128,6 +133,7 @@ const ImageSlider = ({
         aspectRatio: size === "small" ? "3/4" : "auto",
         minHeight: size === "large" ? rem(400) : "auto",
         overflow: "hidden",
+        backgroundColor: imageBackground,
       }}
     >
       {images.length > 1 && (
@@ -189,11 +195,12 @@ const ImageSlider = ({
           }}
         >
           <Image
-            src={getImageUrl(images[validIndex] || "")}
+            src={getImageUrl(currentImageUrl)}
             alt="Product"
             w={size === "small" ? "100%" : "auto"}
             h={size === "small" ? "100%" : "auto"}
-            fit={size === "small" ? "cover" : "contain"}
+            fit={size === "small" ? smallCardFit : "contain"}
+            bg={imageBackground}
             style={{
               maxWidth: size === "large" ? rem(600) : "100%",
               maxHeight: size === "large" ? rem(600) : "100%",

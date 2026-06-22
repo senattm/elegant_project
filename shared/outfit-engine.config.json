@@ -1,46 +1,6 @@
 {
-  "recommendation_engine": {
-    "mode": "rule_based",
-    "reference_outfits_file": "reference_outfits.json",
-    "use_reference_outfits_in_inference": false
-  },
-  "color_match_map": {
-    "black": ["black", "white", "grey", "gray", "beige", "cream", "red", "blue", "navy", "dark blue", "gold", "silver", "green"],
-    "white": ["white", "black", "grey", "gray", "beige", "cream", "blue", "denim", "navy", "dark blue", "gold", "silver", "green"],
-    "green": ["black", "white"],
-    "navy": ["navy", "dark blue", "blue", "white", "grey", "gray", "beige", "cream"],
-    "dark blue": ["navy", "dark blue", "blue", "white", "grey", "gray", "beige", "cream"],
-    "blue": ["blue", "navy", "dark blue", "white", "grey", "gray", "denim"],
-    "denim": ["denim", "white", "black", "grey", "blue"],
-    "beige": ["beige", "cream", "white", "black", "brown", "khaki", "natural"],
-    "natural": ["natural", "beige", "cream", "white", "black", "brown"],
-    "cream": ["cream", "beige", "white", "black", "brown"],
-    "brown": ["brown", "beige", "cream", "black", "khaki", "natural"],
-    "grey": ["grey", "gray", "white", "black", "navy", "dark blue", "blue"],
-    "gray": ["gray", "grey", "white", "black", "navy", "dark blue", "blue"],
-    "gold": ["gold", "black", "white", "cream", "beige", "green", "red"],
-    "silver": ["silver", "black", "white", "grey", "gray", "blue", "green"]
-  },
-  "neutral_colors": ["black", "white", "grey", "gray", "beige", "cream", "natural", "khaki", "silver"],
-  "scoring": {
-    "exact_color_bonus": 1.0,
-    "compatible_color_bonus": 1.2,
-    "incompatible_color_penalty": -1.0,
-    "style_tag_bonus": 0.25,
-    "pair_harmonize_bonus": 2.5,
-    "pair_harmonize_penalty": -2.0,
-    "neutral_bonus_with_pair": 0.8,
-    "neutral_bonus_without_pair": 1.0,
-    "seed_exact_neutral_multiplier": 0.55,
-    "seed_exact_anchor_multiplier": 0.65,
-    "seed_exact_default_multiplier": 0.8,
-    "neutral_layer_bonus": 0.4,
-    "monochrome_penalty_per_overlap": 0.45,
-    "palette_max_colors": 3,
-    "seed_max_repeats": 2,
-    "palette_overflow_penalty": -0.2,
-    "seed_repeat_penalty": -0.25,
-    "missing_neutral_penalty": -0.2,
-    "palette_rule_bonus": 0.15
+  "outfit_complement": {
+    "cp_min_threshold": 0.52,
+    "cp_soft_threshold": 0.40
   }
 }

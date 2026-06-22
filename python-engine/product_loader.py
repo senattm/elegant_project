@@ -6,8 +6,6 @@ from urllib.parse import parse_qs, urlparse
 import pandas as pd
 import psycopg2
 
-from outfit_engine import prepare_products_dataframe
-
 
 def database_url() -> str:
     url = os.environ.get(
@@ -58,6 +56,35 @@ def load_products(
 
     conn.close()
 
-    raw_df["brand"] = None
-    raw_df["gender"] = None
-    return prepare_products_dataframe(raw_df)
+    raw_df["id"] = pd.to_numeric(raw_df["id"], errors="coerce").fillna(0).astype(int)
+    return raw_df
+
+
+def load_seed_products(product_ids: list[int]) -> pd.DataFrame:
+    if not product_ids:
+        return pd.DataFrame(columns=["id", "name", "category", "image_url"])
+
+    conn = psycopg2.connect(database_url())
+    placeholders = ",".join(str(i) for i in product_ids)
+    raw_df = pd.read_sql(
+        f"""
+        SELECT p.id, p.name, c.name AS category, pi.image_url
+        FROM products p
+        LEFT JOIN categories c ON c.id = p.category_id
+        LEFT JOIN LATERAL (
+            SELECT image_url
+            FROM product_images
+            WHERE product_id = p.id
+            ORDER BY
+              CASE WHEN image_url ~ '-1\\.(jpe?g|png|webp)$' THEN 0 ELSE 1 END,
+              is_main DESC NULLS LAST,
+              id ASC
+            LIMIT 1
+        ) pi ON true
+        WHERE p.id IN ({placeholders})
+        """,
+        conn,
+    )
+    conn.close()
+    raw_df["id"] = pd.to_numeric(raw_df["id"], errors="coerce").fillna(0).astype(int)
+    return raw_df

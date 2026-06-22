@@ -50,7 +50,6 @@ export const favoritesApi = {
 export const productsApi = {
   getAll: () => api.get("/products"),
   getById: (id: number) => api.get(`/products/${id}`),
-  getRecommendations: (id: number) => api.get(`/products/${id}/recommendations`),
 };
 
 export const ordersApi = {

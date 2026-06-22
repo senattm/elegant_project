@@ -95,6 +95,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
         <ImageSlider
           images={product.images || []}
+          imageSource={product.source}
           onImageClick={() => navigate(`/product/${product.id}`)}
           size="small"
           showDots={false}

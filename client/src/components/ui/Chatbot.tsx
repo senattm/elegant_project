@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { chatbotApi } from "../../api/client";
-import { getImageUrl } from "../../utils/imageUrl";
 import {
   Box,
   Text,
@@ -14,8 +13,6 @@ import {
   Stack,
   Avatar,
   rem,
-  UnstyledButton,
-  Image,
 } from "@mantine/core";
 import {
   IconMessageCircle,
@@ -24,22 +21,11 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 
-interface ProductRecommendation {
-  id: number;
-  name: string;
-  price: number;
-  image: string | null;
-  category: string | null;
-  style?: string | null;
-  season?: string | null;
-}
-
 interface Message {
   id: string;
   text: string;
   sender: "user" | "bot";
   timestamp: Date;
-  recommendations?: ProductRecommendation[];
 }
 
 const Chatbot = () => {
@@ -49,7 +35,7 @@ const Chatbot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Merhaba! Size yardımcı olmak için buradayım.",
+      text: "Merhaba! Site içinde yönlendirme yapabilir veya kargo, iade ve iletişim hakkında bilgi verebilirim.",
       sender: "bot",
       timestamp: new Date(),
     },
@@ -86,14 +72,13 @@ const Chatbot = () => {
 
     try {
       const response = await chatbotApi.sendMessage(userMessage.text);
-      const { message, action, path, recommendations } = response.data;
+      const { message, action, path } = response.data;
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: message || "Üzgünüm, bir hata oluştu.",
         sender: "bot",
         timestamp: new Date(),
-        recommendations: action === "recommend" ? recommendations : undefined,
       };
       setMessages((prev) => [...prev, botMessage]);
 
@@ -105,13 +90,15 @@ const Chatbot = () => {
       }
     } catch (error) {
       console.error("Chatbot error:", error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Üzgünüm, şu anda yanıt veremiyorum.",
-        sender: "bot",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: "Üzgünüm, şu anda yanıt veremiyorum.",
+          sender: "bot",
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -213,10 +200,8 @@ const Chatbot = () => {
                   <Box
                     key={message.id}
                     style={{
-                      alignSelf:
-                        message.sender === "user" ? "flex-end" : "flex-start",
-                      maxWidth: message.recommendations?.length ? "100%" : "85%",
-                      width: message.recommendations?.length ? "100%" : undefined,
+                      alignSelf: message.sender === "user" ? "flex-end" : "flex-start",
+                      maxWidth: "85%",
                     }}
                   >
                     <Paper
@@ -236,55 +221,6 @@ const Chatbot = () => {
                         {message.text}
                       </Text>
                     </Paper>
-
-                    {message.recommendations && message.recommendations.length > 0 && (
-                      <Stack gap="xs" mt="sm">
-                        {message.recommendations.map((item) => (
-                          <UnstyledButton
-                            key={item.id}
-                            onClick={() => {
-                              navigate(`/product/${item.id}`);
-                              setIsOpen(false);
-                            }}
-                            style={{ width: "100%" }}
-                          >
-                            <Paper
-                              p="xs"
-                              withBorder
-                              radius={0}
-                              style={{
-                                borderColor: "#e8e8e3",
-                                transition: "border-color 0.2s",
-                              }}
-                            >
-                              <Group gap="sm" wrap="nowrap" align="center">
-                                <Box
-                                  w={52}
-                                  h={68}
-                                  style={{ overflow: "hidden", flexShrink: 0, background: "#fafafa" }}
-                                >
-                                  <Image
-                                    src={getImageUrl(item.image)}
-                                    alt={item.name}
-                                    fit="cover"
-                                    h="100%"
-                                    w="100%"
-                                  />
-                                </Box>
-                                <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                                  <Text size="sm" fw={500} lineClamp={2}>
-                                    {item.name}
-                                  </Text>
-                                  <Text size="sm" fw={600}>
-                                    {item.price.toFixed(2)} TL
-                                  </Text>
-                                </Stack>
-                              </Group>
-                            </Paper>
-                          </UnstyledButton>
-                        ))}
-                      </Stack>
-                    )}
                   </Box>
                 ))}
               </Stack>
@@ -295,7 +231,7 @@ const Chatbot = () => {
               style={{ borderTop: "1px solid #000", backgroundColor: "#fff" }}
             >
               <TextInput
-                placeholder=""
+                placeholder="Kargo, sepet, dolabım..."
                 flex={1}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.currentTarget.value)}

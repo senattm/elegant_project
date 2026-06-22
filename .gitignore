@@ -64,6 +64,7 @@ python-engine/data/*.npy
 python-engine/data/checkpoints/
 python-engine/data/checkpoints.zip
 python-engine/data/similarity_projection.pt
+python-engine/data/product_fashion_clip_meta.txt
 python-engine/data/demo_output/
 
 # Polyvore product images (local static assets)

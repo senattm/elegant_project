@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import colorsys
 import json
 import os
 from pathlib import Path
@@ -9,7 +8,7 @@ from typing import Optional
 import numpy as np
 import torch
 
-from outfit_config import OUTFIT_COMPLEMENT_CFG, SEED_SLOT_ALLOWLIST, blocked_outfit_slots, category_to_slot
+from outfit_config import OUTFIT_COMPLEMENT_CFG
 from outfit_model.datatypes import (
     FashionCompatibilityQuery,
     FashionComplementaryQuery,
@@ -21,15 +20,6 @@ CIR_CLIP_EMB_PATH = CIR_DATA_DIR / "catalog_cir_clip.npy"
 CIR_ITEM_EMB_PATH = CIR_DATA_DIR / "catalog_cir_items.npy"
 CIR_IDS_PATH = CIR_DATA_DIR / "catalog_cir_ids.json"
 CIR_FAILED_IDS_PATH = CIR_DATA_DIR / "catalog_cir_failed_ids.json"
-CIR_META_PATH = CIR_DATA_DIR / "catalog_cir_meta.json"
-CIR_COLORS_PATH = CIR_DATA_DIR / "catalog_cir_colors.json"
-CIR_EMBEDDING_PURPOSE = "complementary"
-
-# Slots that form the "accent" layer (jacket, shoes, bag) — should share one color family.
-# Slots that form the "base" layer (top, bottom, dress) — should contrast with accent.
-ACCENT_SLOTS = frozenset({"outer", "footwear", "bag", "accessory"})
-BASE_SLOTS = frozenset({"upper", "lower", "full"})
-_MAX_CANDIDATES_PER_SLOT = 4
 
 _cache: dict = {}
 _FAILED_URLS: set[str] = set()
@@ -115,61 +105,6 @@ def _load_image(url: str):
         return None
 
 
-def _dominant_color_bucket(img) -> str:
-    """
-    Returns the dominant color family of a clothing item.
-    Buckets: 'warm' (red/orange/yellow/brown), 'cool' (blue/green/purple),
-             'neutral' (beige/light gray), 'dark' (black/very dark).
-    Product photos typically have white backgrounds — those pixels are excluded.
-    """
-    small = img.resize((64, 64)).convert("RGB")
-    arr = np.array(small, dtype=np.float32).reshape(-1, 3)
-    brightness = arr.mean(axis=1)
-    # Exclude near-white background pixels common in product photos
-    clothing = arr[brightness < 215]
-    if clothing.shape[0] < 80:
-        clothing = arr
-
-    hues: list[float] = []
-    for r, g, b in clothing:
-        h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
-        if s > 0.15 and 0.12 < v < 0.95:
-            hues.append(h * 360.0)
-
-    if len(hues) < 30:
-        return "dark" if float(clothing.mean()) < 85 else "neutral"
-
-    avg_hue = float(np.mean(hues))
-    # warm: reds, oranges, yellows, pinks (0–60° and 315–360°)
-    # cool: greens, blues, purples (90–315°)
-    if avg_hue < 60 or avg_hue >= 315:
-        return "warm"
-    elif avg_hue < 75:
-        return "warm"   # yellow-green → still warm-ish
-    else:
-        return "cool"
-
-
-def _fill_missing_colors(ids: list[int], db_rows: dict[int, dict]) -> None:
-    """Mevcut cache'deki ürünler için renk hesabı hiç yapılmamışsa tek seferlik çalışır."""
-    existing: dict[str, str] = {}
-    if CIR_COLORS_PATH.is_file():
-        try:
-            existing = json.loads(CIR_COLORS_PATH.read_text())
-        except Exception:
-            pass
-    missing = [pid for pid in ids if str(pid) not in existing and pid in db_rows]
-    if not missing:
-        return
-    print(f"[CIR] {len(missing)} urun icin renk hesaplaniyor (tek seferlik)…")
-    for pid in missing:
-        img = _load_image(db_rows[pid]["url"])
-        if img is not None:
-            existing[str(pid)] = _dominant_color_bucket(img)
-    CIR_COLORS_PATH.write_text(json.dumps(existing))
-    print(f"[CIR] Renk cache hazir ({len(existing)} urun).")
-
-
 def _embed_items(fashion_items: list, model) -> tuple[np.ndarray, np.ndarray]:
     batch_size = 16
     all_clip: list[np.ndarray] = []
@@ -218,24 +153,6 @@ def reset_elegant_failed_ids() -> int:
 def precompute_catalog(df, model, *, force: bool = False):
     global _cache
 
-    if not force and CIR_META_PATH.is_file():
-        try:
-            meta = json.loads(CIR_META_PATH.read_text())
-            if meta.get("embedding_purpose") != CIR_EMBEDDING_PURPOSE:
-                print("[CIR] Eski uyumluluk embedding cache'i temizleniyor…")
-                force = True
-        except Exception:
-            force = True
-    elif CIR_IDS_PATH.is_file() and not force:
-        print("[CIR] Embedding amaci belirsiz, katalog yeniden hesaplanacak…")
-        force = True
-
-    if force:
-        for path in (CIR_IDS_PATH, CIR_CLIP_EMB_PATH, CIR_ITEM_EMB_PATH, CIR_FAILED_IDS_PATH, CIR_COLORS_PATH):
-            if path.is_file():
-                path.unlink()
-        _cache.clear()
-
     if not force and _cache.get("ids") and _cache.get("clip_embs") is not None:
         return _cache["ids"], _cache["clip_embs"], _cache["item_embs"]
 
@@ -273,14 +190,6 @@ def precompute_catalog(df, model, *, force: bool = False):
         cached_item = cached_item[keep_idx] if cached_item is not None else None
         cached_clip = cached_clip[keep_idx] if cached_clip is not None else None
         print(f"[CIR] {len(removed)} silinen urun cache'den cikarildi.")
-        if CIR_COLORS_PATH.is_file():
-            try:
-                colors = json.loads(CIR_COLORS_PATH.read_text())
-                for pid in removed:
-                    colors.pop(str(pid), None)
-                CIR_COLORS_PATH.write_text(json.dumps(colors))
-            except Exception:
-                pass
 
     current_id_set = set(cached_ids)
     new_ids = [pid for pid in db_ids if pid not in current_id_set and pid not in failed_ids]
@@ -289,14 +198,12 @@ def precompute_catalog(df, model, *, force: bool = False):
         print(f"[CIR] {len(new_ids)} yeni urun icin embedding hesaplaniyor…")
         new_fashion_items: list = []
         valid_new_ids: list[int] = []
-        new_colors: dict[str, str] = {}
         for pid in new_ids:
             img = _load_image(db_rows[pid]["url"])
             if img is None:
                 continue
             new_fashion_items.append(FashionItem(image=img, description=db_rows[pid]["desc"]))
             valid_new_ids.append(pid)
-            new_colors[str(pid)] = _dominant_color_bucket(img)
             if len(valid_new_ids) % 50 == 0:
                 print(f"[CIR] Gorsel yuklendi: {len(valid_new_ids)}/{len(new_ids)}")
 
@@ -313,17 +220,7 @@ def precompute_catalog(df, model, *, force: bool = False):
             cached_clip = np.vstack([cached_clip, new_clip]) if cached_clip is not None else new_clip
             cached_item = np.vstack([cached_item, new_item]) if cached_item is not None else new_item
             print(f"[CIR] {len(valid_new_ids)} yeni urun eklendi.")
-            # Persist color cache incrementally
-            existing_colors: dict[str, str] = {}
-            if CIR_COLORS_PATH.is_file():
-                try:
-                    existing_colors = json.loads(CIR_COLORS_PATH.read_text())
-                except Exception:
-                    pass
-            existing_colors.update(new_colors)
-            CIR_COLORS_PATH.write_text(json.dumps(existing_colors))
     elif not removed:
-        _fill_missing_colors(cached_ids, db_rows)
         _cache.update({"ids": cached_ids, "clip_embs": cached_clip, "item_embs": cached_item})
         print(f"[CIR] Cache yuklendi: {len(cached_ids)} urun (degisiklik yok)")
         return cached_ids, cached_clip, cached_item
@@ -337,7 +234,6 @@ def precompute_catalog(df, model, *, force: bool = False):
         np.save(CIR_CLIP_EMB_PATH, clip_embs)
     np.save(CIR_ITEM_EMB_PATH, item_embs)
     CIR_IDS_PATH.write_text(json.dumps(ids))
-    CIR_META_PATH.write_text(json.dumps({"embedding_purpose": CIR_EMBEDDING_PURPOSE}))
 
     print(f"[CIR] Kaydedildi: {len(ids)} urun, item_embs {item_embs.shape}")
     _cache.update({"ids": ids, "clip_embs": clip_embs, "item_embs": item_embs})
@@ -355,10 +251,8 @@ def find_complementary(
     k: int = 8,
     outfit_mode: bool = True,
     seed_df=None,
-    compat_model=None,
 ) -> list[dict]:
     ids, clip_embs, item_embs = precompute_catalog(df, model)
-    cp_model = compat_model or model
     id_to_idx = {pid: i for i, pid in enumerate(ids)}
 
     id_to_cat: dict[int, str] = {}
@@ -426,97 +320,28 @@ def find_complementary(
     cp_min_threshold = float(OUTFIT_COMPLEMENT_CFG["cp_min_threshold"])
     cp_soft_threshold = float(OUTFIT_COMPLEMENT_CFG["cp_soft_threshold"])
 
-    # Slots already occupied by seed items
-    excluded_slots: set[str] = set()
-    for seed_cat in seed_categories:
-        slot = category_to_slot(seed_cat)
-        if slot:
-            excluded_slots.add(slot)
-
-    # ── Non-outfit mode: original single-pass behavior ────────────────────────
-    if not outfit_mode:
-        results: list[dict] = []
-        for idx in np.argsort(dists):
-            pid = ids[idx]
-            if pid in seed_set:
-                continue
-            if id_to_source.get(pid, "elegant") != seed_source:
-                continue
-            item_cat = id_to_cat.get(pid, "")
-            if category and item_cat.lower() != category.lower():
-                continue
-
-            outfit_items_for_cp = seed_outfit_items + [FashionItem(embedding=clip_embs[idx])]
-            cp_query = [FashionCompatibilityQuery(outfit=outfit_items_for_cp)]
-            try:
-                cp_score_t = cp_model.predict_score(cp_query, use_precomputed_embedding=True)
-                cp_score = float(cp_score_t.sigmoid().item())
-            except Exception:
-                cp_score = float(1.0 / (1.0 + dists[idx]))
-
-            if cp_score < cp_soft_threshold:
-                continue
-
-            entry: dict = {
-                "id": pid,
-                "score": round(cp_score, 4),
-                "rank": len(results) + 1,
-                "category": item_cat,
-            }
-            if cp_score < cp_min_threshold:
-                entry["_soft"] = True
-            results.append(entry)
-            if len(results) >= k:
-                break
-        return results
-
-    # ── Outfit mode: two-phase color-diversity selection ──────────────────────
-
-    # Load precomputed color buckets (populated during precompute_catalog)
-    id_to_color: dict[int, str] = {}
-    if CIR_COLORS_PATH.is_file():
-        try:
-            raw = json.loads(CIR_COLORS_PATH.read_text())
-            id_to_color = {int(key): val for key, val in raw.items()}
-        except Exception:
-            pass
-
-    # Slots blocked by the seed's category conflicts (e.g. seed=dress blocks upper+lower)
-    blocked_by_seed = blocked_outfit_slots(excluded_slots)
-    all_seed_excluded = excluded_slots | blocked_by_seed
-
-    # Restrict recommendation slots when seed belongs to a contextual category
-    # (e.g. pijama → only footwear + lower; mayo → only accessory)
-    allowed_slots: frozenset[str] | None = None
-    for seed_cat in seed_categories:
-        if seed_cat in SEED_SLOT_ALLOWLIST:
-            restriction = SEED_SLOT_ALLOWLIST[seed_cat]
-            allowed_slots = restriction if allowed_slots is None else allowed_slots & restriction
-
-    # Phase 1: collect up to _MAX_CANDIDATES_PER_SLOT candidates per slot
-    # (slot conflicts between recommendations are handled in Phase 2)
-    per_slot_pool: dict[str, list[dict]] = {}
+    results: list[dict] = []
+    seen_categories: set[str] = set(seed_categories)
 
     for idx in np.argsort(dists):
         pid = ids[idx]
         if pid in seed_set:
             continue
+
         if id_to_source.get(pid, "elegant") != seed_source:
             continue
 
         item_cat = id_to_cat.get(pid, "")
-        item_slot = category_to_slot(item_cat)
-        if not item_slot or item_slot in all_seed_excluded:
+        if category and item_cat.lower() != category.lower():
             continue
-        if allowed_slots is not None and item_slot not in allowed_slots:
-            continue
-        if item_slot in per_slot_pool and len(per_slot_pool[item_slot]) >= _MAX_CANDIDATES_PER_SLOT:
-            continue
+        if outfit_mode:
+            if not item_cat or item_cat in seen_categories:
+                continue
 
         outfit_items_for_cp = seed_outfit_items + [FashionItem(embedding=clip_embs[idx])]
         cp_query = [FashionCompatibilityQuery(outfit=outfit_items_for_cp)]
         try:
-            cp_score_t = cp_model.predict_score(cp_query, use_precomputed_embedding=True)
+            cp_score_t = model.predict_score(cp_query, use_precomputed_embedding=True)
             cp_score = float(cp_score_t.sigmoid().item())
         except Exception:
             cp_score = float(1.0 / (1.0 + dists[idx]))
@@ -524,93 +349,23 @@ def find_complementary(
         if cp_score < cp_soft_threshold:
             continue
 
-        if item_slot not in per_slot_pool:
-            per_slot_pool[item_slot] = []
-        per_slot_pool[item_slot].append({
+        if outfit_mode:
+            seen_categories.add(item_cat)
+
+        entry = {
             "id": pid,
-            "score": cp_score,
+            "score": round(cp_score, 4),
+            "rank": len(results) + 1,
             "category": item_cat,
-            "slot": item_slot,
-            "color": id_to_color.get(pid, "unknown"),
-        })
+        }
+        if cp_score < cp_min_threshold:
+            entry["_soft"] = True
 
-    if not per_slot_pool:
-        return []
-
-    # Phase 2: color-diversity-aware selection
-    # Accent slots (outer/footwear/bag/accessory) are selected first to establish
-    # the "accent color". Base slots (upper/lower/full) then prefer a contrasting color.
-    def _pick(slot: str, prefer_color: str | None, avoid_color: str | None) -> dict | None:
-        pool = per_slot_pool.get(slot, [])
-        if not pool:
-            return None
-
-        def _adjusted(c: dict) -> float:
-            s = c["score"]
-            col = c["color"]
-            if col in ("unknown", "neutral", "dark"):
-                return s  # achromatic items work with any color theme
-            if prefer_color and col == prefer_color:
-                return s + 0.12
-            if avoid_color and col == avoid_color:
-                return s - 0.12
-            return s
-
-        return max(pool, key=_adjusted)
-
-    results = []
-    used_slots: set[str] = set(excluded_slots)
-
-    # Initialise accent_color from seed if the seed is itself an accent item
-    accent_color: str | None = None
-    for pid in seed_product_ids:
-        cat = id_to_cat.get(int(pid), "") or seed_rows.get(int(pid), {}).get("category", "")
-        if category_to_slot(cat) in ACCENT_SLOTS:
-            col = id_to_color.get(int(pid), "unknown")
-            if col in ("warm", "cool"):
-                accent_color = col
+        results.append(entry)
+        if len(results) >= k:
             break
 
-    # Select accent slots first → establishes the shared accent color
-    for slot in ["outer", "footwear", "bag", "accessory"]:
-        if slot in used_slots or slot in blocked_outfit_slots(used_slots):
-            continue
-        item = _pick(slot, prefer_color=accent_color, avoid_color=None)
-        if not item:
-            continue
-        col = item["color"]
-        if accent_color is None and col in ("warm", "cool"):
-            accent_color = col
-        used_slots.add(slot)
-        entry = {
-            "id": item["id"],
-            "score": round(item["score"], 4),
-            "rank": len(results) + 1,
-            "category": item["category"],
-        }
-        if item["score"] < cp_min_threshold:
-            entry["_soft"] = True
-        results.append(entry)
-
-    # Select base slots next → prefer contrasting with accent color
-    for slot in ["upper", "lower", "full"]:
-        if slot in used_slots or slot in blocked_outfit_slots(used_slots):
-            continue
-        item = _pick(slot, prefer_color=None, avoid_color=accent_color)
-        if not item:
-            continue
-        used_slots.add(slot)
-        entry = {
-            "id": item["id"],
-            "score": round(item["score"], 4),
-            "rank": len(results) + 1,
-            "category": item["category"],
-        }
-        if item["score"] < cp_min_threshold:
-            entry["_soft"] = True
-        results.append(entry)
-
-    return results[:k]
+    return results
 
 
 def catalog_status() -> dict:

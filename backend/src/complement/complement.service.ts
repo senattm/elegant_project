@@ -25,19 +25,7 @@ type PythonHealthResponse = {
   status: string;
   products: number;
   engine: string;
-  models_ready?: boolean;
-  cir_ready?: boolean;
 };
-
-const COMPLEMENT_TIMEOUT_MS = 180_000;
-const COMPLEMENT_RETRY_DELAY_MS = 2_000;
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const isLoadingDetail = (detail: string) =>
-  detail.startsWith('__loading__')
-  || detail.includes('indeksleniyor')
-  || detail.includes('yukleniyor');
 
 @Injectable()
 export class ComplementService {
@@ -83,56 +71,40 @@ export class ComplementService {
       url.searchParams.set('category', category);
     }
 
-    const deadline = Date.now() + COMPLEMENT_TIMEOUT_MS;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120_000);
 
-    while (Date.now() < deadline) {
-      const controller = new AbortController();
-      const remaining = deadline - Date.now();
-      const timeout = setTimeout(() => controller.abort(), remaining);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      const body = await response.json().catch(() => ({}));
 
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        const body = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          const detail =
-            typeof body?.detail === 'string'
-              ? body.detail
-              : 'Kombin servisi hata dondurdu.';
-
-          if (response.status === 503 && isLoadingDetail(detail) && Date.now() < deadline) {
-            await sleep(COMPLEMENT_RETRY_DELAY_MS);
-            continue;
-          }
-
-          throw new HttpException({ detail }, response.status);
-        }
-
-        const pythonResult = body as PythonComplementResponse;
-        const enrichedItems = await this.enrichItems(pythonResult.items);
-
-        return {
-          items: enrichedItems,
-          seed_ids: pythonResult.seed_ids,
-          engine: pythonResult.engine,
-        };
-      } catch (error) {
-        if (error instanceof HttpException) {
-          throw error;
-        }
-        throw new HttpException(
-          { detail: 'Kombin servisi su an kullanilamiyor.' },
-          503,
-        );
-      } finally {
-        clearTimeout(timeout);
+      if (!response.ok) {
+        const detail =
+          typeof body?.detail === 'string'
+            ? body.detail
+            : 'Kombin servisi hata dondurdu.';
+        throw new HttpException({ detail }, response.status);
       }
-    }
 
-    throw new HttpException(
-      { detail: '__loading__:Model yukleniyor, lutfen birkac saniye bekleyin.' },
-      503,
-    );
+      const pythonResult = body as PythonComplementResponse;
+      const enrichedItems = await this.enrichItems(pythonResult.items);
+
+      return {
+        items: enrichedItems,
+        seed_ids: pythonResult.seed_ids,
+        engine: pythonResult.engine,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        { detail: 'Kombin servisi su an kullanilamiyor.' },
+        503,
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private pickPrimaryImage(images: { image_url: string; is_main: boolean | null }[]): string {

@@ -1,84 +1,23 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Container, Title, Text, Grid, Image, Paper, Box, Button, Group, Stack, Center, Loader, Modal, SimpleGrid, UnstyledButton } from "@mantine/core";
 import { IconArrowLeft, IconShoppingBag, IconClothesRack } from "@tabler/icons-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useOrders } from "../store/hooks/useOrders";
 import { motion } from "framer-motion";
 import { getImageUrl, getProductImageBackground, getProductImageFit } from "../utils/imageUrl";
 import { useAtom } from "jotai";
 import { isAuthenticatedAtom } from "../store/atoms";
-import { complementApi, productsApi } from "../api/client";
+import { complementApi } from "../api/client";
 import { useDisclosure } from "@mantine/hooks";
 import { productActionButtonStyles, roleLabelStyle } from "../theme";
 import { navigateToStore } from "../utils/navigation";
 import { uniqueWardrobeItemsFromOrders } from "../utils/wardrobeItems";
-import type { Product } from "../types";
 
 type CirItem = {
   id: number;
   name: string;
   category: string;
   image_url: string;
-};
-
-type WardrobeDisplayItem = {
-  id: number;
-  name: string;
-  image: string;
-  imagePath?: string;
-  source?: string | null;
-  category: string;
-  price: number;
-};
-
-const productToWardrobeItem = (product: Product): WardrobeDisplayItem => {
-  const imagePath = product.images?.[0];
-  const price =
-    typeof product.price === "string" ? parseFloat(product.price) : product.price;
-
-  return {
-    id: product.id,
-    name: product.name,
-    image: getImageUrl(imagePath),
-    imagePath,
-    source: product.source,
-    category: product.category,
-    price: Number.isFinite(price) ? price : 0,
-  };
-};
-
-const COMPLEMENT_LOADING_DETAIL = "__loading__";
-
-const isComplementLoadingError = (message: string) =>
-  message.startsWith(COMPLEMENT_LOADING_DETAIL)
-  || message.includes("indeksleniyor")
-  || message.includes("yükleniyor");
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const fetchComplementWithRetry = async (productId: number) => {
-  const deadline = Date.now() + 180_000;
-
-  while (Date.now() < deadline) {
-    try {
-      const res = await complementApi.getComplement([productId], 8);
-      const detail: string = res.data?.detail ?? "";
-      if (detail.startsWith(COMPLEMENT_LOADING_DETAIL)) {
-        await sleep(2000);
-        continue;
-      }
-      return res;
-    } catch (err: unknown) {
-      const msg: string = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "";
-      if (isComplementLoadingError(msg)) {
-        await sleep(2000);
-        continue;
-      }
-      throw err;
-    }
-  }
-
-  throw new Error("__loading__");
 };
 
 const WardrobeCard = ({ product, handleOpenKombin }: any) => {
@@ -154,20 +93,15 @@ const WardrobeCard = ({ product, handleOpenKombin }: any) => {
 
 const Wardrobe = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const demoPolyvore = searchParams.get("demo") === "polyvore";
-  const demoSeedId = Number(searchParams.get("seed") || "823");
-  const demoAutoOpen = searchParams.get("open") === "1";
   const { getUserOrders } = useOrders();
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
-  const [products, setProducts] = useState<WardrobeDisplayItem[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<WardrobeDisplayItem | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [opened, { open, close }] = useDisclosure(false);
   const [cirItems, setCirItems] = useState<CirItem[]>([]);
   const [cirLoading, setCirLoading] = useState(false);
   const [cirError, setCirError] = useState<string | null>(null);
-  const autoOpenedRef = useRef(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -185,17 +119,9 @@ const Wardrobe = () => {
     const fetchWardrobe = async () => {
       setLoading(true);
       try {
-        if (demoPolyvore && Number.isFinite(demoSeedId)) {
-          const response = await productsApi.getById(demoSeedId);
-          if (!cancelled) {
-            setProducts([productToWardrobeItem(response.data)]);
-          }
-          return;
-        }
-
         const orders = await getUserOrders();
         if (!cancelled) {
-          setProducts(uniqueWardrobeItemsFromOrders(orders) as WardrobeDisplayItem[]);
+          setProducts(uniqueWardrobeItemsFromOrders(orders));
         }
       } catch (error) {
         if (!cancelled) {
@@ -213,7 +139,7 @@ const Wardrobe = () => {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, getUserOrders, demoPolyvore, demoSeedId]);
+  }, [isAuthenticated, getUserOrders]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("TÜMÜ");
 
@@ -227,45 +153,40 @@ const Wardrobe = () => {
     return products.filter((p) => p.category === selectedCategory);
   }, [products, selectedCategory]);
 
-  const handleOpenKombin = async (product: WardrobeDisplayItem) => {
+  const handleOpenKombin = async (product: any) => {
     setSelectedProduct(product);
     setCirLoading(true);
     setCirItems([]);
     setCirError(null);
     open();
 
-    try {
-      const res = await fetchComplementWithRetry(product.id);
-      setCirItems(
-        (res.data.items || []).map(({ id, name, category, image_url }) => ({
-          id,
-          name,
-          category,
-          image_url,
-        })),
-      );
-    } catch (err) {
-      console.error("Kombin önerisi hatası:", err);
-      const msg: string = (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
-        ?? (err as Error)?.message
-        ?? "";
-      if (isComplementLoadingError(msg)) {
-        setCirError("__indexing__");
-      } else {
-        setCirError("Öneriler yüklenemedi. Lütfen daha sonra tekrar deneyin.");
-      }
-    } finally {
-      setCirLoading(false);
-    }
+    complementApi.getComplement([product.id], 8)
+      .then((res) => {
+        const detail: string = res.data?.detail ?? "";
+        if (detail.startsWith("__loading__")) {
+          setCirError("__indexing__");
+        } else {
+          setCirItems(
+            (res.data.items || []).map(({ id, name, category, image_url }) => ({
+              id,
+              name,
+              category,
+              image_url,
+            })),
+          );
+        }
+      })
+      .catch((err) => {
+        console.error("Kombin önerisi hatası:", err);
+        const msg: string = err?.response?.data?.detail ?? "";
+        if (msg.startsWith("__loading__") || msg.includes("indeksleniyor") || msg.includes("yükleniyor")) {
+          setCirError("__indexing__");
+        } else {
+          setCirError("Öneriler yüklenemedi. Lütfen daha sonra tekrar deneyin.");
+        }
+      })
+      .finally(() => setCirLoading(false));
   };
-
-  useEffect(() => {
-    if (!demoAutoOpen || !demoPolyvore || loading || products.length === 0 || autoOpenedRef.current) {
-      return;
-    }
-    autoOpenedRef.current = true;
-    handleOpenKombin(products[0]);
-  }, [demoAutoOpen, demoPolyvore, loading, products]);
 
   if (loading) {
     return (
@@ -300,14 +221,6 @@ const Wardrobe = () => {
             </Group>
           </Group>
           <Box h={1} bg="gray.2" mb="xl" w="100%" />
-
-          {demoPolyvore && (
-            <Box mb="lg" p="md" bg="#fafafa" style={{ border: "1px solid #e8e8e8" }}>
-              <Text size="sm" c="dimmed">
-                Polyvore tez demosu — seed #{demoSeedId}. Öneriler yalnızca Polyvore katalogundan gelir.
-              </Text>
-            </Box>
-          )}
 
           <Group gap="md" mb={40} style={{ overflowX: "auto", flexWrap: "nowrap" }} pb={10}>
             {uniqueCategories.map((filter) => (
@@ -452,7 +365,7 @@ const Wardrobe = () => {
                     <Text size="sm" c="dimmed" ta="center">
                       Kombin parçaları hazırlanıyor…
                     </Text>
-                    <Text size="xs" c="dimmed">Modeller hazırlanıyor, lütfen bekleyin.</Text>
+                    <Text size="xs" c="dimmed">İlk açılışta biraz sürebilir.</Text>
                   </Stack>
                 </Center>
               ) : cirError === "__indexing__" ? (
@@ -460,7 +373,7 @@ const Wardrobe = () => {
                   <Loader color="gray" size="sm" mb="md" />
                   <Text size="sm" fw={500} c="dimmed">Öneriler hazırlanıyor…</Text>
                   <Text size="xs" c="dimmed" mt={4}>
-                    Hazırlık biraz uzun sürdü. Lütfen parçaya tekrar tıklayın.
+                    Birkaç saniye içinde hazır olacak. Tekrar tıklayın.
                   </Text>
                 </Box>
               ) : cirError ? (

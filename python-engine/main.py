@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import threading
-import time
 from datetime import datetime
 
 import pandas as pd
@@ -27,49 +26,6 @@ df: pd.DataFrame | None = None
 engine_ready = False
 last_loaded_at: datetime | None = None
 last_db_updated_at: datetime | None = None
-_warmup_lock = threading.Lock()
-_warmup_done = threading.Event()
-
-
-def _is_models_ready() -> bool:
-    from model_loader import _model_cache
-
-    return "clip:complementary" in _model_cache and "clip:compatibility" in _model_cache
-
-
-def _is_cir_ready() -> bool:
-    from cir_engine import CIR_IDS_PATH
-
-    return CIR_IDS_PATH.is_file()
-
-
-def _ensure_ready(timeout: float = 180.0) -> None:
-    """Warm-up bitene kadar bekler; gerekirse modelleri senkron yukler."""
-    if _is_models_ready() and _is_cir_ready():
-        return
-
-    deadline = time.monotonic() + timeout
-    remaining = max(0.0, deadline - time.monotonic())
-    if not _warmup_lock.acquire(timeout=remaining):
-        raise HTTPException(
-            status_code=503,
-            detail="__loading__:Model yukleniyor, lutfen birkac saniye bekleyin.",
-        )
-
-    try:
-        from cir_engine import CIR_IDS_PATH, precompute_catalog
-        from model_loader import load_model
-
-        if not _is_models_ready():
-            load_model(model_type="clip", purpose="complementary")
-            load_model(model_type="clip", purpose="compatibility")
-
-        if not CIR_IDS_PATH.is_file():
-            df_img = load_products(include_image=True, polyvore_only=catalog_polyvore_only())
-            cir_model = load_model(model_type="clip", purpose="complementary")
-            precompute_catalog(df_img, cir_model)
-    finally:
-        _warmup_lock.release()
 
 
 @app.on_event("startup")
@@ -94,31 +50,27 @@ def load_data() -> None:
 
         def _warmup() -> None:
             try:
-                with _warmup_lock:
-                    from cir_engine import CIR_IDS_PATH, precompute_catalog, reset_elegant_failed_ids
-                    from model_loader import load_model
+                from cir_engine import CIR_IDS_PATH, precompute_catalog, reset_elegant_failed_ids
+                from model_loader import load_model
 
-                    cir_model = load_model(model_type="clip", purpose="complementary")
-                    load_model(model_type="clip", purpose="compatibility")
-                    print("[Warm-up] CIR + uyumluluk modelleri bellege yuklendi.")
+                model = load_model(model_type="clip")
+                print("[Warm-up] Model bellege yuklendi.")
 
-                    if not catalog_polyvore_only():
-                        cleared = reset_elegant_failed_ids()
-                        if cleared:
-                            print(f"[Warm-up] {cleared} Elegant urun failed-list'ten temizlendi.")
+                if not catalog_polyvore_only():
+                    cleared = reset_elegant_failed_ids()
+                    if cleared:
+                        print(f"[Warm-up] {cleared} Elegant urun failed-list'ten temizlendi.")
 
-                    df_img = load_products(include_image=True, polyvore_only=catalog_polyvore_only())
-                    if not CIR_IDS_PATH.is_file():
-                        print("[Warm-up] CIR katalog indexi olusturuluyor…")
-                        precompute_catalog(df_img, cir_model)
-                        print("[Warm-up] CIR katalog indexi hazir.")
-                    else:
-                        precompute_catalog(df_img, cir_model)
-                        print("[Warm-up] CIR embeddingler cache'den yuklendi.")
+                df_img = load_products(include_image=True, polyvore_only=catalog_polyvore_only())
+                if not CIR_IDS_PATH.is_file():
+                    print("[Warm-up] CIR katalog indexi olusturuluyor…")
+                    precompute_catalog(df_img, model)
+                    print("[Warm-up] CIR katalog indexi hazir.")
+                else:
+                    precompute_catalog(df_img, model)
+                    print("[Warm-up] CIR embeddingler cache'den yuklendi.")
             except Exception as exc:
-                print(f"[Warm-up] Hata: {exc}")
-            finally:
-                _warmup_done.set()
+                print(f"[Warm-up] Hata (sorun degil): {exc}")
 
         threading.Thread(target=_warmup, daemon=True).start()
 
@@ -151,9 +103,6 @@ def health() -> dict:
         "status": "ok" if engine_ready else "loading",
         "products": len(df) if df is not None else 0,
         "engine": "elegant_cir",
-        "models_ready": _is_models_ready(),
-        "cir_ready": _is_cir_ready(),
-        "warmup_done": _warmup_done.is_set(),
         "outfit_complement": OUTFIT_COMPLEMENT_CFG,
         "last_loaded_at": last_loaded_at.isoformat() if last_loaded_at else None,
     }
@@ -181,11 +130,14 @@ def complement_items(product_ids: str, category: str = "", k: int = 8):
         raise HTTPException(status_code=400, detail="En az bir product_id gerekli")
 
     try:
-        _ensure_ready()
-        from model_loader import load_model
+        from model_loader import _model_cache, load_model
 
-        cir_model = load_model(model_type="clip", purpose="complementary")
-        compat_model = load_model(model_type="clip", purpose="compatibility")
+        if "clip" not in _model_cache:
+            raise HTTPException(
+                status_code=503,
+                detail="__loading__:Model yukleniyor, lutfen birkac saniye bekleyin.",
+            )
+        model = load_model(model_type="clip")
     except HTTPException:
         raise
     except Exception as exc:
@@ -197,17 +149,21 @@ def complement_items(product_ids: str, category: str = "", k: int = 8):
         raise HTTPException(status_code=503, detail=f"Urunler yuklenemedi: {exc}")
 
     try:
-        from cir_engine import find_complementary
+        from cir_engine import CIR_IDS_PATH, find_complementary
 
+        if not CIR_IDS_PATH.is_file():
+            raise HTTPException(
+                status_code=503,
+                detail="__loading__:CIR katalogu indeksleniyor, birkac dakika sonra tekrar deneyin.",
+            )
         recs = find_complementary(
             seed_ids,
             df_with_img,
-            cir_model,
+            model,
             category=category,
             k=k,
             outfit_mode=(category == ""),
             seed_df=load_seed_products(seed_ids),
-            compat_model=compat_model,
         )
     except HTTPException:
         raise
@@ -232,9 +188,9 @@ def cir_precompute(force: bool = False):
         from cir_engine import precompute_catalog
         from model_loader import load_model
 
-        cir_model = load_model(model_type="clip", purpose="complementary")
+        model = load_model(model_type="clip")
         df_with_img = load_products(include_image=True, polyvore_only=catalog_polyvore_only())
-        ids, _, item_embs = precompute_catalog(df_with_img, cir_model, force=force)
+        ids, _, item_embs = precompute_catalog(df_with_img, model, force=force)
         return {
             "status": "ok",
             "products_indexed": len(ids),

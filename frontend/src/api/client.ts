@@ -134,6 +134,6 @@ export const complementApi = {
       engine: string;
     }>("/complement", {
       params: { product_ids: productIds.join(","), k, category },
-      timeout: 180_000,
+      timeout: 120_000,
     }),
 };

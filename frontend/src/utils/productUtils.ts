@@ -1,6 +1,6 @@
 const ORDERS = ['XS', 'S', 'M', 'L', 'XL', 'STANDART', 'STD'];
 
-/** Fisher–Yates; returns a new shuffled array. */
+
 export const shuffleArray = <T,>(items: T[]): T[] => {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i--) {

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { notificationConfig } from "./store/hooks/useNotification";
@@ -22,12 +22,17 @@ import { useAuth } from "./store/hooks";
 function App() {
   const { fetchCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   return (
     <MantineProvider theme={theme}>

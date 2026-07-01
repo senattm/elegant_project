@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Box, SimpleGrid, Pagination, Center } from "@mantine/core";
+import { Box, SimpleGrid, Pagination, Center, Group, NumberInput, Text, Button } from "@mantine/core";
 import ProductCard from "../components/features/ProductCard";
 import FilterPanel from "../components/store/FilterPanel";
 import { useProducts } from "../store/hooks";
@@ -108,6 +108,16 @@ const Store = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const [goToPageValue, setGoToPageValue] = useState<number | string>("");
+
+  const handleGoToPage = () => {
+    const page = Number(goToPageValue);
+    if (page >= 1 && page <= totalPages) {
+      handlePageChange(page);
+    }
+    setGoToPageValue("");
+  };
+
   if (loading) {
     return <LoadingState message="Ürünler yükleniyor..." />;
   }
@@ -147,29 +157,58 @@ const Store = () => {
 
           {totalPages > 1 && (
             <Center mb={80}>
-              <Pagination
-                total={totalPages}
-                value={currentPage}
-                onChange={handlePageChange}
-                size="lg"
-                radius={0}
-                withEdges
-                color="dark"
-                styles={{
-                  control: {
-                    border: "none",
-                    fontWeight: 500,
-                    letterSpacing: "0.05em",
-                    "&[data-active]": {
-                      backgroundColor: "black",
-                      color: "white",
+              <Group gap="xl" align="center" wrap="wrap" justify="center">
+                <Pagination
+                  total={totalPages}
+                  value={currentPage}
+                  onChange={handlePageChange}
+                  size="lg"
+                  radius={0}
+                  siblings={2}
+                  withEdges
+                  color="dark"
+                  styles={{
+                    control: {
+                      border: "none",
+                      fontWeight: 500,
+                      letterSpacing: "0.05em",
+                      "&[data-active]": {
+                        backgroundColor: "black",
+                        color: "white",
+                      },
+                      "&:not([data-active]):hover": {
+                        backgroundColor: "#f1f3f5",
+                      },
                     },
-                    "&:not([data-active]):hover": {
-                      backgroundColor: "#f1f3f5",
-                    },
-                  },
-                }}
-              />
+                  }}
+                />
+                <Group gap="xs" align="center">
+                  <Text size="sm" c="dimmed">Sayfaya git</Text>
+                  <NumberInput
+                    value={goToPageValue}
+                    onChange={setGoToPageValue}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleGoToPage();
+                    }}
+                    min={1}
+                    max={totalPages}
+                    placeholder={`1-${totalPages}`}
+                    w={90}
+                    size="sm"
+                    radius={0}
+                    hideControls
+                  />
+                  <Button
+                    onClick={handleGoToPage}
+                    variant="outline"
+                    color="dark"
+                    radius={0}
+                    size="sm"
+                  >
+                    Git
+                  </Button>
+                </Group>
+              </Group>
             </Center>
           )}
         </>

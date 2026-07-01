@@ -1,9 +1,3 @@
-"""
-Elegant kombin modeli yukleyicisi.
-
-Egitilmis agirliklar: python-engine/data/checkpoints/
-Model mimarisi: python-engine/outfit_model/
-"""
 
 from __future__ import annotations
 

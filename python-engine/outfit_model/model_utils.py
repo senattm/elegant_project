@@ -17,8 +17,8 @@ def freeze_model(model):
 
 
 def aggregate_embeddings(
-    image_embeddings: Optional[Tensor] = None, 
-    text_embeddings: Optional[Tensor] = None, 
+    image_embeddings: Optional[Tensor] = None,
+    text_embeddings: Optional[Tensor] = None,
     aggregation_method: str = 'concat'
 ) -> Tensor:
     embeds = []
@@ -39,13 +39,13 @@ def aggregate_embeddings(
 
 
 def mean_pooling(
-    model_output: Tensor, 
+    model_output: Tensor,
     attention_mask: Tensor
 ) -> Tensor:
-    token_embeddings = model_output[0]  # First element of model_output contains the hidden states
+    token_embeddings = model_output[0]
     input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
 
     summed_embeddings = torch.sum(token_embeddings * input_mask_expanded, dim=1)
     mask_sum = torch.clamp(input_mask_expanded.sum(dim=1), min=1e-9)
-    
+
     return summed_embeddings / mask_sum

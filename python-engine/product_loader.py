@@ -73,7 +73,7 @@ def load_seed_products(product_ids: list[int]) -> pd.DataFrame:
     placeholders = ",".join(str(i) for i in product_ids)
     raw_df = pd.read_sql(
         f"""
-        SELECT p.id, p.name, c.name AS category, pi.image_url,
+        SELECT p.id, p.name, p.tags, c.name AS category, pi.image_url,
                COALESCE(p.source, 'elegant') AS source
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id

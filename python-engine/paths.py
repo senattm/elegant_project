@@ -1,4 +1,3 @@
-"""Elegant python-engine icin proje kokune gore yollar."""
 
 from pathlib import Path
 

@@ -127,7 +127,7 @@ export default function Navbar({ alwaysWhite = false }: NavbarProps) {
                   setSearchQuery(e.target.value);
                   if (e.target.value.trim()) navigate("/store");
                 }}
-                onBlur={() => !searchQuery.trim() && setSearchOpen(false)}
+                onBlur={() => setSearchOpen(false)}
                 leftSection={<IconSearch size={24} stroke={2} />}
                 autoFocus
                 w={{ base: 180, md: 260 }}

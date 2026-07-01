@@ -20,3 +20,17 @@ OUTFIT_COMPLEMENT_CFG: dict[str, float] = {
     "cp_min_threshold": float(_COMP.get("cp_min_threshold", 0.52)),
     "cp_soft_threshold": float(_COMP.get("cp_soft_threshold", 0.40)),
 }
+
+CATEGORY_SLOTS: dict[str, str] = _CFG.get("category_slots", {})
+SLOT_CONFLICTS: dict[str, list[str]] = _CFG.get("slot_conflicts", {})
+
+
+def category_to_slot(category: str) -> str | None:
+    return CATEGORY_SLOTS.get((category or "").strip())
+
+
+def blocked_outfit_slots(occupied_slots: set[str]) -> set[str]:
+    blocked: set[str] = set()
+    for slot in occupied_slots:
+        blocked.update(SLOT_CONFLICTS.get(slot, []))
+    return blocked

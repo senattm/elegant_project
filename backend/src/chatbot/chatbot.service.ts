@@ -2,21 +2,76 @@ import { Injectable, Logger } from '@nestjs/common';
 import { VertexAI } from '@google-cloud/vertexai';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { PrismaService } from '../prisma/prisma.service';
+
+export interface ProductSuggestion {
+  id: number;
+  name: string;
+  price: number;
+  image: string | null;
+}
 
 export interface ChatbotResponse {
   message: string;
-  action: 'redirect' | 'none';
+  action: 'redirect' | 'products' | 'none';
   path?: string;
+  products?: ProductSuggestion[];
 }
+
+const COLOR_KEYWORDS: Record<string, string> = {
+  beyaz: 'white',
+  siyah: 'black',
+  kirmizi: 'red',
+  mavi: 'blue',
+  lacivert: 'navy',
+  yesil: 'green',
+  sari: 'yellow',
+  pembe: 'pink',
+  mor: 'purple',
+  gri: 'gray',
+  bej: 'beige',
+  kahverengi: 'brown',
+  turuncu: 'orange',
+  krem: 'cream',
+  altin: 'gold',
+  gumus: 'silver',
+};
+
+const STYLE_KEYWORDS: Record<string, string> = {
+  ofis: 'Office',
+  gunluk: 'Casual',
+  rahat: 'Casual',
+  spor: 'Sport',
+  parti: 'Party',
+  gece: 'Party',
+  klasik: 'Formal',
+  resmi: 'Formal',
+  sik: 'Chic',
+};
+
+const PRODUCT_INTENT_VERBS = [
+  'istiyorum',
+  'ariyorum',
+  'ihtiyacim',
+  'lazim',
+  'bakiyorum',
+  'oner',
+  'var mi',
+  'bulabilir miyim',
+];
 
 const STORE_CATEGORIES: Record<string, string[]> = {
   Elbise: ['elbise', 'dress'],
-  Ayakkabı: ['ayakkabi', 'ayakkabı', 'shoe', 'shoes', 'bot'],
-  'Üst Giyim': ['ust giyim', 'üst giyim', 'gomlek', 'gömlek', 'bluz', 'top', 'kazak'],
-  'Alt Giyim': ['alt giyim', 'pantolon', 'etek', 'jean'],
-  'Dış Giyim': ['dis giyim', 'dış giyim', 'kaban', 'ceket', 'mont', 'jacket'],
+  Ayakkabı: ['ayakkabi', 'ayakkabı', 'shoe', 'shoes', 'bot', 'sandalet', 'topuklu'],
+  Gömlek: ['gomlek', 'gömlek', 'bluz', 'shirt', 'blouse'],
+  Top: ['tisort', 'tişört', 'crop top', 'top'],
+  'Kazak ve Hırka': ['kazak', 'hirka', 'hırka', 'sweater', 'cardigan', 'triko', 'suveter'],
+  Pantolon: ['pantolon', 'trouser', 'pants'],
+  Jean: ['jean', 'kot', 'denim'],
+  Etek: ['etek', 'skirt'],
+  'Kaban ve Ceket': ['kaban', 'ceket', 'mont', 'jacket', 'coat'],
   Çanta: ['canta', 'çanta', 'bag'],
-  'Takı & Aksesuar': ['taki', 'takı', 'aksesuar', 'jewelry'],
+  Aksesuar: ['aksesuar', 'taki', 'takı', 'jewelry', 'kolye', 'yuzuk', 'yüzük', 'bilezik'],
   Gözlük: ['gozluk', 'gözlük', 'sunglasses'],
 };
 
@@ -48,7 +103,7 @@ export class ChatbotService {
   private vertexAI: VertexAI | null = null;
   private vertexEnabled = false;
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     this.initVertex();
   }
 
@@ -89,7 +144,8 @@ export class ChatbotService {
     return text
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\u0131/g, 'i');
   }
 
   private answerFaq(message: string): string | null {
@@ -125,6 +181,77 @@ export class ChatbotService {
       }
     }
     return null;
+  }
+
+  private detectProductQuery(message: string): { category: string; color?: string; style?: string } | null {
+    const n = this.normalizeText(message);
+    const category = this.detectStoreCategory(message);
+    if (!category) return null;
+
+    const color = Object.entries(COLOR_KEYWORDS).find(([tr]) => n.includes(this.normalizeText(tr)))?.[1];
+    const style = Object.entries(STYLE_KEYWORDS).find(([tr]) => n.includes(this.normalizeText(tr)))?.[1];
+    const hasIntentVerb = PRODUCT_INTENT_VERBS.some((verb) => n.includes(this.normalizeText(verb)));
+
+    if (!hasIntentVerb && !color && !style) return null;
+
+    return { category, color, style };
+  }
+
+  private async searchElegantProducts(query: {
+    category: string;
+    color?: string;
+    style?: string;
+  }): Promise<ProductSuggestion[]> {
+    const products = await this.prisma.products.findMany({
+      where: {
+        source: null,
+        categories: { name: query.category },
+      },
+      include: {
+        product_images: {
+          select: { image_url: true, is_main: true },
+          orderBy: [{ is_main: 'desc' }, { image_url: 'asc' }],
+        },
+      },
+      take: 60,
+    });
+
+    let filtered = products;
+    if (query.color) {
+      filtered = filtered.filter((p) => JSON.stringify(p.colors ?? []).toLowerCase().includes(query.color!.toLowerCase()));
+    }
+    if (query.style) {
+      filtered = filtered.filter((p) => JSON.stringify(p.tags ?? []).toLowerCase().includes(query.style!.toLowerCase()));
+    }
+    if (filtered.length === 0) {
+      filtered = products;
+    }
+
+    return filtered.slice(0, 4).map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price ? Number(p.price) : 0,
+      image: p.product_images[0]?.image_url ?? null,
+    }));
+  }
+
+  private async answerWithProductSearch(message: string): Promise<ChatbotResponse | null> {
+    const query = this.detectProductQuery(message);
+    if (!query) return null;
+
+    const products = await this.searchElegantProducts(query);
+    if (products.length === 0) {
+      return {
+        message: `${query.category} kategorisinde aradığınız kriterlere uygun ürün bulamadım.`,
+        action: 'none',
+      };
+    }
+
+    return {
+      message: `${query.category} kategorisinde size şunları önerebilirim:`,
+      action: 'products',
+      products,
+    };
   }
 
   private detectRedirect(message: string): { path: string; reply: string } | null {
@@ -179,7 +306,7 @@ export class ChatbotService {
 
     return {
       message:
-        'Size site içinde yönlendirme ve kargo, iade, iletişim gibi konularda yardımcı olabilirim. Örneğin: "sepetim", "kargo kaç gün", "elbise kategorisi".',
+        'Size ürün önerebilir, site içinde yönlendirebilir, kargo/iade/iletişim gibi konularda yardımcı olabilirim. Örneğin: "beyaz ofis elbisesi istiyorum", "sepetim", "kargo kaç gün".',
       action: 'none',
     };
   }
@@ -194,6 +321,11 @@ export class ChatbotService {
   }
 
   async processMessage(message: string): Promise<ChatbotResponse> {
+    const productResponse = await this.answerWithProductSearch(message);
+    if (productResponse) {
+      return productResponse;
+    }
+
     if (this.vertexEnabled && this.vertexAI) {
       return this.processWithLlm(message);
     }

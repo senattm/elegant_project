@@ -2,5 +2,28 @@
   "outfit_complement": {
     "cp_min_threshold": 0.52,
     "cp_soft_threshold": 0.40
+  },
+  "category_slots": {
+    "Üst Giyim": "upper",
+    "Alt Giyim": "lower",
+    "Elbise": "full",
+    "Top": "upper",
+    "Gömlek": "upper",
+    "Kazak ve Hırka": "upper",
+    "Pantolon": "lower",
+    "Jean": "lower",
+    "Etek": "lower",
+    "Ayakkabı": "footwear",
+    "Çanta": "bag",
+    "Dış Giyim": "outer",
+    "Kaban ve Ceket": "outer",
+    "Takı & Aksesuar": "accessory",
+    "Aksesuar": "accessory",
+    "Gözlük": "accessory"
+  },
+  "slot_conflicts": {
+    "full": ["upper", "lower"],
+    "upper": ["full"],
+    "lower": ["full"]
   }
 }

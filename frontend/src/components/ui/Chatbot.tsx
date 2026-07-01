@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { chatbotApi } from "../../api/client";
+import { getImageUrl } from "../../utils/imageUrl";
 import {
   Box,
   Text,
@@ -12,6 +13,8 @@ import {
   Group,
   Stack,
   Avatar,
+  Image,
+  UnstyledButton,
   rem,
 } from "@mantine/core";
 import {
@@ -21,11 +24,19 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 
+interface ProductSuggestion {
+  id: number;
+  name: string;
+  price: number;
+  image: string | null;
+}
+
 interface Message {
   id: string;
   text: string;
   sender: "user" | "bot";
   timestamp: Date;
+  products?: ProductSuggestion[];
 }
 
 const Chatbot = () => {
@@ -35,7 +46,7 @@ const Chatbot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Merhaba! Site içinde yönlendirme yapabilir veya kargo, iade ve iletişim hakkında bilgi verebilirim.",
+      text: "Merhaba! Size ürün önerebilir, site içinde yönlendirebilir veya kargo, iade ve iletişim hakkında bilgi verebilirim.",
       sender: "bot",
       timestamp: new Date(),
     },
@@ -72,13 +83,14 @@ const Chatbot = () => {
 
     try {
       const response = await chatbotApi.sendMessage(userMessage.text);
-      const { message, action, path } = response.data;
+      const { message, action, path, products } = response.data;
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: message || "Üzgünüm, bir hata oluştu.",
         sender: "bot",
         timestamp: new Date(),
+        products: action === "products" ? products : undefined,
       };
       setMessages((prev) => [...prev, botMessage]);
 
@@ -201,7 +213,7 @@ const Chatbot = () => {
                     key={message.id}
                     style={{
                       alignSelf: message.sender === "user" ? "flex-end" : "flex-start",
-                      maxWidth: "85%",
+                      maxWidth: message.products?.length ? "100%" : "85%",
                     }}
                   >
                     <Paper
@@ -221,6 +233,46 @@ const Chatbot = () => {
                         {message.text}
                       </Text>
                     </Paper>
+
+                    {message.products && message.products.length > 0 && (
+                      <Group gap="xs" mt="xs" wrap="wrap">
+                        {message.products.map((product) => (
+                          <UnstyledButton
+                            key={product.id}
+                            onClick={() => {
+                              navigate(`/product/${product.id}`);
+                              setIsOpen(false);
+                            }}
+                            style={{
+                              width: 96,
+                              border: "1px solid #e8e8e3",
+                              borderRadius: 8,
+                              overflow: "hidden",
+                              backgroundColor: "#fff",
+                            }}
+                          >
+                            <Box style={{ aspectRatio: "3/4", overflow: "hidden", backgroundColor: "#f5f5f0" }}>
+                              {product.image && (
+                                <Image
+                                  src={getImageUrl(product.image)}
+                                  h="100%"
+                                  w="100%"
+                                  fit="cover"
+                                />
+                              )}
+                            </Box>
+                            <Box p={6}>
+                              <Text size="9px" c="#333" truncate="end">
+                                {product.name}
+                              </Text>
+                              <Text size="10px" fw={600} c="#000">
+                                {product.price.toFixed(2)} TL
+                              </Text>
+                            </Box>
+                          </UnstyledButton>
+                        ))}
+                      </Group>
+                    )}
                   </Box>
                 ))}
               </Stack>
@@ -231,7 +283,7 @@ const Chatbot = () => {
               style={{ borderTop: "1px solid #000", backgroundColor: "#fff" }}
             >
               <TextInput
-                placeholder="Kargo, sepet, dolabım..."
+                placeholder="Beyaz ofis elbisesi, kargo, sepet..."
                 flex={1}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.currentTarget.value)}

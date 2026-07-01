@@ -1,11 +1,3 @@
-"""
-Elegant + Polyvore kombin demo scripti.
-
-Kullanim:
-  cd python-engine
-  venv\\Scripts\\python.exe demo_complement.py
-  venv\\Scripts\\python.exe demo_complement.py --seed 143
-"""
 from __future__ import annotations
 
 import argparse

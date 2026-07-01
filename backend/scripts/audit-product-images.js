@@ -1,7 +1,3 @@
-/**
- * Lists products missing images on site (no DB row or file not on disk).
- * Usage: node scripts/audit-product-images.js
- */
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');

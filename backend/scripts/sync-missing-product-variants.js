@@ -1,9 +1,3 @@
-/**
- * Variant kaydı olmayan ürünlere kategoriye göre product_variants ekler.
- *
- * Usage: node scripts/sync-missing-product-variants.js
- *        node scripts/sync-missing-product-variants.js --dry-run
- */
 const { PrismaClient } = require('@prisma/client');
 
 const dryRun = process.argv.includes('--dry-run');

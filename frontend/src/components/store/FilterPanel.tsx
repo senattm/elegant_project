@@ -51,6 +51,10 @@ const FilterPanel = ({
     onClearSearch,
 }: FilterPanelProps) => {
     const [categoryOpen, setCategoryOpen] = useState(false);
+    const [minDraft, setMinDraft] = useState<number | string>("");
+    const [maxDraft, setMaxDraft] = useState<number | string>("");
+    const [minEditing, setMinEditing] = useState(false);
+    const [maxEditing, setMaxEditing] = useState(false);
     const [priceOpen, setPriceOpen] = useState(false);
 
     const toggleCategory = (categoryName: string) => {
@@ -224,10 +228,23 @@ const FilterPanel = ({
                         <Group grow maw={400}>
                             <NumberInput
                                 label="Min"
-                                value={priceRange[0]}
-                                onChange={(val) => setPriceRange([Number(val) || 0, priceRange[1]])}
+                                value={minEditing ? minDraft : priceRange[0]}
+                                onChange={(val) => {
+                                    setMinDraft(val);
+                                    setPriceRange([Number(val) || 0, priceRange[1]]);
+                                }}
+                                onFocus={() => {
+                                    setMinEditing(true);
+                                    setMinDraft("");
+                                }}
+                                onBlur={() => {
+                                    setMinEditing(false);
+                                    if (minDraft === "") {
+                                        setPriceRange([0, priceRange[1]]);
+                                    }
+                                }}
                                 min={0}
-                                max={priceRange[1]}
+                                max={maxPrice}
                                 suffix=" ₺"
                                 size="sm"
                                 styles={{
@@ -250,9 +267,22 @@ const FilterPanel = ({
                             />
                             <NumberInput
                                 label="Max"
-                                value={priceRange[1]}
-                                onChange={(val) => setPriceRange([priceRange[0], Number(val) || maxPrice])}
-                                min={priceRange[0]}
+                                value={maxEditing ? maxDraft : priceRange[1]}
+                                onChange={(val) => {
+                                    setMaxDraft(val);
+                                    setPriceRange([priceRange[0], Number(val) || maxPrice]);
+                                }}
+                                onFocus={() => {
+                                    setMaxEditing(true);
+                                    setMaxDraft("");
+                                }}
+                                onBlur={() => {
+                                    setMaxEditing(false);
+                                    if (maxDraft === "") {
+                                        setPriceRange([priceRange[0], maxPrice]);
+                                    }
+                                }}
+                                min={0}
                                 max={maxPrice}
                                 suffix=" ₺"
                                 size="sm"

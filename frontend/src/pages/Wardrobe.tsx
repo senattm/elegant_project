@@ -20,6 +20,32 @@ type CirItem = {
   image_url: string;
 };
 
+const CATEGORY_DISPLAY_ORDER: Record<string, number> = {
+  "dış giyim": 0,
+  "kaban ve ceket": 0,
+  "üst giyim": 1,
+  top: 1,
+  gömlek: 1,
+  "kazak ve hırka": 1,
+  "alt giyim": 2,
+  pantolon: 2,
+  jean: 2,
+  etek: 2,
+  elbise: 2,
+  çanta: 3,
+  ayakkabı: 4,
+  aksesuar: 5,
+  "takı & aksesuar": 5,
+  gözlük: 5,
+};
+
+const sortByCategoryOrder = (items: CirItem[]): CirItem[] =>
+  [...items].sort(
+    (a, b) =>
+      (CATEGORY_DISPLAY_ORDER[a.category?.toLowerCase()] ?? 99) -
+      (CATEGORY_DISPLAY_ORDER[b.category?.toLowerCase()] ?? 99),
+  );
+
 const WardrobeCard = ({ product, handleOpenKombin }: any) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -104,10 +130,6 @@ const Wardrobe = () => {
   const [cirError, setCirError] = useState<string | null>(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  useEffect(() => {
     if (!isAuthenticated) {
       setProducts([]);
       setLoading(false);
@@ -148,6 +170,11 @@ const Wardrobe = () => {
     return ["TÜMÜ", ...Array.from(cats)].filter(Boolean);
   }, [products]);
 
+  const ownedProductIds = useMemo(
+    () => new Set(products.map((p) => p.id)),
+    [products],
+  );
+
   const filteredProducts = useMemo(() => {
     if (selectedCategory === "TÜMÜ") return products;
     return products.filter((p) => p.category === selectedCategory);
@@ -167,12 +194,14 @@ const Wardrobe = () => {
           setCirError("__indexing__");
         } else {
           setCirItems(
-            (res.data.items || []).map(({ id, name, category, image_url }) => ({
-              id,
-              name,
-              category,
-              image_url,
-            })),
+            sortByCategoryOrder(
+              (res.data.items || []).map(({ id, name, category, image_url }) => ({
+                id,
+                name,
+                category,
+                image_url,
+              })),
+            ),
           );
         }
       })
@@ -382,11 +411,13 @@ const Wardrobe = () => {
                 </Box>
               ) : cirItems.length === 0 ? (
                 <Box py={40}>
-                  <Text c="dimmed">Bu parça için kombin önerisi bulunamadı.</Text>
+                  <Text c="dimmed">Bu ürün için öneri yok.</Text>
                 </Box>
               ) : (
                 <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="xl">
-                  {cirItems.map((item) => (
+                  {cirItems.map((item) => {
+                    const owned = ownedProductIds.has(item.id);
+                    return (
                     <Stack key={item.id} align="flex-start" gap="sm">
                       <Paper
                         radius={0}
@@ -418,18 +449,30 @@ const Wardrobe = () => {
                         <Text size="sm" c="gray.7" mb={4} truncate="end">
                           {item.name}
                         </Text>
-                        <Text
-                          size="11px"
-                          fw={600}
-                          c="black"
-                          style={{ textDecoration: "underline", cursor: "pointer", letterSpacing: "1px" }}
-                          onClick={() => { close(); navigate(`/product/${item.id}`); }}
-                        >
-                          SATIN AL
-                        </Text>
+                        {owned ? (
+                          <Text
+                            size="11px"
+                            fw={600}
+                            c="dimmed"
+                            style={{ letterSpacing: "1px" }}
+                          >
+                            DOLABINIZDA
+                          </Text>
+                        ) : (
+                          <Text
+                            size="11px"
+                            fw={600}
+                            c="black"
+                            style={{ textDecoration: "underline", cursor: "pointer", letterSpacing: "1px" }}
+                            onClick={() => { close(); navigate(`/product/${item.id}`); }}
+                          >
+                            SATIN AL
+                          </Text>
+                        )}
                       </Box>
                     </Stack>
-                  ))}
+                    );
+                  })}
                 </SimpleGrid>
               )}
             </Grid.Col>

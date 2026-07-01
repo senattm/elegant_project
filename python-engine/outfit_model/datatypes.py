@@ -34,7 +34,7 @@ class FashionItem(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    
+
 class FashionCompatibilityQuery(BaseModel):
     outfit: List[Union[FashionItem, int]] = Field(
         default_factory=list,
@@ -50,19 +50,19 @@ class FashionComplementaryQuery(BaseModel):
         default="",
         description="Category of the target outfit"
     )
-    
-    
+
+
 class FashionCompatibilityData(TypedDict):
     label: Union[
-        int, 
+        int,
         List[int]
     ]
     query: Union[
-        FashionCompatibilityQuery, 
+        FashionCompatibilityQuery,
         List[FashionCompatibilityQuery]
     ]
-    
-    
+
+
 class FashionFillInTheBlankData(TypedDict):
     query: Union[
         FashionComplementaryQuery,
@@ -76,8 +76,8 @@ class FashionFillInTheBlankData(TypedDict):
         List[FashionItem],
         List[List[FashionItem]]
     ]
-    
-    
+
+
 class FashionTripletData(TypedDict):
     query: Union[
         FashionComplementaryQuery,

@@ -63,8 +63,8 @@ const WardrobePiecesPanel = ({
         gap: 2,
         background: "rgba(0,0,0,0.06)",
         minHeight: items.length > 0 ? undefined : 120,
-        alignItems: "center",
-        justifyItems: "center",
+        alignItems: items.length > 0 ? "stretch" : "center",
+        justifyItems: items.length > 0 ? "stretch" : "center",
       }}
     >
       {items.length > 0 ? (
@@ -85,6 +85,7 @@ const WardrobePiecesPanel = ({
             className="wardrobe-card-light"
             style={{
               position: "relative",
+              width: "100%",
               aspectRatio: "3/4",
               overflow: "hidden",
               background: getProductImageBackground(imageRef, item.source) ?? "#fff",

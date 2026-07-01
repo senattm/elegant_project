@@ -23,7 +23,7 @@ const pickProducts = (products: Product[], count: number, offset = 0) =>
 type Category = { name: string; image: string; product_count: number };
 
 const statsData = [
-  { num: "400+", label: "Benzersiz Parça" },
+  { num: "2881", label: "Benzersiz Parça" },
   { num: "25", label: "Yıllık Deneyim" },
   { num: "11", label: "Kategori" },
 ];
@@ -40,7 +40,8 @@ const categoryImages: Record<string, string> = {
   aksesuar: "accesories.jpg",
   aksesuarlar: "accesories.jpg",
   "kaban ve ceket": "jacket.jpg",
-  "kazak ve hırka": "jumper.jpg"
+  "kazak ve hırka": "jumper.jpg",
+  gözlük: "glasses.jpg"
 };
 
 

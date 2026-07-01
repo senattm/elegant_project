@@ -1,10 +1,3 @@
-/**
- * Links product_images rows for products that have files on disk but no DB rows.
- * Expected files: public/images/products/{id}-0.jpg (or {id}.jpg, {id}-1.jpg, ...)
- *
- * Usage: node scripts/sync-missing-product-images.js
- *        node scripts/sync-missing-product-images.js --dry-run
- */
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
@@ -33,7 +26,6 @@ function discoverFiles(productId) {
       found.push(file);
     }
   }
-  // Any {id}-N.ext
   const prefix = `${productId}-`;
   for (const file of fs.readdirSync(productsDir)) {
     if (file.startsWith(prefix) && !found.includes(file)) {

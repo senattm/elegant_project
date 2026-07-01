@@ -18,15 +18,25 @@ from paths import CHECKPOINT_DIR
 _model_cache: dict[str, object] = {}
 
 
-def _find_best_checkpoint(model_type: str = "clip") -> Optional[Path]:
+def _find_best_checkpoint(
+    model_type: str = "clip",
+    purpose: str = "compatibility",
+) -> Optional[Path]:
     if not CHECKPOINT_DIR.is_dir():
         return None
 
-    priority_names = [
-        "compatibillity_clip_best.pth",
-        "compatibility_clip_best.pth",
-        f"compatibility_{model_type}_best.pth",
-    ]
+    if purpose == "complementary":
+        priority_names = [
+            "complementary_clip_best.pth",
+            "complement_clip_best.pth",
+            f"complementary_{model_type}_best.pth",
+        ]
+    else:
+        priority_names = [
+            "compatibillity_clip_best.pth",
+            "compatibility_clip_best.pth",
+            f"compatibility_{model_type}_best.pth",
+        ]
     for name in priority_names:
         candidate = CHECKPOINT_DIR / name
         if candidate.is_file():
@@ -52,13 +62,17 @@ def _find_best_checkpoint(model_type: str = "clip") -> Optional[Path]:
     return None
 
 
-def load_model(checkpoint_path: Optional[Path] = None, model_type: str = "clip"):
+def load_model(
+    checkpoint_path: Optional[Path] = None,
+    model_type: str = "clip",
+    purpose: str = "compatibility",
+):
     if checkpoint_path is None:
-        checkpoint_path = _find_best_checkpoint(model_type)
+        checkpoint_path = _find_best_checkpoint(model_type, purpose=purpose)
         if checkpoint_path is None:
             raise FileNotFoundError(f"Checkpoint bulunamadi: {CHECKPOINT_DIR}")
 
-    cache_key = model_type
+    cache_key = f"{model_type}:{purpose}"
     if cache_key in _model_cache:
         return _model_cache[cache_key]
 
@@ -79,7 +93,10 @@ def load_model(checkpoint_path: Optional[Path] = None, model_type: str = "clip")
     model = model.to(device)
     model.eval()
 
-    print(f"Elegant kombin modeli yuklendi: {checkpoint_path.name} (device={device})")
+    print(
+        f"Elegant kombin modeli yuklendi: {checkpoint_path.name} "
+        f"(purpose={purpose}, device={device})"
+    )
     _model_cache[cache_key] = model
     return model
 

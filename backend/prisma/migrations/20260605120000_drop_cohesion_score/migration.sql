@@ -1,2 +1,2 @@
--- AlterTable
-ALTER TABLE "outfits" DROP COLUMN IF EXISTS "cohesion_score";
+-- outfits table removed; migration retained for history
+SELECT 1;

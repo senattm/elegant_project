@@ -72,8 +72,9 @@ def main() -> None:
     print("ELEGANT KOMBIN DEMO")
     print("=" * 60)
 
-    print("\n[1/4] Model yukleniyor...")
-    model = load_model(model_type="clip")
+    print("\n[1/4] Modeller yukleniyor...")
+    cir_model = load_model(model_type="clip", purpose="complementary")
+    compat_model = load_model(model_type="clip", purpose="compatibility")
 
     print("[2/4] Tum urunler yukleniyor (Elegant + Polyvore)...")
     cleared = reset_elegant_failed_ids()
@@ -86,7 +87,7 @@ def main() -> None:
     print(f"      Katalog: {len(df)} urun ({elegant_count} Elegant, {polyvore_count} Polyvore)")
 
     print("[3/4] CIR index guncelleniyor (yeni Elegant urunler ekleniyor)...")
-    ids, _, _ = precompute_catalog(df, model)
+    ids, _, _ = precompute_catalog(df, cir_model)
     print(f"      Index: {len(ids)} urun")
 
     seed_meta = fetch_product_meta([seed_id]).get(seed_id, {})
@@ -97,10 +98,11 @@ def main() -> None:
     recs = find_complementary(
         [seed_id],
         df,
-        model,
+        cir_model,
         k=args.k,
         outfit_mode=True,
         seed_df=load_seed_products([seed_id]),
+        compat_model=compat_model,
     )
 
     if not recs:
